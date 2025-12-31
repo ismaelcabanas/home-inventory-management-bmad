@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2]
+stepsCompleted: [1, 2, 3]
 inputDocuments: []
 date: 2025-12-31
 author: Isma
@@ -92,3 +92,78 @@ Multiple family members can mark items as consumed, reflecting the reality that 
 
 **5. Timing Advantage**
 Modern smartphone OCR capabilities (via ML models) are now accurate enough to reliably extract product information from receipts, making the core automation technically feasible in ways it wasn't 3-5 years ago.
+
+## Target Users
+
+### Primary Users
+
+**The Household Manager**
+
+Our primary user is any adult managing household grocery shopping and inventory, whether living alone or with family/partners. This encompasses a broad age range (25-55 years old) of working adults who have limited time for household management tasks and basic smartphone proficiency.
+
+**Profile Characteristics:**
+- **Context**: Managing household grocery shopping and inventory (solo or shared household)
+- **Employment Status**: Working adults with time constraints
+- **Tech Comfort**: Basic smartphone user (can use apps, scan receipts)
+- **Shopping Pattern**: Weekly grocery shopping trips at 1-2 regular supermarkets
+
+**Current Pain Points:**
+- Spends time every week manually checking fridge/pantry to create shopping lists
+- Mental fatigue from constantly tracking "do we have X?" across dozens of products
+- Occasionally buys duplicate items already at home
+- Sometimes forgets essential items, requiring extra trips
+- Frustrated by the repetitive, manual nature of a universal weekly task
+
+**Motivations:**
+- Reduce mental load and time spent on inventory management
+- Avoid wasted money on duplicate purchases
+- Eliminate forgotten items and emergency store runs
+- Automate a tedious but necessary household task
+
+**Success Criteria:**
+- Can mark items consumed with a quick tap (no typing)
+- Shopping list auto-generates - no manual list creation needed
+- Can scan receipt after shopping to update inventory automatically
+- Simple checkbox interface while shopping in-store
+- Minimal manual effort required week-to-week
+
+**User Quote:** *"I just want to stop thinking about what we have and what we need. The app should handle that for me."*
+
+### Secondary Users
+
+N/A - This product focuses on a single user type operating in two contexts (at home managing inventory, in-store shopping).
+
+### User Journey
+
+**Discovery & Onboarding:**
+1. User downloads app after experiencing yet another frustrating duplicate purchase or forgotten item
+2. Initial setup: Adds their most common grocery items to inventory (one-time effort)
+3. Sets stock level preferences (when should milk go on shopping list? When down to 1 carton?)
+
+**Weekly Usage Cycle:**
+
+**At Home Context (Throughout the Week):**
+- User consumes products (uses milk, finishes bread, etc.)
+- Quick tap to mark item as "low" or "empty" stock
+- Product automatically appears on shopping list
+- No need to manually check inventory or create lists
+
+**In-Store Context (Shopping Day):**
+- Opens app to see auto-generated shopping list
+- Taps/checks items as they place them in cart
+- Completes purchase, receives receipt
+
+**After Shopping:**
+- Takes photo of receipt with phone
+- OCR automatically updates inventory quantities
+- New products from receipt are added to inventory database
+- Cycle begins again for the next week
+
+**"Aha!" Moment:**
+When the user realizes they went through an entire week without manually creating a shopping list or checking what they have - the system just worked automatically.
+
+**Long-term Value:**
+- Inventory database becomes more complete and accurate over time
+- Stock level preferences become more refined to match actual consumption patterns
+- Weekly shopping becomes a mindless, automated routine
+- Mental load of household inventory management disappears entirely
