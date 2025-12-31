@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3]
+stepsCompleted: [1, 2, 3, 4]
 inputDocuments: []
 date: 2025-12-31
 author: Isma
@@ -167,3 +167,78 @@ When the user realizes they went through an entire week without manually creatin
 - Stock level preferences become more refined to match actual consumption patterns
 - Weekly shopping becomes a mindless, automated routine
 - Mental load of household inventory management disappears entirely
+
+## Success Metrics
+
+### Phase 1: Personal Validation (Primary Focus)
+
+**User Success - Your Household:**
+
+**Core Engagement (Daily/Weekly Use):**
+- Family members consistently mark items as consumed during the week (3+ times per week minimum)
+- Auto-generated shopping list is used for weekly shopping trip (not supplemented with paper lists)
+- Receipt scanning occurs after every shopping trip
+- In-store checklist is used and completed (80%+ of items checked off)
+
+**The "Aha!" Moment:**
+- Household completes at least 4 consecutive weekly cycles without manually creating a shopping list
+- Family members report reduced mental load around inventory management
+
+**Reliability Metrics:**
+- OCR accuracy on receipts: 90%+ correct product recognition
+- App stability: Zero crashes during core workflows (mark consumed, view list, scan receipt)
+- Data persistence: No lost inventory data or shopping list corruption
+- Response time: All actions complete in <2 seconds
+
+**Value Delivery:**
+- Reduction in duplicate purchases (tracked via user self-report)
+- Reduction in forgotten essential items (tracked via user self-report)
+- Household adoption: All adults use the app for consumption marking
+
+**Success Threshold:**
+If after 3 months of use, your household relies on the app for inventory management and shopping without reverting to paper lists or manual methods, Phase 1 is successful.
+
+---
+
+### Phase 2: Public Release (If Phase 1 Succeeds)
+
+**Growth Objectives:**
+- Public release via app stores (iOS/Android)
+- Open source repository published with documentation
+- Portfolio case study created demonstrating the build process and technical decisions
+
+**Adoption Metrics:**
+- Active users: Track weekly active users who complete the core cycle
+- User retention: % of users who remain active after 30 days, 60 days, 90 days
+- Core feature adoption: % of users who scan receipts vs. only using shopping list features
+
+**Technical Performance (Public Scale):**
+- OCR accuracy maintained across different receipt formats and stores
+- App performance across different devices and OS versions
+- Onboarding completion rate: % of new users who add their first 10+ products
+
+**Community Engagement (Open Source):**
+- GitHub stars/forks as portfolio visibility indicators
+- Community contributions (issues, PRs, documentation)
+- User feedback and feature requests
+
+**Success Threshold:**
+If public users demonstrate similar engagement patterns to your household (completing weekly cycles, sustained use beyond 30 days), the product is validated for broader use.
+
+---
+
+### Key Performance Indicators Summary
+
+**Critical KPIs (Phase 1 - Personal Use):**
+1. **Weekly Active Household Members**: All adults in household mark items weekly
+2. **Shopping List Reliance**: 100% of shopping trips use auto-generated list
+3. **Receipt Scanning Rate**: 100% of shopping trips end with receipt scan
+4. **OCR Accuracy**: 90%+ product recognition on receipts
+5. **Household Satisfaction**: Self-reported reduction in inventory management burden
+
+**Critical KPIs (Phase 2 - Public Release):**
+1. **30-Day Retention Rate**: % of new users still active after 30 days
+2. **Weekly Active Users (WAU)**: Users who mark items consumed at least once per week
+3. **Complete Cycle Rate**: % of users who complete full inventory → shop → scan cycle weekly
+4. **Technical Reliability**: 99%+ uptime, <1% crash rate
+5. **OCR Accuracy (Cross-Store)**: 85%+ accuracy across different supermarket receipt formats
