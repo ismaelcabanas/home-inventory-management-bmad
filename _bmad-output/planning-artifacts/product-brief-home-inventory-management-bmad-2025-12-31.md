@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5]
 inputDocuments: []
 date: 2025-12-31
 author: Isma
@@ -242,3 +242,154 @@ If public users demonstrate similar engagement patterns to your household (compl
 3. **Complete Cycle Rate**: % of users who complete full inventory → shop → scan cycle weekly
 4. **Technical Reliability**: 99%+ uptime, <1% crash rate
 5. **OCR Accuracy (Cross-Store)**: 85%+ accuracy across different supermarket receipt formats
+
+## MVP Scope
+
+### Core Features (Phase 1 - Household Validation)
+
+**Product Inventory Management:**
+- Manual entry of products by name (simple text input)
+- Edit and delete existing products
+- View all products in household inventory
+
+**Stock Level Tracking:**
+- Four-state stock levels: High / Medium / Low / Empty
+- Quick tap interface to mark product consumption
+- Manual stock level adjustment as items are used
+
+**Automatic Shopping List Generation:**
+- Products automatically added to shopping list when marked as Low or Empty
+- Flat list view of all items needing purchase
+- Clear indication of which products need restocking
+
+**In-Store Shopping Experience:**
+- Shopping list accessible in-app
+- Tap/checkbox interface to mark items as "in cart"
+- Visual progress indicator (X of Y items collected)
+
+**Receipt Scanning & OCR:**
+- Camera-based receipt photo capture
+- OCR processing to extract product names from receipt
+- Automatic matching of recognized products to existing inventory
+
+**OCR Error Correction Interface:**
+- Review screen showing all recognized products after scan
+- Manual correction for misrecognized product names
+- Ability to add products the system didn't recognize
+- Confirm/save to update inventory with corrected data
+
+**Inventory Updates:**
+- Automatic stock replenishment for purchased items (set to High)
+- New products from receipt added to inventory database
+- Cycle repeats for next week
+
+**Technical Approach:**
+- Single-user application (no accounts/login for MVP)
+- Local-first data storage (no cloud sync required)
+- Mobile-first design optimized for smartphone use
+
+---
+
+### Out of Scope for MVP
+
+**Explicitly NOT included in Phase 1 to maintain focus:**
+
+**Advanced Inventory Features:**
+- Quantity-based tracking (cartons, packs, liters, etc.)
+- Automatic stock level calculation based on quantities
+- Product categories or classification
+- Barcode scanning for product identification
+- Expiration date tracking
+- Storage location tracking (fridge, pantry, freezer)
+
+**Multi-User Features:**
+- User accounts and authentication
+- Household sharing and sync across devices
+- Cloud data backup and sync
+- Permission management for different users
+
+**Price & Shopping Intelligence:**
+- Price extraction from receipts
+- Price history and trend tracking
+- Multi-store price comparison
+- Shopping cost predictions
+- Savings recommendations
+- Budget tracking
+
+**Smart Features:**
+- Supermarket API integrations
+- Real-time price lookups
+- Consumption pattern learning
+- Predictive restocking suggestions
+- Recipe integration or meal planning
+- Shopping list organization by category/aisle
+- Store layout optimization
+- Notifications or reminders
+
+**Rationale:** These features are valuable but not essential to validate the core value proposition: eliminating manual shopping list creation and reducing inventory management mental load. MVP focuses on proving the basic automation workflow works reliably for a single household.
+
+---
+
+### MVP Success Criteria
+
+**Phase 1 is successful if after 3 months of household use:**
+
+**Adoption & Behavior:**
+- All adults in household mark consumed items at least 3 times per week
+- 100% of weekly shopping trips use the auto-generated list (no paper lists)
+- 100% of shopping trips end with receipt scanning
+- Family reports reduced mental load around inventory management
+
+**Technical Performance:**
+- OCR accuracy: 90%+ correct product name recognition on receipts
+- Zero crashes during core workflows (mark consumed, view list, scan receipt)
+- No data loss (inventory persists reliably)
+- Response time under 2 seconds for all actions
+
+**Value Validation:**
+- Household self-reports reduction in duplicate purchases
+- Household self-reports fewer forgotten essential items
+- No reversion to paper lists or manual methods
+- Family members voluntarily continue using the app
+
+**Decision Gate:** If these criteria are met, proceed to public release (Phase 2). If not met, iterate on MVP based on household feedback before expanding scope.
+
+---
+
+### Future Vision
+
+**If Phase 1 validates the core value proposition, here's the product evolution roadmap:**
+
+**Version 2.0 - Smart Inventory (Post-MVP):**
+- Quantity-based tracking with units (cartons, liters, packs, individual items)
+- Automatic stock level calculation based on quantity thresholds
+- Multi-user household accounts with cloud sync
+- Product categories and shopping list organization by category/aisle
+- Enhanced inventory management (favorites, custom thresholds per product)
+
+**Version 3.0 - Price Intelligence:**
+- Price extraction and tracking from receipts
+- Historical price trends for products
+- Multi-store price comparison ("Your list costs €45 at Store A vs €52 at Store B")
+- Savings recommendations and budget tracking
+- Cost-per-unit comparisons for different product sizes
+
+**Version 4.0 - Smart Shopping Assistant:**
+- Supermarket API integrations for real-time pricing
+- Consumption pattern learning and predictive restocking
+- Smart product recommendations (substitutions, deals, alternatives)
+- Recipe and meal planning integration
+- Store route optimization based on shopping list
+- Barcode scanning for quick product entry
+
+**Version 5.0+ - Ecosystem & Expansion:**
+- Integration with smart home devices (fridges, pantries)
+- Voice assistant integration (Alexa, Google Home)
+- Community features (shared shopping lists, family coordination)
+- Loyalty program integrations
+- Sustainability tracking (food waste reduction, carbon footprint)
+- B2B opportunities (small business inventory, restaurant supplies)
+
+**Long-term Vision:** Transform from a personal household tool into a comprehensive smart shopping platform that eliminates all manual work around household consumables management, saves users money through intelligent shopping, and reduces food waste through better inventory awareness.
+
+**Philosophy:** Each version builds on validated learnings from the previous phase. Only advance when user adoption and value creation are proven at the current level.
