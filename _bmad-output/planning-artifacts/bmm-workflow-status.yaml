@@ -27,7 +27,7 @@ workflow_path: "method-greenfield"
 workflow_status:
   # Phase 1: Analysis (Optional - User Selected)
   product-brief:
-    status: "optional"
+    status: "_bmad-output/planning-artifacts/product-brief-home-inventory-management-bmad-2025-12-31.md"
     agent: "analyst"
     command: "/bmad:bmm:workflows:create-product-brief"
     output: "Product brief document"
