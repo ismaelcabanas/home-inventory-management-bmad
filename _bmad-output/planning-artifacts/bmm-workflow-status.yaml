@@ -34,7 +34,7 @@ workflow_status:
 
   # Phase 2: Planning (Required)
   prd:
-    status: "required"
+    status: "_bmad-output/planning-artifacts/prd.md"
     agent: "pm"
     command: "/bmad:bmm:workflows:create-prd"
     output: "Product Requirements Document with FRs and NFRs"
