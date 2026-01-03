@@ -48,7 +48,7 @@ workflow_status:
 
   # Phase 3: Solutioning (Required)
   create-architecture:
-    status: "required"
+    status: "_bmad-output/planning-artifacts/architecture.md"
     agent: "architect"
     command: "/bmad:bmm:workflows:create-architecture"
     output: "System architecture document"
