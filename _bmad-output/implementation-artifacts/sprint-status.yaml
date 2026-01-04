@@ -40,8 +40,8 @@ tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
 
 development_status:
-  epic-1: backlog
-  1-1-initialize-project-with-technical-stack: backlog
+  epic-1: in-progress
+  1-1-initialize-project-with-technical-stack: ready-for-dev
   1-2-set-up-database-schema-and-service-layer: backlog
   1-3-create-inventory-context-and-state-management: backlog
   1-4-add-and-view-products-in-inventory: backlog
