@@ -54,19 +54,19 @@ workflow_status:
     output: "System architecture document"
 
   create-epics-and-stories:
-    status: "required"
+    status: "_bmad-output/planning-artifacts/epics.md"
     agent: "pm"
     command: "/bmad:bmm:workflows:create-epics-and-stories"
     output: "Epics and stories breakdown"
 
   test-design:
-    status: "optional"
+    status: "_bmad-output/planning-artifacts/test-design-system.md"
     agent: "tea"
     command: "/bmad:bmm:workflows:testarch-test-design"
     output: "System-level testability review"
 
   implementation-readiness:
-    status: "required"
+    status: "_bmad-output/planning-artifacts/implementation-readiness-report-2026-01-04.md"
     agent: "architect"
     command: "/bmad:bmm:workflows:check-implementation-readiness"
     output: "Implementation readiness validation"
