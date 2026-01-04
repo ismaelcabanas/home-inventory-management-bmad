@@ -1,0 +1,82 @@
+# generated: 2026-01-04
+# project: home-inventory-management-bmad
+# project_key: home-inventory-management-bmad
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-01-04
+project: home-inventory-management-bmad
+project_key: home-inventory-management-bmad
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  epic-1: backlog
+  1-1-initialize-project-with-technical-stack: backlog
+  1-2-set-up-database-schema-and-service-layer: backlog
+  1-3-create-inventory-context-and-state-management: backlog
+  1-4-add-and-view-products-in-inventory: backlog
+  1-5-edit-product-names: backlog
+  1-6-delete-products: backlog
+  1-7-search-and-filter-products: backlog
+  1-8-set-up-error-handling-and-logging-utilities: backlog
+  1-9-implement-feature-error-boundaries-and-navigation: backlog
+  1-10-deploy-application-with-ci-cd-pipeline: backlog
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-implement-stock-level-picker-component: backlog
+  2-2-enhanced-visual-stock-level-indicators: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-view-shopping-list-with-automatic-item-addition: backlog
+  3-2-automatic-removal-from-shopping-list-when-replenished: backlog
+  3-3-manual-shopping-list-management-safety-nets: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-check-off-items-while-shopping: backlog
+  4-2-shopping-progress-indicator: backlog
+  4-3-mobile-optimized-shopping-list-layout: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-capture-receipt-photo-with-camera: backlog
+  5-2-process-receipt-with-ocr: backlog
+  5-3-review-and-correct-ocr-results: backlog
+  epic-5-retrospective: optional
+
+  epic-6: backlog
+  6-1-update-inventory-from-confirmed-receipt-products: backlog
+  6-2-handle-inventory-update-errors: backlog
+  epic-6-retrospective: optional
