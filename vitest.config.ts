@@ -9,6 +9,29 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
     css: true,
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/tests/e2e/**',
+      '**/.git/**',
+      '**/.cache/**'
+    ],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/test/',
+        'tests/',
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/*.spec.ts',
+        '**/*.spec.tsx',
+        '**/vite.config.ts',
+        '**/vitest.config.ts',
+        '**/playwright.config.ts'
+      ]
+    }
   },
   resolve: {
     alias: {
