@@ -22,3 +22,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables
+.env.local
+.env.*.local
+
+# Test results
+coverage
+.nyc_output
+test-results
+playwright-report
+playwright/.cache
+
+# Build artifacts
+*.tsbuildinfo
+
+# PWA
+dev-dist
