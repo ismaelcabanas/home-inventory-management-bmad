@@ -122,6 +122,7 @@ describe('InventoryService', () => {
     it('should throw error when trying to update id', async () => {
       const product = await inventoryService.addProduct('Test');
       await expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         inventoryService.updateProduct(product.id, { id: 'new-id' } as any)
       ).rejects.toThrow('Cannot update immutable fields');
     });
@@ -129,6 +130,7 @@ describe('InventoryService', () => {
     it('should throw error when trying to update createdAt', async () => {
       const product = await inventoryService.addProduct('Test');
       await expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         inventoryService.updateProduct(product.id, { createdAt: new Date() } as any)
       ).rejects.toThrow('Cannot update immutable fields');
     });
@@ -136,6 +138,7 @@ describe('InventoryService', () => {
     it('should throw error for invalid stockLevel', async () => {
       const product = await inventoryService.addProduct('Test');
       await expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         inventoryService.updateProduct(product.id, { stockLevel: 'INVALID' as any })
       ).rejects.toThrow('Invalid stockLevel');
     });
@@ -253,6 +256,7 @@ describe('InventoryService', () => {
 
         const product = await inventoryService.addProduct('Test');
         await expect(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           inventoryService.updateProduct(product.id, { id: 'new' } as any)
         ).rejects.toThrow('Cannot update immutable fields');
       });
