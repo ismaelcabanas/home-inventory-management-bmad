@@ -7,7 +7,8 @@ class InventoryDatabase extends Dexie {
   constructor() {
     super('HomeInventoryDB');
     this.version(1).stores({
-      products: '++id, name, stockLevel, isOnShoppingList, updatedAt'
+      // Use 'id' without '++' since we manually assign UUIDs (not auto-increment)
+      products: 'id, name, stockLevel, isOnShoppingList, updatedAt'
     });
   }
 }
