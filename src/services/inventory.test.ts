@@ -26,6 +26,30 @@ describe('InventoryService', () => {
 
       expect(retrieved).toEqual(product);
     });
+
+    it('should trim whitespace from product name', async () => {
+      const product = await inventoryService.addProduct('  Milk  ');
+      expect(product.name).toBe('Milk');
+    });
+
+    it('should throw error for empty product name', async () => {
+      await expect(inventoryService.addProduct('')).rejects.toThrow('Product name cannot be empty');
+    });
+
+    it('should throw error for whitespace-only product name', async () => {
+      await expect(inventoryService.addProduct('   ')).rejects.toThrow('Product name cannot be empty');
+    });
+
+    it('should throw error for product name exceeding 255 characters', async () => {
+      const longName = 'A'.repeat(256);
+      await expect(inventoryService.addProduct(longName)).rejects.toThrow('Product name too long');
+    });
+
+    it('should accept product name with exactly 255 characters', async () => {
+      const maxName = 'A'.repeat(255);
+      const product = await inventoryService.addProduct(maxName);
+      expect(product.name).toBe(maxName);
+    });
   });
 
   describe('getProducts', () => {

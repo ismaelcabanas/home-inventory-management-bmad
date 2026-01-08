@@ -23,9 +23,18 @@ export class InventoryService {
 
   async addProduct(name: string): Promise<Product> {
     try {
+      // Validate product name
+      if (!name || name.trim().length === 0) {
+        throw new Error('Product name cannot be empty');
+      }
+
+      if (name.length > 255) {
+        throw new Error('Product name too long (max 255 characters)');
+      }
+
       const product: Product = {
         id: crypto.randomUUID(),
-        name,
+        name: name.trim(),
         stockLevel: 'high',
         createdAt: new Date(),
         updatedAt: new Date(),
