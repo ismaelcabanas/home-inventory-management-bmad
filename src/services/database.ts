@@ -1,0 +1,16 @@
+import Dexie, { Table } from 'dexie';
+import type { Product } from '@/types/product';
+
+class InventoryDatabase extends Dexie {
+  products!: Table<Product>;
+
+  constructor() {
+    super('HomeInventoryDB');
+    this.version(1).stores({
+      // Use 'id' without '++' since we manually assign UUIDs (not auto-increment)
+      products: 'id, name, stockLevel, isOnShoppingList, updatedAt'
+    });
+  }
+}
+
+export const db = new InventoryDatabase();
