@@ -118,6 +118,49 @@ describe('InventoryService', () => {
       expect(updated?.name).toBe('Cheese'); // Unchanged
       expect(updated?.stockLevel).toBe('empty'); // Changed
     });
+
+    it('should throw error when trying to update id', async () => {
+      const product = await inventoryService.addProduct('Test');
+      await expect(
+        inventoryService.updateProduct(product.id, { id: 'new-id' } as any)
+      ).rejects.toThrow('Cannot update immutable fields');
+    });
+
+    it('should throw error when trying to update createdAt', async () => {
+      const product = await inventoryService.addProduct('Test');
+      await expect(
+        inventoryService.updateProduct(product.id, { createdAt: new Date() } as any)
+      ).rejects.toThrow('Cannot update immutable fields');
+    });
+
+    it('should throw error for invalid stockLevel', async () => {
+      const product = await inventoryService.addProduct('Test');
+      await expect(
+        inventoryService.updateProduct(product.id, { stockLevel: 'INVALID' as any })
+      ).rejects.toThrow('Invalid stockLevel');
+    });
+
+    it('should throw error for empty name', async () => {
+      const product = await inventoryService.addProduct('Test');
+      await expect(
+        inventoryService.updateProduct(product.id, { name: '' })
+      ).rejects.toThrow('Product name cannot be empty');
+    });
+
+    it('should throw error for name exceeding 255 characters', async () => {
+      const product = await inventoryService.addProduct('Test');
+      const longName = 'A'.repeat(256);
+      await expect(
+        inventoryService.updateProduct(product.id, { name: longName })
+      ).rejects.toThrow('Product name too long');
+    });
+
+    it('should trim whitespace from updated name', async () => {
+      const product = await inventoryService.addProduct('Test');
+      await inventoryService.updateProduct(product.id, { name: '  Updated  ' });
+      const updated = await inventoryService.getProduct(product.id);
+      expect(updated?.name).toBe('Updated');
+    });
   });
 
   describe('deleteProduct', () => {
