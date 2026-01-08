@@ -233,11 +233,10 @@ describe('InventoryService', () => {
         ).rejects.toThrow();
       });
 
-      it('should not fail when updating non-existent product', async () => {
-        // Dexie.update doesn't throw for non-existent IDs, just does nothing
+      it('should throw error when updating non-existent product', async () => {
         await expect(
           inventoryService.updateProduct('non-existent-id', { name: 'Test' })
-        ).resolves.not.toThrow();
+        ).rejects.toThrow('Product with id \'non-existent-id\' not found');
       });
 
       it('should not fail when deleting non-existent product', async () => {

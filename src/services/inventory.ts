@@ -51,6 +51,12 @@ export class InventoryService {
 
   async updateProduct(id: string, updates: Partial<Product>): Promise<void> {
     try {
+      // Check if product exists
+      const existing = await db.products.get(id);
+      if (!existing) {
+        throw new Error(`Product with id '${id}' not found`);
+      }
+
       // Validate that immutable fields are not being updated
       if ('id' in updates || 'createdAt' in updates) {
         throw new Error('Cannot update immutable fields: id, createdAt');
