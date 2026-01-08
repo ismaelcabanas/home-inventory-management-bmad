@@ -7,6 +7,7 @@ export class InventoryService {
       // Return products ordered by most recently updated first
       return await db.products.orderBy('updatedAt').reverse().toArray();
     } catch (error) {
+      // TODO: Story 1.8 - Replace with logger.error() when logger utility is available
       console.error('[InventoryService] Error getting products:', error);
       throw error;
     }
@@ -16,6 +17,7 @@ export class InventoryService {
     try {
       return await db.products.get(id);
     } catch (error) {
+      // TODO: Story 1.8 - Replace with logger.error() when logger utility is available
       console.error('[InventoryService] Error getting product:', error);
       throw error;
     }
@@ -44,6 +46,7 @@ export class InventoryService {
       await db.products.add(product);
       return product;
     } catch (error) {
+      // TODO: Story 1.8 - Replace with logger.error() when logger utility is available
       console.error('[InventoryService] Error adding product:', error);
       throw error;
     }
@@ -86,6 +89,7 @@ export class InventoryService {
         updatedAt: new Date(),
       });
     } catch (error) {
+      // TODO: Story 1.8 - Replace with logger.error() when logger utility is available
       console.error('[InventoryService] Error updating product:', error);
       throw error;
     }
@@ -95,6 +99,7 @@ export class InventoryService {
     try {
       await db.products.delete(id);
     } catch (error) {
+      // TODO: Story 1.8 - Replace with logger.error() when logger utility is available
       console.error('[InventoryService] Error deleting product:', error);
       throw error;
     }
@@ -107,6 +112,7 @@ export class InventoryService {
         .filter((product) => product.name.toLowerCase().includes(lowerQuery))
         .toArray();
     } catch (error) {
+      // TODO: Story 1.8 - Replace with logger.error() when logger utility is available
       console.error('[InventoryService] Error searching products:', error);
       throw error;
     }
