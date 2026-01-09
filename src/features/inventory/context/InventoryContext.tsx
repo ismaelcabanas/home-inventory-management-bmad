@@ -49,7 +49,6 @@ function inventoryReducer(state: InventoryState, action: InventoryAction): Inven
       return {
         ...state,
         products: action.payload,
-        loading: false,
         error: null,
       };
 
@@ -57,7 +56,6 @@ function inventoryReducer(state: InventoryState, action: InventoryAction): Inven
       return {
         ...state,
         products: [action.payload, ...state.products],
-        loading: false,
         error: null,
       };
 
@@ -68,7 +66,6 @@ function inventoryReducer(state: InventoryState, action: InventoryAction): Inven
         products: state.products.map((p) =>
           p.id === id ? { ...p, ...updates } : p
         ),
-        loading: false,
         error: null,
       };
     }
@@ -77,7 +74,6 @@ function inventoryReducer(state: InventoryState, action: InventoryAction): Inven
       return {
         ...state,
         products: state.products.filter((p) => p.id !== action.payload),
-        loading: false,
         error: null,
       };
 
@@ -85,7 +81,6 @@ function inventoryReducer(state: InventoryState, action: InventoryAction): Inven
       return {
         ...state,
         products: action.payload,
-        loading: false,
         error: null,
       };
 
@@ -98,7 +93,6 @@ function inventoryReducer(state: InventoryState, action: InventoryAction): Inven
     case 'SET_ERROR':
       return {
         ...state,
-        loading: false,
         error: action.payload,
       };
 
@@ -130,6 +124,8 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
       const appError = handleError(error);
       logger.error('Failed to load products', appError.details);
       dispatch({ type: 'SET_ERROR', payload: appError.message });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
@@ -148,6 +144,8 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
       logger.error('Failed to add product', appError.details);
       dispatch({ type: 'SET_ERROR', payload: appError.message });
       throw error; // Re-throw to allow component-level handling
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
@@ -166,6 +164,8 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
       logger.error('Failed to update product', appError.details);
       dispatch({ type: 'SET_ERROR', payload: appError.message });
       throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
@@ -184,6 +184,8 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
       logger.error('Failed to delete product', appError.details);
       dispatch({ type: 'SET_ERROR', payload: appError.message });
       throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
@@ -202,6 +204,8 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
       logger.error('Failed to search products', appError.details);
       dispatch({ type: 'SET_ERROR', payload: appError.message });
       throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
