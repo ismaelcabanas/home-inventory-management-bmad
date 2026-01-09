@@ -154,20 +154,20 @@ describe('InventoryContext', () => {
         wrapper: InventoryProvider,
       });
 
-      let caughtError: Error | null = null;
+      let caughtError: unknown = null;
 
       // Verify the error is re-thrown AND stored in state
       await act(async () => {
         try {
           await result.current.addProduct('Milk');
         } catch (error) {
-          caughtError = error as Error;
+          caughtError = error;
         }
       });
 
       // Verify error was re-thrown to component (allows component-level handling)
       expect(caughtError).toBeInstanceOf(Error);
-      expect(caughtError?.message).toBe('Add failed');
+      expect((caughtError as Error).message).toBe('Add failed');
 
       // Verify error was ALSO stored in context state (dual error handling pattern)
       await waitFor(() => {
@@ -234,20 +234,20 @@ describe('InventoryContext', () => {
         wrapper: InventoryProvider,
       });
 
-      let caughtError: Error | null = null;
+      let caughtError: unknown = null;
 
       // Verify the error is re-thrown AND stored in state
       await act(async () => {
         try {
           await result.current.updateProduct('1', { stockLevel: 'low' });
         } catch (error) {
-          caughtError = error as Error;
+          caughtError = error;
         }
       });
 
       // Verify error was re-thrown to component (allows component-level handling)
       expect(caughtError).toBeInstanceOf(Error);
-      expect(caughtError?.message).toBe('Update failed');
+      expect((caughtError as Error).message).toBe('Update failed');
 
       // Verify error was ALSO stored in context state (dual error handling pattern)
       await waitFor(() => {
@@ -311,20 +311,20 @@ describe('InventoryContext', () => {
         wrapper: InventoryProvider,
       });
 
-      let caughtError: Error | null = null;
+      let caughtError: unknown = null;
 
       // Verify the error is re-thrown AND stored in state
       await act(async () => {
         try {
           await result.current.deleteProduct('1');
         } catch (error) {
-          caughtError = error as Error;
+          caughtError = error;
         }
       });
 
       // Verify error was re-thrown to component (allows component-level handling)
       expect(caughtError).toBeInstanceOf(Error);
-      expect(caughtError?.message).toBe('Delete failed');
+      expect((caughtError as Error).message).toBe('Delete failed');
 
       // Verify error was ALSO stored in context state (dual error handling pattern)
       await waitFor(() => {
@@ -363,20 +363,20 @@ describe('InventoryContext', () => {
         wrapper: InventoryProvider,
       });
 
-      let caughtError: Error | null = null;
+      let caughtError: unknown = null;
 
       // Verify the error is re-thrown AND stored in state
       await act(async () => {
         try {
           await result.current.searchProducts('milk');
         } catch (error) {
-          caughtError = error as Error;
+          caughtError = error;
         }
       });
 
       // Verify error was re-thrown to component (allows component-level handling)
       expect(caughtError).toBeInstanceOf(Error);
-      expect(caughtError?.message).toBe('Search failed');
+      expect((caughtError as Error).message).toBe('Search failed');
 
       // Verify error was ALSO stored in context state (dual error handling pattern)
       await waitFor(() => {
