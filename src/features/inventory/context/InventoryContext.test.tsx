@@ -154,20 +154,26 @@ describe('InventoryContext', () => {
         wrapper: InventoryProvider,
       });
 
-      // Verify the error is thrown and error state is set
+      let caughtError: Error | null = null;
+
+      // Verify the error is re-thrown AND stored in state
       await act(async () => {
         try {
           await result.current.addProduct('Milk');
         } catch (error) {
-          // Expected to throw - this is correct behavior
-          expect(error).toBeInstanceOf(Error);
-          expect((error as Error).message).toBe('Add failed');
+          caughtError = error as Error;
         }
       });
 
-      // Error should be set in context state after catch
-      expect(result.current.state.error).toBe('Add failed');
-      expect(result.current.state.loading).toBe(false);
+      // Verify error was re-thrown to component (allows component-level handling)
+      expect(caughtError).toBeInstanceOf(Error);
+      expect(caughtError?.message).toBe('Add failed');
+
+      // Verify error was ALSO stored in context state (dual error handling pattern)
+      await waitFor(() => {
+        expect(result.current.state.error).toBe('Add failed');
+        expect(result.current.state.loading).toBe(false);
+      });
     });
   });
 
@@ -228,20 +234,26 @@ describe('InventoryContext', () => {
         wrapper: InventoryProvider,
       });
 
-      // Verify the error is thrown and error state is set
+      let caughtError: Error | null = null;
+
+      // Verify the error is re-thrown AND stored in state
       await act(async () => {
         try {
           await result.current.updateProduct('1', { stockLevel: 'low' });
         } catch (error) {
-          // Expected to throw - this is correct behavior
-          expect(error).toBeInstanceOf(Error);
-          expect((error as Error).message).toBe('Update failed');
+          caughtError = error as Error;
         }
       });
 
-      // Error should be set in context state after catch
-      expect(result.current.state.error).toBe('Update failed');
-      expect(result.current.state.loading).toBe(false);
+      // Verify error was re-thrown to component (allows component-level handling)
+      expect(caughtError).toBeInstanceOf(Error);
+      expect(caughtError?.message).toBe('Update failed');
+
+      // Verify error was ALSO stored in context state (dual error handling pattern)
+      await waitFor(() => {
+        expect(result.current.state.error).toBe('Update failed');
+        expect(result.current.state.loading).toBe(false);
+      });
     });
   });
 
@@ -299,20 +311,26 @@ describe('InventoryContext', () => {
         wrapper: InventoryProvider,
       });
 
-      // Verify the error is thrown and error state is set
+      let caughtError: Error | null = null;
+
+      // Verify the error is re-thrown AND stored in state
       await act(async () => {
         try {
           await result.current.deleteProduct('1');
         } catch (error) {
-          // Expected to throw - this is correct behavior
-          expect(error).toBeInstanceOf(Error);
-          expect((error as Error).message).toBe('Delete failed');
+          caughtError = error as Error;
         }
       });
 
-      // Error should be set in context state after catch
-      expect(result.current.state.error).toBe('Delete failed');
-      expect(result.current.state.loading).toBe(false);
+      // Verify error was re-thrown to component (allows component-level handling)
+      expect(caughtError).toBeInstanceOf(Error);
+      expect(caughtError?.message).toBe('Delete failed');
+
+      // Verify error was ALSO stored in context state (dual error handling pattern)
+      await waitFor(() => {
+        expect(result.current.state.error).toBe('Delete failed');
+        expect(result.current.state.loading).toBe(false);
+      });
     });
   });
 
@@ -345,20 +363,26 @@ describe('InventoryContext', () => {
         wrapper: InventoryProvider,
       });
 
-      // Verify the error is thrown and error state is set
+      let caughtError: Error | null = null;
+
+      // Verify the error is re-thrown AND stored in state
       await act(async () => {
         try {
           await result.current.searchProducts('milk');
         } catch (error) {
-          // Expected to throw - this is correct behavior
-          expect(error).toBeInstanceOf(Error);
-          expect((error as Error).message).toBe('Search failed');
+          caughtError = error as Error;
         }
       });
 
-      // Error should be set in context state after catch
-      expect(result.current.state.error).toBe('Search failed');
-      expect(result.current.state.loading).toBe(false);
+      // Verify error was re-thrown to component (allows component-level handling)
+      expect(caughtError).toBeInstanceOf(Error);
+      expect(caughtError?.message).toBe('Search failed');
+
+      // Verify error was ALSO stored in context state (dual error handling pattern)
+      await waitFor(() => {
+        expect(result.current.state.error).toBe('Search failed');
+        expect(result.current.state.loading).toBe(false);
+      });
     });
   });
 
