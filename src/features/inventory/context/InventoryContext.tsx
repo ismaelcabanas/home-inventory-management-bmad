@@ -2,6 +2,7 @@
 import { createContext, useContext, useReducer, ReactNode } from 'react';
 import { inventoryService } from '@/services/inventory';
 import { handleError } from '@/utils/errorHandler';
+import { logger } from '@/utils/logger';
 import type { Product } from '@/types/product';
 
 // State interface
@@ -119,10 +120,15 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
   const loadProducts = async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      logger.debug('Loading products from database');
+
       const products = await inventoryService.getProducts();
       dispatch({ type: 'LOAD_PRODUCTS', payload: products });
+
+      logger.info('Products loaded successfully', { count: products.length });
     } catch (error) {
       const appError = handleError(error);
+      logger.error('Failed to load products', appError.details);
       dispatch({ type: 'SET_ERROR', payload: appError.message });
     }
   };
@@ -131,10 +137,15 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
   const addProduct = async (name: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      logger.debug('Adding new product', { name });
+
       const product = await inventoryService.addProduct(name);
       dispatch({ type: 'ADD_PRODUCT', payload: product });
+
+      logger.info('Product added successfully', { id: product.id, name: product.name });
     } catch (error) {
       const appError = handleError(error);
+      logger.error('Failed to add product', appError.details);
       dispatch({ type: 'SET_ERROR', payload: appError.message });
       throw error; // Re-throw to allow component-level handling
     }
@@ -144,10 +155,15 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      logger.debug('Updating product', { id, updates });
+
       await inventoryService.updateProduct(id, updates);
       dispatch({ type: 'UPDATE_PRODUCT', payload: { id, updates } });
+
+      logger.info('Product updated successfully', { id });
     } catch (error) {
       const appError = handleError(error);
+      logger.error('Failed to update product', appError.details);
       dispatch({ type: 'SET_ERROR', payload: appError.message });
       throw error;
     }
@@ -157,10 +173,15 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
   const deleteProduct = async (id: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      logger.debug('Deleting product', { id });
+
       await inventoryService.deleteProduct(id);
       dispatch({ type: 'DELETE_PRODUCT', payload: id });
+
+      logger.info('Product deleted successfully', { id });
     } catch (error) {
       const appError = handleError(error);
+      logger.error('Failed to delete product', appError.details);
       dispatch({ type: 'SET_ERROR', payload: appError.message });
       throw error;
     }
@@ -170,10 +191,15 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
   const searchProducts = async (query: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      logger.debug('Searching products', { query });
+
       const products = await inventoryService.searchProducts(query);
       dispatch({ type: 'SEARCH_PRODUCTS', payload: products });
+
+      logger.info('Product search completed', { query, resultCount: products.length });
     } catch (error) {
       const appError = handleError(error);
+      logger.error('Failed to search products', appError.details);
       dispatch({ type: 'SET_ERROR', payload: appError.message });
       throw error;
     }
