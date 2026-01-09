@@ -143,6 +143,60 @@ describe('InventoryService', () => {
       ).rejects.toThrow('Invalid stockLevel');
     });
 
+    it('should automatically add product to shopping list when stock is low', async () => {
+      const product = await inventoryService.addProduct('Milk');
+      expect(product.isOnShoppingList).toBe(false);
+
+      await inventoryService.updateProduct(product.id, { stockLevel: 'low' });
+
+      const updated = await inventoryService.getProduct(product.id);
+      expect(updated?.stockLevel).toBe('low');
+      expect(updated?.isOnShoppingList).toBe(true);
+    });
+
+    it('should automatically add product to shopping list when stock is empty', async () => {
+      const product = await inventoryService.addProduct('Bread');
+      expect(product.isOnShoppingList).toBe(false);
+
+      await inventoryService.updateProduct(product.id, { stockLevel: 'empty' });
+
+      const updated = await inventoryService.getProduct(product.id);
+      expect(updated?.stockLevel).toBe('empty');
+      expect(updated?.isOnShoppingList).toBe(true);
+    });
+
+    it('should automatically remove product from shopping list when stock is high', async () => {
+      const product = await inventoryService.addProduct('Cheese');
+      // First mark as low to add to shopping list
+      await inventoryService.updateProduct(product.id, { stockLevel: 'low' });
+
+      let updated = await inventoryService.getProduct(product.id);
+      expect(updated?.isOnShoppingList).toBe(true);
+
+      // Then mark as high to remove from shopping list
+      await inventoryService.updateProduct(product.id, { stockLevel: 'high' });
+
+      updated = await inventoryService.getProduct(product.id);
+      expect(updated?.stockLevel).toBe('high');
+      expect(updated?.isOnShoppingList).toBe(false);
+    });
+
+    it('should not change shopping list status when stock is medium', async () => {
+      const product = await inventoryService.addProduct('Butter');
+      // First mark as low to add to shopping list
+      await inventoryService.updateProduct(product.id, { stockLevel: 'low' });
+
+      let updated = await inventoryService.getProduct(product.id);
+      expect(updated?.isOnShoppingList).toBe(true);
+
+      // Then mark as medium - should remain on shopping list
+      await inventoryService.updateProduct(product.id, { stockLevel: 'medium' });
+
+      updated = await inventoryService.getProduct(product.id);
+      expect(updated?.stockLevel).toBe('medium');
+      expect(updated?.isOnShoppingList).toBe(true); // Still on list
+    });
+
     it('should throw error for empty name', async () => {
       const product = await inventoryService.addProduct('Test');
       await expect(
