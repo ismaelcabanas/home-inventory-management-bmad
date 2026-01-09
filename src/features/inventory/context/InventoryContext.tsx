@@ -30,6 +30,7 @@ export interface InventoryContextValue {
   updateProduct: (id: string, updates: Partial<Product>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   searchProducts: (query: string) => Promise<void>;
+  clearError: () => void;
 }
 
 // Create context
@@ -209,6 +210,11 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
     }
   };
 
+  // Clear error
+  const clearError = () => {
+    dispatch({ type: 'SET_ERROR', payload: null });
+  };
+
   const value: InventoryContextValue = {
     state,
     loadProducts,
@@ -216,6 +222,7 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
     updateProduct,
     deleteProduct,
     searchProducts,
+    clearError,
   };
 
   return (

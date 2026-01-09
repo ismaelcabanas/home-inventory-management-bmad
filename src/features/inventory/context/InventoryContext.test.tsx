@@ -361,4 +361,69 @@ describe('InventoryContext', () => {
       expect(result.current.state.loading).toBe(false);
     });
   });
+
+  describe('clearError', () => {
+    it('should clear error state', async () => {
+      vi.mocked(inventoryService.getProducts).mockRejectedValue(
+        new Error('Load failed')
+      );
+
+      const { result } = renderHook(() => useInventory(), {
+        wrapper: InventoryProvider,
+      });
+
+      // First trigger an error
+      await act(async () => {
+        await result.current.loadProducts();
+      });
+
+      await waitFor(() => {
+        expect(result.current.state.error).toBe('Load failed');
+      });
+
+      // Then clear the error
+      act(() => {
+        result.current.clearError();
+      });
+
+      expect(result.current.state.error).toBeNull();
+    });
+
+    it('should allow retrying after clearing error', async () => {
+      const mockProducts = [mockProduct];
+      vi.mocked(inventoryService.getProducts)
+        .mockRejectedValueOnce(new Error('Load failed'))
+        .mockResolvedValueOnce(mockProducts);
+
+      const { result } = renderHook(() => useInventory(), {
+        wrapper: InventoryProvider,
+      });
+
+      // First attempt fails
+      await act(async () => {
+        await result.current.loadProducts();
+      });
+
+      await waitFor(() => {
+        expect(result.current.state.error).toBe('Load failed');
+      });
+
+      // Clear error
+      act(() => {
+        result.current.clearError();
+      });
+
+      expect(result.current.state.error).toBeNull();
+
+      // Retry succeeds
+      await act(async () => {
+        await result.current.loadProducts();
+      });
+
+      await waitFor(() => {
+        expect(result.current.state.products).toEqual(mockProducts);
+        expect(result.current.state.error).toBeNull();
+      });
+    });
+  });
 });
