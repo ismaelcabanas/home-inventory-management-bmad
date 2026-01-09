@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useReducer, ReactNode } from 'react';
 import { inventoryService } from '@/services/inventory';
+import { handleError } from '@/utils/errorHandler';
 import type { Product } from '@/types/product';
 
 // State interface
@@ -121,8 +122,8 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
       const products = await inventoryService.getProducts();
       dispatch({ type: 'LOAD_PRODUCTS', payload: products });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load products';
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      const appError = handleError(error);
+      dispatch({ type: 'SET_ERROR', payload: appError.message });
     }
   };
 
@@ -133,8 +134,8 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
       const product = await inventoryService.addProduct(name);
       dispatch({ type: 'ADD_PRODUCT', payload: product });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to add product';
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      const appError = handleError(error);
+      dispatch({ type: 'SET_ERROR', payload: appError.message });
       throw error; // Re-throw to allow component-level handling
     }
   };
@@ -146,8 +147,8 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
       await inventoryService.updateProduct(id, updates);
       dispatch({ type: 'UPDATE_PRODUCT', payload: { id, updates } });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update product';
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      const appError = handleError(error);
+      dispatch({ type: 'SET_ERROR', payload: appError.message });
       throw error;
     }
   };
@@ -159,8 +160,8 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
       await inventoryService.deleteProduct(id);
       dispatch({ type: 'DELETE_PRODUCT', payload: id });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete product';
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      const appError = handleError(error);
+      dispatch({ type: 'SET_ERROR', payload: appError.message });
       throw error;
     }
   };
@@ -172,8 +173,8 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
       const products = await inventoryService.searchProducts(query);
       dispatch({ type: 'SEARCH_PRODUCTS', payload: products });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to search products';
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      const appError = handleError(error);
+      dispatch({ type: 'SET_ERROR', payload: appError.message });
       throw error;
     }
   };
