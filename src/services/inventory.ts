@@ -84,8 +84,20 @@ export class InventoryService {
         updates.name = updates.name.trim();
       }
 
+      // Automatic shopping list management (FR11, FR12)
+      // When stock level changes to low/empty, add to shopping list
+      // When stock level changes to high, remove from shopping list
+      const finalUpdates = { ...updates };
+      if (updates.stockLevel) {
+        if (updates.stockLevel === 'low' || updates.stockLevel === 'empty') {
+          finalUpdates.isOnShoppingList = true;
+        } else if (updates.stockLevel === 'high') {
+          finalUpdates.isOnShoppingList = false;
+        }
+      }
+
       await db.products.update(id, {
-        ...updates,
+        ...finalUpdates,
         updatedAt: new Date(),
       });
     } catch (error) {
