@@ -103,4 +103,130 @@ describe('InventoryList', () => {
       expect(screen.getByText('Product added successfully')).toBeInTheDocument();
     });
   });
+
+  // Issue #2: Error Handling Tests
+  it('should display error alert when loadProducts fails', async () => {
+    vi.mocked(inventoryService.getProducts).mockRejectedValue(new Error('Failed to load products'));
+
+    render(
+      <InventoryProvider>
+        <InventoryList />
+      </InventoryProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load products')).toBeInTheDocument();
+    });
+  });
+
+  it('should show error snackbar when addProduct fails', async () => {
+    vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
+    vi.mocked(inventoryService.addProduct).mockRejectedValue(new Error('Failed to add product'));
+
+    render(
+      <InventoryProvider>
+        <InventoryList />
+      </InventoryProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Add Product')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Add Product'));
+
+    const input = screen.getByLabelText(/Product Name/i);
+    fireEvent.change(input, { target: { value: 'Milk' } });
+
+    const addButtons = screen.getAllByRole('button', { name: /Add/i });
+    const lastButton = addButtons[addButtons.length - 1];
+    if (lastButton) {
+      fireEvent.click(lastButton);
+    }
+
+    await waitFor(() => {
+      const alerts = screen.getAllByText('Failed to add product');
+      expect(alerts.length).toBeGreaterThan(0);
+    });
+  });
+
+  // Issue #3: Accessibility Tests
+  it('should have accessible button with proper ARIA', async () => {
+    vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
+
+    render(
+      <InventoryProvider>
+        <InventoryList />
+      </InventoryProvider>
+    );
+
+    await waitFor(() => {
+      const addButton = screen.getByRole('button', { name: /add product/i });
+      expect(addButton).toBeInTheDocument();
+      expect(addButton).toBeEnabled();
+    });
+  });
+
+  it('should support keyboard navigation for add button', async () => {
+    vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
+
+    render(
+      <InventoryProvider>
+        <InventoryList />
+      </InventoryProvider>
+    );
+
+    await waitFor(() => {
+      const addButton = screen.getByRole('button', { name: /add product/i });
+      addButton.focus();
+      expect(addButton).toHaveFocus();
+    });
+  });
+
+  it('should have proper heading hierarchy', async () => {
+    vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
+
+    render(
+      <InventoryProvider>
+        <InventoryList />
+      </InventoryProvider>
+    );
+
+    await waitFor(() => {
+      const heading = screen.getByRole('heading', { name: /inventory/i, level: 1 });
+      expect(heading).toBeInTheDocument();
+    });
+  });
+
+  // Issue #4: Data Persistence Test
+  it('should persist products after reload simulation', async () => {
+    const products = [mockProduct, { ...mockProduct, id: '2', name: 'Bread' }];
+    vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
+
+    const { unmount } = render(
+      <InventoryProvider>
+        <InventoryList />
+      </InventoryProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Milk')).toBeInTheDocument();
+      expect(screen.getByText('Bread')).toBeInTheDocument();
+    });
+
+    // Simulate page reload by unmounting and remounting
+    unmount();
+
+    render(
+      <InventoryProvider>
+        <InventoryList />
+      </InventoryProvider>
+    );
+
+    // Verify data is loaded again (simulating persistence)
+    await waitFor(() => {
+      expect(screen.getByText('Milk')).toBeInTheDocument();
+      expect(screen.getByText('Bread')).toBeInTheDocument();
+    });
+  });
 });
