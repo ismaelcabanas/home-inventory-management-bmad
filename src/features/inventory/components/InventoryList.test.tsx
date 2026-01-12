@@ -104,7 +104,7 @@ describe('InventoryList', () => {
     });
   });
 
-  // Issue #2: Error Handling Tests
+  // Error Handling Tests
   it('should display error alert when loadProducts fails', async () => {
     vi.mocked(inventoryService.getProducts).mockRejectedValue(new Error('Failed to load products'));
 
@@ -150,7 +150,7 @@ describe('InventoryList', () => {
     });
   });
 
-  // Issue #3: Accessibility Tests
+  // Accessibility Tests
   it('should have accessible button with proper ARIA', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
 
@@ -198,7 +198,7 @@ describe('InventoryList', () => {
     });
   });
 
-  // Issue #4: Data Persistence Test
+  // Data Persistence Test
   it('should persist products after reload simulation', async () => {
     const products = [mockProduct, { ...mockProduct, id: '2', name: 'Bread' }];
     vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
