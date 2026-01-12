@@ -14,6 +14,8 @@ import { ProductCard } from './ProductCard';
 import { AddProductDialog } from './AddProductDialog';
 import { EmptyState } from '@/components/shared/EmptyState';
 
+const SNACKBAR_AUTO_HIDE_DURATION = 3000; // 3 seconds
+
 export function InventoryList() {
   const { state, loadProducts, addProduct } = useInventory();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -104,7 +106,7 @@ export function InventoryList() {
       {/* Success/Error Snackbar */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={3000}
+        autoHideDuration={SNACKBAR_AUTO_HIDE_DURATION}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >

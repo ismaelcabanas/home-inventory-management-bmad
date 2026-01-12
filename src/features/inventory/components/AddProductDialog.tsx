@@ -29,8 +29,8 @@ export function AddProductDialog({ open, onClose, onAdd }: AddProductDialogProps
       setProductName('');
       onClose();
     } catch {
-      // Error handled by parent
-    } finally {
+      // Error handled by parent, keep dialog open for retry
+      // User can modify input and try again or click cancel
       setSubmitting(false);
     }
   };

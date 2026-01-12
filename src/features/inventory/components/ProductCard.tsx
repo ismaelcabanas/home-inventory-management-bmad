@@ -1,19 +1,13 @@
 import { Card, CardContent, Typography, Chip, Box } from '@mui/material';
 import type { Product } from '@/types/product';
+import { STOCK_LEVEL_CONFIG } from './stockLevelConfig';
 
 export interface ProductCardProps {
   product: Product;
 }
 
-const stockLevelConfig = {
-  high: { label: 'High', color: '#4caf50' as const },
-  medium: { label: 'Medium', color: '#ff9800' as const },
-  low: { label: 'Low', color: '#ff5722' as const },
-  empty: { label: 'Empty', color: '#f44336' as const },
-};
-
 export function ProductCard({ product }: ProductCardProps) {
-  const stockConfig = stockLevelConfig[product.stockLevel];
+  const stockConfig = STOCK_LEVEL_CONFIG[product.stockLevel];
 
   return (
     <Card sx={{ mb: 2 }}>
