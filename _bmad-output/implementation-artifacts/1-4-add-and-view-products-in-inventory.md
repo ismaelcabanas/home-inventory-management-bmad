@@ -107,7 +107,6 @@ This story introduces the **first UI components** that consume the InventoryCont
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { InventoryProvider } from '@/features/inventory/context/InventoryContext';
 import { InventoryList } from '@/features/inventory/components/InventoryList';
-import { BottomNav } from '@/components/shared/Layout/BottomNav';
 
 function App() {
   return (
@@ -115,16 +114,16 @@ function App() {
       <InventoryProvider>
         <Routes>
           <Route path="/" element={<InventoryList />} />
-          {/* Placeholder routes from Story 1.9 */}
           <Route path="/shopping" element={<div>Shopping List (Coming Soon)</div>} />
           <Route path="/scan" element={<div>Receipt Scanner (Coming Soon)</div>} />
         </Routes>
-        <BottomNav />
       </InventoryProvider>
     </BrowserRouter>
   );
 }
 ```
+
+**Note:** BottomNav component will be implemented in Story 1.9.
 
 ### TypeScript Interfaces
 
@@ -891,7 +890,6 @@ describe('InventoryList', () => {
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { InventoryProvider } from '@/features/inventory/context/InventoryContext';
 import { InventoryList } from '@/features/inventory/components/InventoryList';
-import { BottomNav } from '@/components/shared/Layout/BottomNav';
 
 function App() {
   return (
@@ -902,7 +900,6 @@ function App() {
           <Route path="/shopping" element={<div>Shopping List (Coming Soon)</div>} />
           <Route path="/scan" element={<div>Receipt Scanner (Coming Soon)</div>} />
         </Routes>
-        <BottomNav />
       </InventoryProvider>
     </BrowserRouter>
   );
@@ -910,6 +907,8 @@ function App() {
 
 export default App;
 ```
+
+**Note:** BottomNav navigation will be added in Story 1.9.
 
 ### Step 6: Run Tests
 
