@@ -1,6 +1,6 @@
 # Story 1.4: Add and View Products in Inventory
 
-**Status:** review
+**Status:** done
 **Epic:** Epic 1 - Project Foundation & Initial Inventory Setup
 **Story ID:** 1.4
 **Created:** 2026-01-11
