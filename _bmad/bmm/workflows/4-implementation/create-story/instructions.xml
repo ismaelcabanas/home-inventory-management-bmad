@@ -21,7 +21,7 @@
     <check if="{{story_path}} is provided by user or user provided the epic and story number such as 2-4 or 1.6 or epic 1 story 5">
       <action>Parse user-provided story path: extract epic_num, story_num, story_title from format like "1-2-user-auth"</action>
       <action>Set {{epic_num}}, {{story_num}}, {{story_key}} from user input</action>
-      <action>GOTO step 2a</action>
+      <action>GOTO step 1.5</action>
     </check>
 
     <action>Check if {{sprint_status}} file exists for auto discover</action>
@@ -47,12 +47,12 @@
       <check if="user provides epic-story number">
         <action>Parse user input: extract epic_num, story_num, story_title</action>
         <action>Set {{epic_num}}, {{story_num}}, {{story_key}} from user input</action>
-        <action>GOTO step 2a</action>
+        <action>GOTO step 1.5</action>
       </check>
 
       <check if="user provides story docs path">
         <action>Use user-provided path for story documents</action>
-        <action>GOTO step 2a</action>
+        <action>GOTO step 1.5</action>
       </check>
     </check>
 
@@ -114,7 +114,7 @@
         <output>📊 Epic {{epic_num}} status updated to in-progress</output>
       </check>
 
-      <action>GOTO step 2a</action>
+      <action>GOTO step 1.5</action>
     </check>
     <action>Load the FULL file: {{sprint_status}}</action>
     <action>Read ALL lines from beginning to end - do not skip any content</action>
@@ -171,7 +171,64 @@
       <output>📊 Epic {{epic_num}} status updated to in-progress</output>
     </check>
 
-    <action>GOTO step 2a</action>
+    <action>GOTO step 1.5</action>
+  </step>
+
+  <step n="1.5" goal="Create feature branch from main">
+    <critical>Always create a new feature branch from main before starting story work</critical>
+
+    <action>Check current git branch status</action>
+    <action>Determine branch name: "feat/story-{{story_key}}"</action>
+
+    <check if="already on correct feature branch feat/story-{{story_key}}">
+      <output>✅ Already on branch feat/story-{{story_key}}</output>
+      <action>GOTO step 2</action>
+    </check>
+
+    <output>📋 Story: {{story_key}}</output>
+    <output>🌿 Recommended branch: feat/story-{{story_key}}</output>
+
+    <ask>Create new branch feat/story-{{story_key}} from main?
+Options:
+  y - Create recommended branch from main (recommended)
+  n - Skip branch creation (stay on current branch)
+  custom - Specify custom branch name
+
+Your choice:</ask>
+
+    <check if="response == y">
+      <action>Execute git commands in sequence:
+        1. git fetch origin
+        2. git checkout main
+        3. git pull origin main
+        4. git checkout -b feat/story-{{story_key}}
+      </action>
+      <output>✅ Created and switched to branch: feat/story-{{story_key}}</output>
+    </check>
+
+    <check if="response == custom">
+      <ask>Enter custom branch name (without prefix):</ask>
+      <action>Set custom_branch_name from user input</action>
+      <action>Execute git commands:
+        1. git fetch origin
+        2. git checkout main
+        3. git pull origin main
+        4. git checkout -b {{custom_branch_name}}
+      </action>
+      <output>✅ Created and switched to branch: {{custom_branch_name}}</output>
+    </check>
+
+    <check if="response == n">
+      <output>⚠️ Skipping branch creation - staying on current branch</output>
+      <ask>Continue with story creation on current branch? (y/n)</ask>
+      <check if="response == n">
+        <output>Story creation cancelled by user</output>
+        <action>HALT - User cancelled</action>
+      </check>
+      <output>Continuing on current branch...</output>
+    </check>
+
+    <action>Continue to step 2</action>
   </step>
 
   <step n="2" goal="Load and analyze core artifacts">
