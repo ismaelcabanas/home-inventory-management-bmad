@@ -19,7 +19,7 @@ import type { Product } from '@/types/product';
 const SNACKBAR_AUTO_HIDE_DURATION = 3000; // 3 seconds
 
 export function InventoryList() {
-  const { state, loadProducts, addProduct, updateProduct } = useInventory();
+  const { state, loadProducts, addProduct, updateProduct, clearError } = useInventory();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [productBeingEdited, setProductBeingEdited] = useState<Product | null>(null);
@@ -59,6 +59,7 @@ export function InventoryList() {
 
   const handleSaveEdit = async (id: string, name: string) => {
     try {
+      clearError(); // Clear any previous error state
       await updateProduct(id, { name });
       setSnackbar({
         open: true,
