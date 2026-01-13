@@ -22,12 +22,14 @@ export function EditProductDialog({ open, onClose, onEdit, product }: EditProduc
   const [submitting, setSubmitting] = useState(false);
 
   // Initialize productName when product changes or dialog opens
-  // Clear productName when dialog closes to prevent stale data
+  // Clear productName and reset submitting state when dialog closes to prevent stale data
   useEffect(() => {
     if (product && open) {
       setProductName(product.name);
+      setSubmitting(false); // Reset submitting state when opening dialog
     } else if (!open) {
       setProductName('');
+      setSubmitting(false); // Reset submitting state when closing dialog
     }
   }, [product, open]);
 
