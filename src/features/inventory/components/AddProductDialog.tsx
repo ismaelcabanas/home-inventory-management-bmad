@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -18,6 +18,13 @@ export interface AddProductDialogProps {
 export function AddProductDialog({ open, onClose, onAdd }: AddProductDialogProps) {
   const [productName, setProductName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Reset submitting state when dialog opens or closes to prevent stale state
+  useEffect(() => {
+    if (!open) {
+      setSubmitting(false);
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
