@@ -45,7 +45,7 @@ development_status:
   1-2-set-up-database-schema-and-service-layer: done
   1-3-create-inventory-context-and-state-management: done
   1-4-add-and-view-products-in-inventory: done
-  1-5-edit-product-names: review
+  1-5-edit-product-names: done
   1-6-delete-products: backlog
   1-7-search-and-filter-products: backlog
   1-8-set-up-error-handling-and-logging-utilities: backlog
