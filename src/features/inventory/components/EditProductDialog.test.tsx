@@ -118,4 +118,31 @@ describe('EditProductDialog', () => {
       expect(onEdit).toHaveBeenCalledWith('1', 'Whole Milk');
     });
   });
+
+  it('should keep dialog open when onEdit fails', async () => {
+    const onEdit = vi.fn().mockRejectedValue(new Error('Network error'));
+    const onClose = vi.fn();
+
+    render(
+      <EditProductDialog
+        open={true}
+        onClose={onClose}
+        onEdit={onEdit}
+        product={mockProduct}
+      />
+    );
+
+    const input = screen.getByLabelText(/Product Name/i);
+    fireEvent.change(input, { target: { value: 'Updated Name' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => {
+      expect(onEdit).toHaveBeenCalled();
+    });
+
+    // Dialog should stay open (onClose NOT called)
+    expect(onClose).not.toHaveBeenCalled();
+    // Save button should be re-enabled for retry
+    expect(screen.getByText('Save')).not.toBeDisabled();
+  });
 });
