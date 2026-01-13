@@ -8,36 +8,42 @@ import {
   Button,
   CircularProgress,
 } from '@mui/material';
+import type { Product } from '@/types/product';
 
-export interface AddProductDialogProps {
+export interface EditProductDialogProps {
   open: boolean;
   onClose: () => void;
-  onAdd: (name: string) => Promise<void>;
+  onEdit: (id: string, name: string) => Promise<void>;
+  product: Product | null;
 }
 
-export function AddProductDialog({ open, onClose, onAdd }: AddProductDialogProps) {
+export function EditProductDialog({ open, onClose, onEdit, product }: EditProductDialogProps) {
   const [productName, setProductName] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Reset submitting state when dialog opens or closes to prevent stale state
+  // Initialize productName when product changes or dialog opens
+  // Clear productName and reset submitting state when dialog closes to prevent stale data
   useEffect(() => {
-    if (!open) {
-      setSubmitting(false);
+    if (product && open) {
+      setProductName(product.name);
+      setSubmitting(false); // Reset submitting state when opening dialog
+    } else if (!open) {
+      setProductName('');
+      setSubmitting(false); // Reset submitting state when closing dialog
     }
-  }, [open]);
+  }, [product, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productName.trim()) return;
+    if (!productName.trim() || !product) return;
 
     setSubmitting(true);
     try {
-      await onAdd(productName.trim());
+      await onEdit(product.id, productName.trim());
       setProductName('');
       onClose();
     } catch {
       // Error handled by parent, keep dialog open for retry
-      // User can modify input and try again or click cancel
       setSubmitting(false);
     }
   };
@@ -52,7 +58,7 @@ export function AddProductDialog({ open, onClose, onAdd }: AddProductDialogProps
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <form onSubmit={handleSubmit}>
-        <DialogTitle>Add Product</DialogTitle>
+        <DialogTitle>Edit Product</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -76,7 +82,7 @@ export function AddProductDialog({ open, onClose, onAdd }: AddProductDialogProps
             variant="contained"
             disabled={submitting || !productName.trim()}
           >
-            {submitting ? <CircularProgress size={24} /> : 'Add'}
+            {submitting ? <CircularProgress size={24} /> : 'Save'}
           </Button>
         </DialogActions>
       </form>

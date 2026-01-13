@@ -12,13 +12,17 @@ import AddIcon from '@mui/icons-material/Add';
 import { useInventory } from '@/features/inventory/context/InventoryContext';
 import { ProductCard } from './ProductCard';
 import { AddProductDialog } from './AddProductDialog';
+import { EditProductDialog } from './EditProductDialog';
 import { EmptyState } from '@/components/shared/EmptyState';
+import type { Product } from '@/types/product';
 
 const SNACKBAR_AUTO_HIDE_DURATION = 3000; // 3 seconds
 
 export function InventoryList() {
-  const { state, loadProducts, addProduct } = useInventory();
+  const { state, loadProducts, addProduct, updateProduct, clearError } = useInventory();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [productBeingEdited, setProductBeingEdited] = useState<Product | null>(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -46,6 +50,35 @@ export function InventoryList() {
       });
       throw error; // Re-throw to prevent dialog close
     }
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setProductBeingEdited(product);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async (id: string, name: string) => {
+    try {
+      clearError(); // Clear any previous error state
+      await updateProduct(id, { name });
+      setSnackbar({
+        open: true,
+        message: 'Product updated successfully',
+        severity: 'success',
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error instanceof Error ? error.message : 'Failed to update product',
+        severity: 'error',
+      });
+      throw error; // Re-throw to prevent dialog close
+    }
+  };
+
+  const handleCloseEditDialog = () => {
+    setEditDialogOpen(false);
+    setProductBeingEdited(null);
   };
 
   const handleCloseSnackbar = () => {
@@ -91,7 +124,7 @@ export function InventoryList() {
       {state.products.length > 0 && (
         <Box>
           {state.products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product} onEdit={handleEditProduct} />
           ))}
         </Box>
       )}
@@ -101,6 +134,14 @@ export function InventoryList() {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         onAdd={handleAddProduct}
+      />
+
+      {/* Edit Product Dialog */}
+      <EditProductDialog
+        open={editDialogOpen}
+        onClose={handleCloseEditDialog}
+        onEdit={handleSaveEdit}
+        product={productBeingEdited}
       />
 
       {/* Success/Error Snackbar */}

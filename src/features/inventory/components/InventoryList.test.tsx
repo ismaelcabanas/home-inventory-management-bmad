@@ -10,6 +10,7 @@ vi.mock('@/services/inventory', () => ({
   inventoryService: {
     getProducts: vi.fn(),
     addProduct: vi.fn(),
+    updateProduct: vi.fn(),
   },
 }));
 
@@ -227,6 +228,52 @@ describe('InventoryList', () => {
     await waitFor(() => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
       expect(screen.getByText('Bread')).toBeInTheDocument();
+    });
+  });
+
+  // Edit Product Tests
+  it('should open edit dialog when edit button clicked', async () => {
+    vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
+
+    render(
+      <InventoryProvider>
+        <InventoryList />
+      </InventoryProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Milk')).toBeInTheDocument();
+    });
+
+    const editButton = screen.getByLabelText(/Edit Milk/i);
+    fireEvent.click(editButton);
+
+    expect(screen.getByText('Edit Product')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Milk')).toBeInTheDocument();
+  });
+
+  it('should update product successfully', async () => {
+    vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
+    vi.mocked(inventoryService.updateProduct).mockResolvedValue();
+
+    render(
+      <InventoryProvider>
+        <InventoryList />
+      </InventoryProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Milk')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText(/Edit Milk/i));
+
+    const input = screen.getByLabelText(/Product Name/i);
+    fireEvent.change(input, { target: { value: 'Whole Milk' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Product updated successfully')).toBeInTheDocument();
     });
   });
 });
