@@ -22,7 +22,7 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
             <IconButton
               onClick={() => onEdit(product)}
               aria-label={`Edit ${product.name}`}
-              size="small"
+              sx={{ minWidth: 44, minHeight: 44 }}
             >
               <EditIcon />
             </IconButton>
