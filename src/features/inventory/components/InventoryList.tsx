@@ -13,16 +13,19 @@ import { useInventory } from '@/features/inventory/context/InventoryContext';
 import { ProductCard } from './ProductCard';
 import { AddProductDialog } from './AddProductDialog';
 import { EditProductDialog } from './EditProductDialog';
+import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 import { EmptyState } from '@/components/shared/EmptyState';
 import type { Product } from '@/types/product';
 
 const SNACKBAR_AUTO_HIDE_DURATION = 3000; // 3 seconds
 
 export function InventoryList() {
-  const { state, loadProducts, addProduct, updateProduct, clearError } = useInventory();
+  const { state, loadProducts, addProduct, updateProduct, deleteProduct, clearError } = useInventory();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [productBeingEdited, setProductBeingEdited] = useState<Product | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productBeingDeleted, setProductBeingDeleted] = useState<Product | null>(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -81,6 +84,37 @@ export function InventoryList() {
     setProductBeingEdited(null);
   };
 
+  const handleDeleteProduct = (product: Product) => {
+    setProductBeingDeleted(product);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!productBeingDeleted) return;
+
+    try {
+      await deleteProduct(productBeingDeleted.id);
+      setSnackbar({
+        open: true,
+        message: 'Product deleted successfully',
+        severity: 'success',
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error instanceof Error ? error.message : 'Failed to delete product',
+        severity: 'error',
+      });
+      throw error; // Re-throw to prevent dialog close
+    }
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setProductBeingDeleted(null);
+    // Don't clear snackbar here - let it auto-hide after showing success/error
+  };
+
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
@@ -122,9 +156,9 @@ export function InventoryList() {
 
       {/* Product List */}
       {state.products.length > 0 && (
-        <Box>
+        <Box role="region" aria-live="polite" aria-label="Product inventory">
           {state.products.map((product) => (
-            <ProductCard key={product.id} product={product} onEdit={handleEditProduct} />
+            <ProductCard key={product.id} product={product} onEdit={handleEditProduct} onDelete={handleDeleteProduct} />
           ))}
         </Box>
       )}
@@ -142,6 +176,14 @@ export function InventoryList() {
         onClose={handleCloseEditDialog}
         onEdit={handleSaveEdit}
         product={productBeingEdited}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        onConfirm={handleConfirmDelete}
+        productName={productBeingDeleted?.name || ''}
       />
 
       {/* Success/Error Snackbar */}

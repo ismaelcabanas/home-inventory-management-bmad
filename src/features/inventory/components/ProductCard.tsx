@@ -1,4 +1,5 @@
 import { Card, CardContent, Typography, Chip, Box, IconButton } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import type { Product } from '@/types/product';
 import { STOCK_LEVEL_CONFIG } from './stockLevelConfig';
@@ -6,9 +7,10 @@ import { STOCK_LEVEL_CONFIG } from './stockLevelConfig';
 export interface ProductCardProps {
   product: Product;
   onEdit: (product: Product) => void;
+  onDelete: (product: Product) => void;
 }
 
-export function ProductCard({ product, onEdit }: ProductCardProps) {
+export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
   const stockConfig = STOCK_LEVEL_CONFIG[product.stockLevel];
 
   return (
@@ -25,6 +27,13 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
               sx={{ minWidth: 44, minHeight: 44 }}
             >
               <EditIcon />
+            </IconButton>
+            <IconButton
+              onClick={() => onDelete(product)}
+              aria-label={`Delete ${product.name}`}
+              sx={{ minWidth: 44, minHeight: 44, color: 'error.main' }}
+            >
+              <DeleteIcon />
             </IconButton>
             <Chip
               label={stockConfig.label}
