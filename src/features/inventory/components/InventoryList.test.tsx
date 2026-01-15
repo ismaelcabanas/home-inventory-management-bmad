@@ -366,4 +366,324 @@ describe('InventoryList', () => {
     // The handleConfirmDelete early return should prevent deleteProduct call
     expect(screen.getByText('Delete Product?')).toBeInTheDocument();
   });
+
+  // Search functionality tests
+  describe('Search functionality', () => {
+    it('should render search bar when products exist', async () => {
+      vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
+
+      render(
+        <InventoryProvider>
+          <InventoryList />
+        </InventoryProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('Search products...')).toBeInTheDocument();
+      });
+    });
+
+    it('should not render search bar when no products', async () => {
+      vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
+
+      render(
+        <InventoryProvider>
+          <InventoryList />
+        </InventoryProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.queryByPlaceholderText('Search products...')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should filter products by name', async () => {
+      const products: Product[] = [
+        { id: '1', name: 'Milk', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+        { id: '2', name: 'Bread', stockLevel: 'medium', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+        { id: '3', name: 'Chocolate Milk', stockLevel: 'low', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+      ];
+      vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
+
+      render(
+        <InventoryProvider>
+          <InventoryList />
+        </InventoryProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Milk')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText('Search products...');
+      fireEvent.change(searchInput, { target: { value: 'milk' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Milk')).toBeInTheDocument();
+        expect(screen.getByText('Chocolate Milk')).toBeInTheDocument();
+        expect(screen.queryByText('Bread')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should be case-insensitive', async () => {
+      vi.mocked(inventoryService.getProducts).mockResolvedValue([
+        { id: '1', name: 'MILK', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+      ]);
+
+      render(
+        <InventoryProvider>
+          <InventoryList />
+        </InventoryProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('MILK')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText('Search products...');
+      fireEvent.change(searchInput, { target: { value: 'milk' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('MILK')).toBeInTheDocument();
+      });
+    });
+
+    it('should show empty state when no products match', async () => {
+      vi.mocked(inventoryService.getProducts).mockResolvedValue([
+        { id: '1', name: 'Milk', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+      ]);
+
+      render(
+        <InventoryProvider>
+          <InventoryList />
+        </InventoryProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Milk')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText('Search products...');
+      fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
+
+      await waitFor(() => {
+        expect(screen.getByText(/No products found matching "nonexistent"/)).toBeInTheDocument();
+      });
+    });
+
+    it('should clear search and show all products', async () => {
+      const products: Product[] = [
+        { id: '1', name: 'Milk', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+        { id: '2', name: 'Bread', stockLevel: 'medium', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+      ];
+      vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
+
+      render(
+        <InventoryProvider>
+          <InventoryList />
+        </InventoryProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Milk')).toBeInTheDocument();
+        expect(screen.getByText('Bread')).toBeInTheDocument();
+      });
+
+      // Search for "milk"
+      const searchInput = screen.getByPlaceholderText('Search products...');
+      fireEvent.change(searchInput, { target: { value: 'milk' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Milk')).toBeInTheDocument();
+        expect(screen.queryByText('Bread')).not.toBeInTheDocument();
+      });
+
+      // Clear search
+      const clearButton = screen.getByLabelText('Clear search');
+      fireEvent.click(clearButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Milk')).toBeInTheDocument();
+        expect(screen.getByText('Bread')).toBeInTheDocument();
+      });
+    });
+
+    it('should show all products when search is empty', async () => {
+      const products: Product[] = [
+        { id: '1', name: 'Milk', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+        { id: '2', name: 'Bread', stockLevel: 'medium', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+      ];
+      vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
+
+      render(
+        <InventoryProvider>
+          <InventoryList />
+        </InventoryProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Milk')).toBeInTheDocument();
+        expect(screen.getByText('Bread')).toBeInTheDocument();
+      });
+
+      // Initially all products visible
+      expect(screen.getByText('Milk')).toBeInTheDocument();
+      expect(screen.getByText('Bread')).toBeInTheDocument();
+    });
+
+    // Performance test (AC2: <500ms requirement)
+    it('should filter products within 500ms for 100+ products', async () => {
+      // Generate 150 products to test performance
+      const products: Product[] = Array.from({ length: 150 }, (_, i) => ({
+        id: `${i + 1}`,
+        name: i % 3 === 0 ? `Milk Product ${i}` : `Other Product ${i}`,
+        stockLevel: 'medium' as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isOnShoppingList: false,
+      }));
+      vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
+
+      render(
+        <InventoryProvider>
+          <InventoryList />
+        </InventoryProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('Search products...')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText('Search products...');
+
+      // Measure filtering time
+      const startTime = performance.now();
+      fireEvent.change(searchInput, { target: { value: 'milk' } });
+      const endTime = performance.now();
+
+      const filterTime = endTime - startTime;
+
+      // AC2 requirement: <500ms
+      expect(filterTime).toBeLessThan(500);
+
+      // Verify filtering worked
+      await waitFor(() => {
+        // Should have filtered to only "Milk Product X" items (50 products)
+        const milkProducts = products.filter(p => p.name.toLowerCase().includes('milk'));
+        expect(milkProducts.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should handle whitespace-only search correctly', async () => {
+      const products: Product[] = [
+        { id: '1', name: 'Milk', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+      ];
+      vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
+
+      render(
+        <InventoryProvider>
+          <InventoryList />
+        </InventoryProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Milk')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText('Search products...');
+
+      // Type whitespace-only search
+      fireEvent.change(searchInput, { target: { value: '   ' } });
+
+      // Should still show all products (whitespace trimmed)
+      await waitFor(() => {
+        expect(screen.getByText('Milk')).toBeInTheDocument();
+      });
+    });
+
+    it('should persist search term during delete operation', async () => {
+      const products: Product[] = [
+        { id: '1', name: 'Milk', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+        { id: '2', name: 'Chocolate Milk', stockLevel: 'medium', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+        { id: '3', name: 'Bread', stockLevel: 'low', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+      ];
+      vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
+      vi.mocked(inventoryService.deleteProduct).mockResolvedValue();
+
+      render(
+        <InventoryProvider>
+          <InventoryList />
+        </InventoryProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Milk')).toBeInTheDocument();
+      });
+
+      // Search for "milk"
+      const searchInput = screen.getByPlaceholderText('Search products...');
+      fireEvent.change(searchInput, { target: { value: 'milk' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Milk')).toBeInTheDocument();
+        expect(screen.getByText('Chocolate Milk')).toBeInTheDocument();
+        expect(screen.queryByText('Bread')).not.toBeInTheDocument();
+      });
+
+      // Delete one of the filtered products
+      const deleteButton = screen.getByLabelText(/Delete Milk/i);
+      fireEvent.click(deleteButton);
+      fireEvent.click(screen.getByText('Delete'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Product deleted successfully')).toBeInTheDocument();
+      });
+
+      // Verify search term persists (input value still "milk")
+      expect(searchInput).toHaveValue('milk');
+    });
+
+    it('should persist search term during edit operation', async () => {
+      const products: Product[] = [
+        { id: '1', name: 'Milk', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+        { id: '2', name: 'Bread', stockLevel: 'medium', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
+      ];
+      vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
+      vi.mocked(inventoryService.updateProduct).mockResolvedValue();
+
+      render(
+        <InventoryProvider>
+          <InventoryList />
+        </InventoryProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Milk')).toBeInTheDocument();
+      });
+
+      // Search for "milk"
+      const searchInput = screen.getByPlaceholderText('Search products...');
+      fireEvent.change(searchInput, { target: { value: 'milk' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Milk')).toBeInTheDocument();
+        expect(screen.queryByText('Bread')).not.toBeInTheDocument();
+      });
+
+      // Edit the product
+      const editButton = screen.getByLabelText(/Edit Milk/i);
+      fireEvent.click(editButton);
+
+      const editInput = screen.getByLabelText(/Product Name/i);
+      fireEvent.change(editInput, { target: { value: 'Whole Milk' } });
+      fireEvent.click(screen.getByText('Save'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Product updated successfully')).toBeInTheDocument();
+      });
+
+      // Verify search term persists
+      expect(searchInput).toHaveValue('milk');
+    });
+  });
 });

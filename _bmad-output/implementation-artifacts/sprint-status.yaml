@@ -47,7 +47,7 @@ development_status:
   1-4-add-and-view-products-in-inventory: done
   1-5-edit-product-names: done
   1-6-delete-products: done
-  1-7-search-and-filter-products: backlog
+  1-7-search-and-filter-products: review
   1-8-set-up-error-handling-and-logging-utilities: backlog
   1-9-implement-feature-error-boundaries-and-navigation: backlog
   1-10-deploy-application-with-ci-cd-pipeline: backlog
