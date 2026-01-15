@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -14,6 +14,7 @@ import { ProductCard } from './ProductCard';
 import { AddProductDialog } from './AddProductDialog';
 import { EditProductDialog } from './EditProductDialog';
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
+import { SearchBar } from './SearchBar';
 import { EmptyState } from '@/components/shared/EmptyState';
 import type { Product } from '@/types/product';
 
@@ -31,11 +32,25 @@ export function InventoryList() {
     message: '',
     severity: 'success' as 'success' | 'error',
   });
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Filter products based on search term
+  const filteredProducts = useMemo(() => {
+    const trimmedSearch = searchTerm.trim();
+    if (!trimmedSearch) {
+      return state.products;
+    }
+
+    const lowerSearch = trimmedSearch.toLowerCase();
+    return state.products.filter(product =>
+      product.name.toLowerCase().includes(lowerSearch)
+    );
+  }, [state.products, searchTerm]);
 
   const handleAddProduct = async (name: string) => {
     try {
@@ -142,6 +157,14 @@ export function InventoryList() {
         </Alert>
       )}
 
+      {/* Search Bar */}
+      {!state.loading && state.products.length > 0 && (
+        <SearchBar
+          value={searchTerm}
+          onChange={setSearchTerm}
+        />
+      )}
+
       {/* Loading State */}
       {state.loading && state.products.length === 0 && (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -149,15 +172,20 @@ export function InventoryList() {
         </Box>
       )}
 
-      {/* Empty State */}
+      {/* Empty State - No products at all */}
       {!state.loading && state.products.length === 0 && (
         <EmptyState message="No products yet. Add your first product!" />
       )}
 
+      {/* Empty State - No search results */}
+      {!state.loading && state.products.length > 0 && filteredProducts.length === 0 && searchTerm.trim() && (
+        <EmptyState message={`No products found matching "${searchTerm.trim()}"`} />
+      )}
+
       {/* Product List */}
-      {state.products.length > 0 && (
+      {filteredProducts.length > 0 && (
         <Box role="region" aria-live="polite" aria-label="Product inventory">
-          {state.products.map((product) => (
+          {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} onEdit={handleEditProduct} onDelete={handleDeleteProduct} />
           ))}
         </Box>
