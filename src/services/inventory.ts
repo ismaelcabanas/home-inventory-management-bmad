@@ -1,30 +1,43 @@
 import { db } from './database';
 import type { Product } from '@/types/product';
+import { handleError } from '@/utils/errorHandler';
+import { logger } from '@/utils/logger';
 
 export class InventoryService {
   async getProducts(): Promise<Product[]> {
     try {
-      // Return products ordered by most recently updated first
-      return await db.products.orderBy('updatedAt').reverse().toArray();
+      logger.debug('Fetching all products from database');
+      const products = await db.products.orderBy('updatedAt').reverse().toArray();
+      logger.info('Products loaded successfully', { count: products.length });
+      return products;
     } catch (error) {
-      // TODO: Story 1.8 - Replace with logger.error() when logger utility is available
-      console.error('[InventoryService] Error getting products:', error);
-      throw error;
+      const appError = handleError(error);
+      logger.error('Failed to load products', appError.details);
+      throw appError;
     }
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
     try {
-      return await db.products.get(id);
+      logger.debug('Fetching product', { id });
+      const product = await db.products.get(id);
+      if (product) {
+        logger.info('Product found', { id, name: product.name });
+      } else {
+        logger.warn('Product not found', { id });
+      }
+      return product;
     } catch (error) {
-      // TODO: Story 1.8 - Replace with logger.error() when logger utility is available
-      console.error('[InventoryService] Error getting product:', error);
-      throw error;
+      const appError = handleError(error);
+      logger.error('Failed to get product', appError.details);
+      throw appError;
     }
   }
 
   async addProduct(name: string): Promise<Product> {
     try {
+      logger.debug('Adding new product', { name });
+
       // Validate product name
       if (!name || name.trim().length === 0) {
         throw new Error('Product name cannot be empty');
@@ -44,16 +57,19 @@ export class InventoryService {
       };
 
       await db.products.add(product);
+      logger.info('Product added successfully', { id: product.id, name: product.name });
       return product;
     } catch (error) {
-      // TODO: Story 1.8 - Replace with logger.error() when logger utility is available
-      console.error('[InventoryService] Error adding product:', error);
-      throw error;
+      const appError = handleError(error);
+      logger.error('Failed to add product', appError.details);
+      throw appError;
     }
   }
 
   async updateProduct(id: string, updates: Partial<Product>): Promise<void> {
     try {
+      logger.debug('Updating product', { id, updates });
+
       // Check if product exists
       const existing = await db.products.get(id);
       if (!existing) {
@@ -100,33 +116,39 @@ export class InventoryService {
         ...finalUpdates,
         updatedAt: new Date(),
       });
+      logger.info('Product updated successfully', { id, updates: finalUpdates });
     } catch (error) {
-      // TODO: Story 1.8 - Replace with logger.error() when logger utility is available
-      console.error('[InventoryService] Error updating product:', error);
-      throw error;
+      const appError = handleError(error);
+      logger.error('Failed to update product', appError.details);
+      throw appError;
     }
   }
 
   async deleteProduct(id: string): Promise<void> {
     try {
+      logger.debug('Deleting product', { id });
       await db.products.delete(id);
+      logger.info('Product deleted successfully', { id });
     } catch (error) {
-      // TODO: Story 1.8 - Replace with logger.error() when logger utility is available
-      console.error('[InventoryService] Error deleting product:', error);
-      throw error;
+      const appError = handleError(error);
+      logger.error('Failed to delete product', appError.details);
+      throw appError;
     }
   }
 
   async searchProducts(query: string): Promise<Product[]> {
     try {
+      logger.debug('Searching products', { query });
       const lowerQuery = query.toLowerCase();
-      return await db.products
+      const results = await db.products
         .filter((product) => product.name.toLowerCase().includes(lowerQuery))
         .toArray();
+      logger.info('Product search completed', { query, count: results.length });
+      return results;
     } catch (error) {
-      // TODO: Story 1.8 - Replace with logger.error() when logger utility is available
-      console.error('[InventoryService] Error searching products:', error);
-      throw error;
+      const appError = handleError(error);
+      logger.error('Failed to search products', appError.details);
+      throw appError;
     }
   }
 }
