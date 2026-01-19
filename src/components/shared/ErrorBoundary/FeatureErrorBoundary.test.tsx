@@ -93,4 +93,38 @@ describe('FeatureErrorBoundary', () => {
     // After reset, children render normally
     expect(screen.getByText('No error')).toBeInTheDocument();
   });
+
+  it('should display error message details when error has message', () => {
+    const ComponentWithDetailedError = () => {
+      throw new Error('Detailed error message');
+    };
+
+    render(
+      <FeatureErrorBoundary featureName="Test Feature">
+        <ComponentWithDetailedError />
+      </FeatureErrorBoundary>
+    );
+
+    // Should display both the generic message and specific error details
+    expect(screen.getByText(/Something went wrong in Test Feature/)).toBeInTheDocument();
+    expect(screen.getByText('Detailed error message')).toBeInTheDocument();
+  });
+
+  it('should include featureName in error log', () => {
+    render(
+      <FeatureErrorBoundary featureName="Critical Feature">
+        <ThrowError shouldThrow={true} />
+      </FeatureErrorBoundary>
+    );
+
+    // Verify logger was called with feature name in message
+    expect(logger.error).toHaveBeenCalledWith(
+      'Error in Critical Feature feature',
+      expect.objectContaining({
+        error: 'Test error',
+        stack: expect.any(String),
+        componentStack: expect.any(String)
+      })
+    );
+  });
 });

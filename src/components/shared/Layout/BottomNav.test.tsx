@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import { BottomNav } from './BottomNav';
 
 describe('BottomNav', () => {
@@ -45,5 +45,19 @@ describe('BottomNav', () => {
     await user.click(screen.getByRole('button', { name: /scan/i }));
 
     expect(window.location.pathname).toBe('/scan');
+  });
+
+  it('should default to Inventory for unknown routes', () => {
+    // Use MemoryRouter to start at an unknown route
+    render(
+      <MemoryRouter initialEntries={['/unknown-route']}>
+        <BottomNav />
+      </MemoryRouter>
+    );
+
+    // On unknown routes, the default case should activate
+    // and Inventory tab should be selected (value = 0)
+    const inventoryButton = screen.getByRole('button', { name: /inventory/i });
+    expect(inventoryButton).toHaveClass('Mui-selected');
   });
 });

@@ -33,8 +33,8 @@ export function BottomNav() {
   }, [location.pathname]);
 
   const handleNavigation = (_event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-
+    // Don't set value here - let useEffect handle it based on location
+    // This prevents double state updates and ensures browser back button works
     switch (newValue) {
       case 0:
         navigate('/');
