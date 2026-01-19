@@ -8,6 +8,7 @@ import {
   Button,
   CircularProgress,
 } from '@mui/material';
+import { logger } from '@/utils/logger';
 
 export interface DeleteConfirmationDialogProps {
   open: boolean;
@@ -32,7 +33,7 @@ export function DeleteConfirmationDialog({
       onClose(); // Close on success
     } catch (error) {
       // Error handled by parent, keep dialog open for retry
-      console.error('Delete confirmation error:', error);
+      logger.error('Delete confirmation error:', error as Error);
       setDeleting(false);
     }
   };
