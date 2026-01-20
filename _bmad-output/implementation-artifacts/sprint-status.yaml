@@ -53,7 +53,7 @@ development_status:
   1-10-deploy-application-with-ci-cd-pipeline: done
   epic-1-retrospective: optional
 
-  epic-2: backlog
+  epic-2: in-progress
   2-1-implement-stock-level-picker-component: backlog
   2-2-enhanced-visual-stock-level-indicators: backlog
   epic-2-retrospective: optional
