@@ -249,6 +249,196 @@ These are tracked and should be addressed as per the prioritization guidance abo
 
 ---
 
-*Last Updated: 2026-01-19*
-*Identified During: Story 1.3 Code Review (Issues #1-5)*
+## Story 1.10 Code Review - Deployment & PWA
+
+### Issue #6: Desktop PWA Verification Checklist
+**Priority:** Medium
+**Category:** Testing / Quality Assurance
+**Location:** Story 1.10, Tasks 4.1-4.6
+
+**Description:**
+Complete desktop PWA verification checklist was not fully validated during code review due to time constraints and desktop-only testing environment. AC3 (PWA Features Work in Production) only partially verified.
+
+**Current State:**
+- ✅ Basic verification completed: Service worker registration, manifest accessible, HTTPS working
+- ⚠️ Incomplete verification: Full desktop PWA checklist including offline scenarios, cache validation, standalone mode testing
+- ❌ Mobile testing not performed: iOS "Add to Home Screen", Android "Install app", mobile camera access
+
+**Proposed Comprehensive Verification:**
+
+**Desktop Checks (11 items):**
+1. Service worker activated and running (Application > Service Workers)
+2. Manifest loads correctly with all metadata (Application > Manifest)
+3. Icons configured in manifest (192x192, 512x512)
+4. Cache storage populated with expected files (~9 files, ~569KB)
+5. Offline mode works (toggle offline in DevTools)
+6. All routes work offline (/, /shopping, /scan)
+7. Desktop PWA install icon appears in address bar
+8. Standalone window opens without browser chrome
+9. HTTPS certificate valid (lock icon verified)
+10. Camera permission prompt works without HTTPS errors
+11. No console errors in production build
+
+**Mobile Checks (Required for Full AC3 Compliance):**
+1. iOS Safari "Add to Home Screen" functionality
+2. Android Chrome "Install app" prompt
+3. App opens in standalone mode (full-screen, no browser UI)
+4. Touch gestures work correctly
+5. Camera access works on mobile devices
+6. Service worker updates properly on mobile
+
+**Benefits:**
+- Full AC3 compliance verification
+- Production PWA readiness confirmed
+- User experience validated across platforms
+- Catches mobile-specific issues early
+
+**Estimated Effort:** 1-2 hours (requires mobile device access)
+
+**Recommended Approach:**
+1. Complete all desktop checks systematically
+2. Test on iOS device (iPhone/iPad)
+3. Test on Android device (phone/tablet)
+4. Document results in story file
+5. Mark AC3 as fully satisfied
+
+---
+
+### Issue #7: Bundle Size Optimization
+**Priority:** Medium
+**Category:** Performance / Build Optimization
+**Location:** Production build output
+
+**Description:**
+Main JavaScript bundle exceeds recommended 500KB limit (currently 581KB after minification), triggering Vite build warning. This impacts initial load time, especially on slow networks.
+
+**Current State:**
+```
+dist/assets/index-CcHdZGMy.js   581.31 kB │ gzip: 183.80 kB
+Warning: Some chunks are larger than 500 kB after minification
+```
+
+**Impact:**
+- Slower initial page load (especially on 3G/slow networks)
+- Potential poor performance scores (Lighthouse, PageSpeed)
+- Not meeting performance best practices
+- May affect NFR1 (<2 second response time) on slower connections
+
+**Root Causes:**
+- All dependencies bundled into single main chunk
+- No code splitting implemented
+- MUI components fully loaded (heavy library)
+- React Router not using lazy loading
+- No dynamic imports for route components
+
+**Proposed Solutions:**
+
+**Option A: Route-Based Code Splitting (Recommended)**
+```tsx
+// src/App.tsx
+const InventoryPage = lazy(() => import('./features/inventory/pages/InventoryPage'));
+const ShoppingPage = lazy(() => import('./features/shopping/pages/ShoppingPage'));
+const ScanPage = lazy(() => import('./features/scan/pages/ScanPage'));
+
+function App() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <Routes>
+        <Route path="/" element={<InventoryPage />} />
+        <Route path="/shopping" element={<ShoppingPage />} />
+        <Route path="/scan" element={<ScanPage />} />
+      </Routes>
+    </Suspense>
+  );
+}
+```
+
+**Option B: Manual Chunk Configuration**
+```ts
+// vite.config.ts
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-mui': ['@mui/material', '@mui/icons-material'],
+          'vendor-data': ['dexie'],
+        }
+      }
+    }
+  }
+});
+```
+
+**Option C: Combined Approach (Best Results)**
+Implement both route-based code splitting AND manual chunk configuration for optimal bundle sizes.
+
+**Expected Results:**
+- Main bundle: <300 KB
+- Vendor chunks: 200-250 KB (cached across pages)
+- Route chunks: 50-100 KB each (loaded on demand)
+- Total initial load: ~400-450 KB (vs current 581 KB)
+- Faster Time to Interactive (TTI)
+
+**Benefits:**
+- Faster initial page load
+- Better performance scores
+- Improved user experience on slow networks
+- Better caching strategy (vendors cached separately)
+- Meets performance best practices
+
+**Trade-offs:**
+- Slightly more complex build configuration
+- Route transitions may have brief loading state
+- More HTTP requests (mitigated by HTTP/2)
+
+**Estimated Effort:** 4-6 hours
+- Implement route-based code splitting: 2-3 hours
+- Configure manual chunks: 1-2 hours
+- Test and validate: 1 hour
+- Measure performance improvements: 30 minutes
+
+**Recommended Path:**
+1. Start with Option A (route-based splitting) - quick wins
+2. Measure results
+3. Add Option B (manual chunks) if still >500KB
+4. Validate all features work correctly after optimization
+5. Run Lighthouse/PageSpeed tests to measure improvement
+
+---
+
+## Summary (Updated)
+
+| Issue | Priority | Estimated Effort | Impact | Story |
+|-------|----------|------------------|--------|-------|
+| #1: Loading state refactoring | Medium | 1-2 hours | Maintainability | 1.3 |
+| #2: Defensive validation | Medium | 1-2 hours | User Experience | 1.3 |
+| #3: Concurrent operations | Medium | 2-6 hours | Correctness | 1.3 |
+| #4: ESLint comment | Low | 5 minutes | Documentation | 1.3 |
+| #5: readonly modifiers | Low | 1-2 hours | Type Safety | 1.3 |
+| #6: Desktop PWA verification | Medium | 1-2 hours | Quality Assurance | 1.10 |
+| #7: Bundle size optimization | Medium | 4-6 hours | Performance | 1.10 |
+
+**Total Estimated Effort:** 10-21 hours depending on approach
+
+## Prioritization Guidance (Updated)
+
+**Address Now (Before Production):**
+- Issue #3 (Concurrent operations) - At least add tests documenting behavior
+- Issue #6 (Desktop PWA verification) - Required for full AC3 compliance
+
+**Address Before Scale:**
+- Issue #7 (Bundle optimization) - Important for performance and UX
+- Issue #2 (Defensive validation) - Better UX as app grows
+- Issue #1 (Loading refactoring) - Easier maintenance
+
+**Address When Convenient:**
+- Issue #4 (ESLint comment) - Quick win
+- Issue #5 (readonly modifiers) - Nice to have
+
+---
+
+*Last Updated: 2026-01-20*
+*Identified During: Story 1.3 Code Review (Issues #1-5), Story 1.10 Code Review (Issues #6-7)*
 *Referenced During: Story 1.9 Code Review (TODO comment tracking)*
