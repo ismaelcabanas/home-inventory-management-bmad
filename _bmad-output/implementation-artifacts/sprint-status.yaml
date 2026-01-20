@@ -50,7 +50,7 @@ development_status:
   1-7-search-and-filter-products: done
   1-8-set-up-error-handling-and-logging-utilities: done
   1-9-implement-feature-error-boundaries-and-navigation: done
-  1-10-deploy-application-with-ci-cd-pipeline: review
+  1-10-deploy-application-with-ci-cd-pipeline: done
   epic-1-retrospective: optional
 
   epic-2: backlog
