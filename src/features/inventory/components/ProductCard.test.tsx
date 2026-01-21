@@ -19,32 +19,37 @@ describe('ProductCard', () => {
   });
 
   it('should render stock level chip', () => {
-    render(<ProductCard product={mockProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
-    expect(screen.getByText('High')).toBeInTheDocument();
+    const { container } = render(<ProductCard product={mockProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
+    const chip = container.querySelector('.MuiChip-root');
+    expect(chip).toHaveTextContent('High');
   });
 
   it('should render high stock level correctly', () => {
     const highProduct = { ...mockProduct, stockLevel: 'high' as const };
-    render(<ProductCard product={highProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
-    expect(screen.getByText('High')).toBeInTheDocument();
+    const { container } = render(<ProductCard product={highProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
+    const chip = container.querySelector('.MuiChip-root');
+    expect(chip).toHaveTextContent('High');
   });
 
   it('should render medium stock level correctly', () => {
     const mediumProduct = { ...mockProduct, stockLevel: 'medium' as const };
-    render(<ProductCard product={mediumProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
-    expect(screen.getByText('Medium')).toBeInTheDocument();
+    const { container } = render(<ProductCard product={mediumProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
+    const chip = container.querySelector('.MuiChip-root');
+    expect(chip).toHaveTextContent('Medium');
   });
 
   it('should render low stock level correctly', () => {
     const lowProduct = { ...mockProduct, stockLevel: 'low' as const };
-    render(<ProductCard product={lowProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
-    expect(screen.getByText('Low')).toBeInTheDocument();
+    const { container } = render(<ProductCard product={lowProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
+    const chip = container.querySelector('.MuiChip-root');
+    expect(chip).toHaveTextContent('Low');
   });
 
   it('should render empty stock level correctly', () => {
     const emptyProduct = { ...mockProduct, stockLevel: 'empty' as const };
-    render(<ProductCard product={emptyProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
-    expect(screen.getByText('Empty')).toBeInTheDocument();
+    const { container } = render(<ProductCard product={emptyProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
+    const chip = container.querySelector('.MuiChip-root');
+    expect(chip).toHaveTextContent('Empty');
   });
 
   it('should render product as MUI Card component', () => {
@@ -103,5 +108,39 @@ describe('ProductCard', () => {
     fireEvent.click(deleteButton);
 
     expect(onDelete).toHaveBeenCalledWith(mockProduct);
+  });
+
+  it('should render stock level picker', () => {
+    render(<ProductCard product={mockProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
+
+    expect(screen.getByLabelText(/Set stock level to High/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Set stock level to Medium/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Set stock level to Low/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Set stock level to Empty/i)).toBeInTheDocument();
+  });
+
+  it('should call onStockLevelChange when stock level is changed', async () => {
+    const onStockLevelChange = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ProductCard
+        product={mockProduct}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onStockLevelChange={onStockLevelChange}
+      />
+    );
+
+    const lowButton = screen.getByLabelText(/Set stock level to Low/i);
+    fireEvent.click(lowButton);
+
+    expect(onStockLevelChange).toHaveBeenCalledWith('1', 'low');
+  });
+
+  it('should not call onStockLevelChange if handler not provided', () => {
+    render(<ProductCard product={mockProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
+
+    const lowButton = screen.getByLabelText(/Set stock level to Low/i);
+    // Should not throw error when clicking without handler
+    expect(() => fireEvent.click(lowButton)).not.toThrow();
   });
 });
