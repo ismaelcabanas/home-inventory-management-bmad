@@ -1,6 +1,6 @@
 # Story 2.1: Implement Stock Level Picker Component
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
