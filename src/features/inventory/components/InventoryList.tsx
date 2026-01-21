@@ -134,6 +134,29 @@ export function InventoryList() {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  const handleStockLevelChange = async (productId: string, newLevel: Product['stockLevel']) => {
+    // Capture original state for rollback on error (AC5)
+    const originalProduct = state.products.find(p => p.id === productId);
+    if (!originalProduct) return;
+
+    try {
+      await updateProduct(productId, { stockLevel: newLevel });
+      setSnackbar({
+        open: true,
+        message: 'Stock level updated successfully',
+        severity: 'success',
+      });
+    } catch (error) {
+      // Rollback UI to original state on persistence failure (AC5)
+      await updateProduct(productId, { stockLevel: originalProduct.stockLevel });
+      setSnackbar({
+        open: true,
+        message: error instanceof Error ? error.message : 'Failed to update stock level',
+        severity: 'error',
+      });
+    }
+  };
+
   return (
     <Container maxWidth="md" sx={{ py: 3 }}>
       {/* Header */}
@@ -186,7 +209,13 @@ export function InventoryList() {
       {filteredProducts.length > 0 && (
         <Box role="region" aria-live="polite" aria-label="Product inventory">
           {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} onEdit={handleEditProduct} onDelete={handleDeleteProduct} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              onEdit={handleEditProduct}
+              onDelete={handleDeleteProduct}
+              onStockLevelChange={handleStockLevelChange}
+            />
           ))}
         </Box>
       )}

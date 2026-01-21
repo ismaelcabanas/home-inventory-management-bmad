@@ -54,7 +54,8 @@ describe('InventoryList', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
-      expect(screen.getByText('High')).toBeInTheDocument();
+      // H5: Chip removed, verify StockLevelPicker is rendered instead
+      expect(screen.getByLabelText(/Set stock level to High/i)).toBeInTheDocument();
     });
   });
 
