@@ -46,7 +46,7 @@ describe('InventoryList', () => {
   it('should render products when available', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
 
-    const { container } = render(
+    render(
       <InventoryProvider>
         <InventoryList />
       </InventoryProvider>
@@ -54,8 +54,8 @@ describe('InventoryList', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
-      const chip = container.querySelector('.MuiChip-root');
-      expect(chip).toHaveTextContent('High');
+      // H5: Chip removed, verify StockLevelPicker is rendered instead
+      expect(screen.getByLabelText(/Set stock level to High/i)).toBeInTheDocument();
     });
   });
 

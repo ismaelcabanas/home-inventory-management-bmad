@@ -1,8 +1,8 @@
-import { Card, CardContent, Typography, Chip, Box, IconButton } from '@mui/material';
+import { memo, useState } from 'react';
+import { Card, CardContent, Typography, Box, IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import type { Product, StockLevel } from '@/types/product';
-import { STOCK_LEVEL_CONFIG } from './stockLevelConfig';
 import { StockLevelPicker } from '@/components/StockLevelPicker';
 
 export interface ProductCardProps {
@@ -12,18 +12,43 @@ export interface ProductCardProps {
   onStockLevelChange?: (productId: string, stockLevel: StockLevel) => Promise<void>;
 }
 
-export function ProductCard({ product, onEdit, onDelete, onStockLevelChange }: ProductCardProps) {
-  const stockConfig = STOCK_LEVEL_CONFIG[product.stockLevel];
+export const ProductCard = memo(function ProductCard({ product, onEdit, onDelete, onStockLevelChange }: ProductCardProps) {
+  const [announceMessage, setAnnounceMessage] = useState<string>('');
 
   const handleStockLevelChange = async (newLevel: StockLevel) => {
     if (onStockLevelChange) {
-      await onStockLevelChange(product.id, newLevel);
+      try {
+        // Update ARIA live region for screen readers (H4)
+        setAnnounceMessage(`Stock level changed to ${newLevel}`);
+        setTimeout(() => setAnnounceMessage(''), 2000);
+
+        await onStockLevelChange(product.id, newLevel);
+      } catch {
+        // Error handled by parent (InventoryList shows snackbar)
+        // Silently catch here to prevent unhandled rejection
+      }
     }
   };
 
   return (
     <Card sx={{ mb: 2 }}>
       <CardContent>
+        {/* ARIA live region for stock level change announcements (H4) */}
+        <Box
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          sx={{
+            position: 'absolute',
+            left: '-10000px',
+            width: '1px',
+            height: '1px',
+            overflow: 'hidden',
+          }}
+        >
+          {announceMessage}
+        </Box>
+
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {/* Product name and actions */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -45,18 +70,10 @@ export function ProductCard({ product, onEdit, onDelete, onStockLevelChange }: P
               >
                 <DeleteIcon />
               </IconButton>
-              <Chip
-                label={stockConfig.label}
-                sx={{
-                  backgroundColor: stockConfig.color,
-                  color: 'white',
-                  fontWeight: 'bold',
-                }}
-              />
             </Box>
           </Box>
 
-          {/* Stock level picker */}
+          {/* Stock level picker - Chip removed (H5) as picker visually highlights current level */}
           <Box sx={{ display: 'flex', justifyContent: 'center' }}>
             <StockLevelPicker
               currentLevel={product.stockLevel}
@@ -68,4 +85,4 @@ export function ProductCard({ product, onEdit, onDelete, onStockLevelChange }: P
       </CardContent>
     </Card>
   );
-}
+});

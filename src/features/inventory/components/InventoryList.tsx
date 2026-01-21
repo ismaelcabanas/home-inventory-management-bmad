@@ -134,15 +134,21 @@ export function InventoryList() {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const handleStockLevelChange = async (productId: string, newLevel: string) => {
+  const handleStockLevelChange = async (productId: string, newLevel: Product['stockLevel']) => {
+    // Capture original state for rollback on error (AC5)
+    const originalProduct = state.products.find(p => p.id === productId);
+    if (!originalProduct) return;
+
     try {
-      await updateProduct(productId, { stockLevel: newLevel as Product['stockLevel'] });
+      await updateProduct(productId, { stockLevel: newLevel });
       setSnackbar({
         open: true,
         message: 'Stock level updated successfully',
         severity: 'success',
       });
     } catch (error) {
+      // Rollback UI to original state on persistence failure (AC5)
+      await updateProduct(productId, { stockLevel: originalProduct.stockLevel });
       setSnackbar({
         open: true,
         message: error instanceof Error ? error.message : 'Failed to update stock level',
