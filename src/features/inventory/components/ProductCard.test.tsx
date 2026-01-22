@@ -208,4 +208,74 @@ describe('ProductCard', () => {
     // Verify announcement message contains stock level
     expect(liveRegion?.textContent).toMatch(/Stock level changed/i);
   });
+
+  // Story 2.2: Stock Level Chip Visual Indicators - Unit Tests (AC1)
+  describe('Stock Level Chip Display', () => {
+    it('should render green chip with "High" label for high stock level', () => {
+      const highProduct = { ...mockProduct, stockLevel: 'high' as const };
+      const { container } = render(<ProductCard product={highProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
+
+      // Find the Chip component by its MUI class
+      const chip = container.querySelector('.MuiChip-root');
+      expect(chip).toBeInTheDocument();
+      expect(chip?.textContent).toBe('High');
+
+      // Verify green background color (#4caf50)
+      expect(chip).toHaveStyle({ backgroundColor: 'rgb(76, 175, 80)' }); // #4caf50 as RGB
+    });
+
+    it('should render orange chip with "Medium" label for medium stock level', () => {
+      const mediumProduct = { ...mockProduct, stockLevel: 'medium' as const };
+      const { container } = render(<ProductCard product={mediumProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
+
+      const chip = container.querySelector('.MuiChip-root');
+      expect(chip).toBeInTheDocument();
+      expect(chip?.textContent).toBe('Medium');
+
+      // Verify orange background color (#ff9800)
+      expect(chip).toHaveStyle({ backgroundColor: 'rgb(255, 152, 0)' }); // #ff9800 as RGB
+    });
+
+    it('should render orange/red chip with "Low" label for low stock level', () => {
+      const lowProduct = { ...mockProduct, stockLevel: 'low' as const };
+      const { container } = render(<ProductCard product={lowProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
+
+      const chip = container.querySelector('.MuiChip-root');
+      expect(chip).toBeInTheDocument();
+      expect(chip?.textContent).toBe('Low');
+
+      // Verify orange/red background color (#ff5722)
+      expect(chip).toHaveStyle({ backgroundColor: 'rgb(255, 87, 34)' }); // #ff5722 as RGB
+    });
+
+    it('should render red chip with "Empty" label for empty stock level', () => {
+      const emptyProduct = { ...mockProduct, stockLevel: 'empty' as const };
+      const { container } = render(<ProductCard product={emptyProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
+
+      const chip = container.querySelector('.MuiChip-root');
+      expect(chip).toBeInTheDocument();
+      expect(chip?.textContent).toBe('Empty');
+
+      // Verify red background color (#f44336)
+      expect(chip).toHaveStyle({ backgroundColor: 'rgb(244, 67, 54)' }); // #f44336 as RGB
+    });
+
+    it('should use small chip size for mobile optimization', () => {
+      const { container } = render(<ProductCard product={mockProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
+
+      const chip = container.querySelector('.MuiChip-root');
+      expect(chip).toHaveClass('MuiChip-sizeSmall');
+    });
+
+    it('should have readable font size (minimum 14px) for accessibility', () => {
+      const { container } = render(<ProductCard product={mockProduct} onEdit={vi.fn()} onDelete={vi.fn()} />);
+
+      const chip = container.querySelector('.MuiChip-root');
+      const computedStyles = window.getComputedStyle(chip!);
+
+      // Font size should be at least 14px for mobile readability (AC2)
+      const fontSize = parseInt(computedStyles.fontSize);
+      expect(fontSize).toBeGreaterThanOrEqual(14);
+    });
+  });
 });
