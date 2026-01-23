@@ -1,9 +1,10 @@
 import { memo, useState } from 'react';
-import { Card, CardContent, Typography, Box, IconButton } from '@mui/material';
+import { Card, CardContent, Typography, Box, IconButton, Chip } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import type { Product, StockLevel } from '@/types/product';
 import { StockLevelPicker } from '@/components/StockLevelPicker';
+import { STOCK_LEVEL_CONFIG } from './stockLevelConfig';
 
 export interface ProductCardProps {
   product: Product;
@@ -14,6 +15,9 @@ export interface ProductCardProps {
 
 export const ProductCard = memo(function ProductCard({ product, onEdit, onDelete, onStockLevelChange }: ProductCardProps) {
   const [announceMessage, setAnnounceMessage] = useState<string>('');
+
+  // Get stock level configuration for visual chip (Story 2.2)
+  const stockConfig = STOCK_LEVEL_CONFIG[product.stockLevel];
 
   const handleStockLevelChange = async (newLevel: StockLevel) => {
     if (onStockLevelChange) {
@@ -73,7 +77,21 @@ export const ProductCard = memo(function ProductCard({ product, onEdit, onDelete
             </Box>
           </Box>
 
-          {/* Stock level picker - Chip removed (H5) as picker visually highlights current level */}
+          {/* Story 2.2: Stock Level Visual Indicator Chip (AC1) */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 1 }}>
+            <Chip
+              label={stockConfig.label}
+              size="small"
+              sx={{
+                backgroundColor: stockConfig.chipColor,
+                color: stockConfig.textColor,
+                fontWeight: 'medium',
+                fontSize: '14px',
+              }}
+            />
+          </Box>
+
+          {/* Stock level picker for changing stock level */}
           <Box sx={{ display: 'flex', justifyContent: 'center' }}>
             <StockLevelPicker
               currentLevel={product.stockLevel}
