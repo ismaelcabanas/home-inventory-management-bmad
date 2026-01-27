@@ -3,8 +3,6 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { ShoppingList } from './ShoppingList';
 import { ShoppingProvider } from '../context/ShoppingContext';
 import * as ShoppingContext from '../context/ShoppingContext';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { shoppingService } from '@/services/shopping';
 import React from 'react';
 
 // Mock dependencies
@@ -146,9 +144,9 @@ describe('ShoppingList', () => {
     });
 
     it('should sort items by updatedAt descending', () => {
-      const productsSorted = [
-        mockProducts[1], // Bread (Jan 15)
-        mockProducts[0], // Milk (Jan 10)
+      const productsSorted: typeof mockProducts = [
+        mockProducts[1]!, // Bread (Jan 15)
+        mockProducts[0]!, // Milk (Jan 10)
       ];
 
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({

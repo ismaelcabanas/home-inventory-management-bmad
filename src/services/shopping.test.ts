@@ -64,11 +64,9 @@ describe('ShoppingService', () => {
 
   describe('getShoppingListItems', () => {
     it('should return only Low and Empty products from shopping list', async () => {
-      // Setup mock chain
-      const mockSort = vi.fn().mockReturnValue({
+      mockFilter.mockResolvedValue({
         toArray: vi.fn().mockResolvedValue(mockProducts),
-      });
-      mockFilter.mockReturnValue({ sort: mockSort } as unknown);
+      } as never);
 
       const result = await shoppingService.getShoppingListItems();
 
@@ -79,10 +77,9 @@ describe('ShoppingService', () => {
     });
 
     it('should exclude High and Medium products from results', async () => {
-      const mockSort = vi.fn().mockReturnValue({
+      mockFilter.mockResolvedValue({
         toArray: vi.fn().mockResolvedValue(mockProducts),
-      });
-      mockFilter.mockReturnValue({ sort: mockSort } as unknown);
+      } as never);
 
       const result = await shoppingService.getShoppingListItems();
 
@@ -93,26 +90,21 @@ describe('ShoppingService', () => {
     });
 
     it('should sort results by updatedAt descending (most recently changed first)', async () => {
-      const mockSort = vi.fn().mockReturnValue({
+      mockFilter.mockResolvedValue({
         toArray: vi.fn().mockResolvedValue(mockProducts),
-      });
-      mockFilter.mockReturnValue({ sort: mockSort } as unknown);
+      } as never);
 
-      await shoppingService.getShoppingListItems();
+      const result = await shoppingService.getShoppingListItems();
 
-      // Check sort was called with proper comparator
-      expect(mockSort).toHaveBeenCalled();
-      const sortCallback = mockSort.mock.calls[0][0];
-      // For descending order: Bread (Jan 15) should come before Milk (Jan 10)
-      // So when comparing Milk vs Bread, should return positive (Milk comes after Bread)
-      expect(sortCallback(mockProducts[0], mockProducts[1])).toBeGreaterThan(0);
+      // Bread (Jan 15) should come before Milk (Jan 10)
+      expect(result[0]!.name).toBe('Bread');
+      expect(result[1]!.name).toBe('Milk');
     });
 
     it('should return empty array when no products on shopping list', async () => {
-      const mockSort = vi.fn().mockReturnValue({
+      mockFilter.mockResolvedValue({
         toArray: vi.fn().mockResolvedValue([]),
-      });
-      mockFilter.mockReturnValue({ sort: mockSort } as unknown);
+      } as never);
 
       const result = await shoppingService.getShoppingListItems();
 
@@ -121,10 +113,7 @@ describe('ShoppingService', () => {
 
     it('should handle database errors gracefully', async () => {
       const mockError = new Error('Database connection failed');
-      const mockSort = vi.fn().mockReturnValue({
-        toArray: vi.fn().mockRejectedValue(mockError),
-      });
-      mockFilter.mockReturnValue({ sort: mockSort } as unknown);
+      mockFilter.mockRejectedValue(mockError);
 
       await expect(shoppingService.getShoppingListItems()).rejects.toThrow();
     });
@@ -132,18 +121,22 @@ describe('ShoppingService', () => {
 
   describe('getShoppingListCount', () => {
     it('should return count of products on shopping list', async () => {
-      const mockCount = vi.fn().mockResolvedValue(3);
-      mockFilter.mockReturnValue({ count: mockCount } as unknown);
+      const mockCollection = {
+        count: vi.fn().mockResolvedValue(3),
+      };
+      mockFilter.mockResolvedValue(mockCollection as never);
 
       const result = await shoppingService.getShoppingListCount();
 
       expect(result).toBe(3);
-      expect(mockCount).toHaveBeenCalled();
+      expect(mockCollection.count).toHaveBeenCalled();
     });
 
     it('should return 0 when shopping list is empty', async () => {
-      const mockCount = vi.fn().mockResolvedValue(0);
-      mockFilter.mockReturnValue({ count: mockCount } as unknown);
+      const mockCollection = {
+        count: vi.fn().mockResolvedValue(0),
+      };
+      mockFilter.mockResolvedValue(mockCollection as never);
 
       const result = await shoppingService.getShoppingListCount();
 
@@ -152,8 +145,7 @@ describe('ShoppingService', () => {
 
     it('should handle database errors gracefully', async () => {
       const mockError = new Error('Database connection failed');
-      const mockCount = vi.fn().mockRejectedValue(mockError);
-      mockFilter.mockReturnValue({ count: mockCount } as unknown);
+      mockFilter.mockRejectedValue(mockError);
 
       await expect(shoppingService.getShoppingListCount()).rejects.toThrow();
     });

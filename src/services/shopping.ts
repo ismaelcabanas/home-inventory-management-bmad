@@ -11,8 +11,10 @@ export class ShoppingService {
       // Query products where isOnShoppingList is true
       const items = await db.products
         .filter((product) => product.isOnShoppingList === true)
-        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
         .toArray();
+
+      // Sort by updatedAt descending (most recently changed first)
+      items.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
       // Defensive: Double-check stock level (in case DB inconsistency)
       const filteredItems = items.filter(
