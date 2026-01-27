@@ -1,7 +1,7 @@
 // TODO (Tech Debt #4): Add explanation for why react-refresh/only-export-components is disabled
 // See: docs/technical-debt.md - Issue #4
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useReducer, ReactNode } from 'react';
+import { createContext, useContext, useReducer, ReactNode, useMemo, useCallback } from 'react';
 import { shoppingService } from '@/services/shopping';
 import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
@@ -83,7 +83,7 @@ export function ShoppingProvider({ children }: ShoppingProviderProps) {
   // TODO (Tech Debt #3): Add concurrency handling (request deduplication or cancellation)
   // Current behavior: "last call wins" - concurrent calls may show stale data
   // See: docs/technical-debt.md - Issue #3 for solutions (AbortController, deduplication, React Query)
-  const loadShoppingList = async () => {
+  const loadShoppingList = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       logger.debug('Loading shopping list');
@@ -100,29 +100,32 @@ export function ShoppingProvider({ children }: ShoppingProviderProps) {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, []);
 
   // Refresh shopping list count
-  const refreshCount = async () => {
+  const refreshCount = useCallback(async () => {
     try {
       const count = await shoppingService.getShoppingListCount();
       dispatch({ type: 'UPDATE_COUNT', payload: count });
     } catch (error) {
       logger.error('Failed to refresh count', handleError(error).details);
     }
-  };
+  }, []);
 
   // Clear error
-  const clearError = () => {
+  const clearError = useCallback(() => {
     dispatch({ type: 'SET_ERROR', payload: null });
-  };
+  }, []);
 
-  const value: ShoppingContextValue = {
-    state,
-    loadShoppingList,
-    refreshCount,
-    clearError,
-  };
+  const value: ShoppingContextValue = useMemo(
+    () => ({
+      state,
+      loadShoppingList,
+      refreshCount,
+      clearError,
+    }),
+    [state, loadShoppingList, refreshCount, clearError]
+  );
 
   return (
     <ShoppingContext.Provider value={value}>

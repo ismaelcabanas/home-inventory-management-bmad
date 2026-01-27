@@ -1,6 +1,6 @@
 # Story 3.1: View Shopping List with Automatic Item Addition
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -921,6 +921,6 @@ Ultimate context engine analysis completed - comprehensive developer guide creat
 
 ## Senior Developer Review (AI)
 
-**Review Status:** Not yet reviewed - story ready for development
+**Review Status:** Ready for code review - implementation complete
 
 This story will be reviewed via code-review workflow after implementation is complete.
