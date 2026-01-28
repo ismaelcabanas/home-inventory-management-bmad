@@ -12,10 +12,12 @@ function ShoppingListContent() {
   useEffect(() => {
     loadShoppingList();
 
-    // Refresh every 2 seconds to catch stock level changes from InventoryContext
+    // Refresh every 5 seconds to catch stock level changes from InventoryContext
+    // TODO (Tech Debt #10): Replace polling with event-driven synchronization
+    // See: docs/technical-debt.md - Issue #10
     const interval = setInterval(() => {
       loadShoppingList();
-    }, 2000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [loadShoppingList]);
@@ -38,7 +40,10 @@ function ShoppingListContent() {
 
   if (items.length === 0) {
     return (
-      <EmptyState message="Your shopping list is empty. Mark items as Low or Empty in inventory to auto-add them here." />
+      <EmptyState
+        title="Your shopping list is empty"
+        message="Mark items as Low or Empty in inventory to auto-add them here"
+      />
     );
   }
 
