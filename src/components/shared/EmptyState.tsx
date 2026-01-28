@@ -4,9 +4,10 @@ import { ReactNode } from 'react';
 export interface EmptyStateProps {
   message: string;
   icon?: ReactNode;
+  title?: string;
 }
 
-export function EmptyState({ message, icon }: EmptyStateProps) {
+export function EmptyState({ message, icon, title }: EmptyStateProps) {
   return (
     <Box
       sx={{
@@ -23,7 +24,12 @@ export function EmptyState({ message, icon }: EmptyStateProps) {
           {icon}
         </Box>
       )}
-      <Typography variant="body1" color="text.secondary" align="center">
+      {title && (
+        <Typography variant="h6" color="text.primary" align="center" sx={{ mb: 1 }}>
+          {title}
+        </Typography>
+      )}
+      <Typography variant="body2" color="text.secondary" align="center">
         {message}
       </Typography>
     </Box>

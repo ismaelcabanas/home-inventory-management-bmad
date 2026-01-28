@@ -305,16 +305,21 @@ Complete desktop PWA verification checklist was not fully validated during code 
 ---
 
 ### Issue #7: Bundle Size Optimization
-**Priority:** Medium
+**Priority:** Low → Medium (increasing trend)
 **Category:** Performance / Build Optimization
 **Location:** Production build output
 
 **Description:**
-Main JavaScript bundle exceeds recommended 500KB limit (currently 581KB after minification), triggering Vite build warning. This impacts initial load time, especially on slow networks.
+Main JavaScript bundle exceeds recommended 500KB limit and continues growing with each feature addition, triggering Vite build warning. This impacts initial load time, especially on slow networks.
+
+**Progression:**
+- **Story 1.10:** 581.31 kB (gzip: 183.80 kB) - Initial measurement
+- **Story 3.1:** 604.61 kB (gzip: 189.29 kB) - Added shopping feature (+23 KB, +5.5 KB gzipped)
+- **Trend:** Growing ~4% with each major feature
 
 **Current State:**
 ```
-dist/assets/index-CcHdZGMy.js   581.31 kB │ gzip: 183.80 kB
+dist/assets/index-BLeH1gej.js   604.61 kB │ gzip: 189.29 kB
 Warning: Some chunks are larger than 500 kB after minification
 ```
 
@@ -323,6 +328,7 @@ Warning: Some chunks are larger than 500 kB after minification
 - Potential poor performance scores (Lighthouse, PageSpeed)
 - Not meeting performance best practices
 - May affect NFR1 (<2 second response time) on slower connections
+- **Growing concern:** Bundle increases with each epic (Epic 3 added 23KB)
 
 **Root Causes:**
 - All dependencies bundled into single main chunk
@@ -330,6 +336,7 @@ Warning: Some chunks are larger than 500 kB after minification
 - MUI components fully loaded (heavy library)
 - React Router not using lazy loading
 - No dynamic imports for route components
+- **New cause:** Multiple feature contexts loaded upfront (Inventory + Shopping + future features)
 
 **Proposed Solutions:**
 
@@ -399,28 +406,54 @@ Implement both route-based code splitting AND manual chunk configuration for opt
 - Test and validate: 1 hour
 - Measure performance improvements: 30 minutes
 
+**Tracking:**
+| Story | Bundle Size (minified) | Gzipped | Change | Features Added |
+|-------|------------------------|---------|---------|----------------|
+| 1.10  | 581.31 kB | 183.80 kB | baseline | Epic 1 complete |
+| 3.1   | 604.61 kB | 189.29 kB | +23 kB (+4%) | Shopping list |
+| Future | TBD | TBD | TBD | TBD |
+
+**When to Address:**
+Given the growing trend, consider addressing when:
+- Bundle reaches 700KB+ (critical threshold)
+- Epic 4-6 features are added (predictable growth)
+- User performance complaints emerge
+- Lighthouse scores drop below acceptable thresholds
+
 **Recommended Path:**
-1. Start with Option A (route-based splitting) - quick wins
-2. Measure results
-3. Add Option B (manual chunks) if still >500KB
-4. Validate all features work correctly after optimization
-5. Run Lighthouse/PageSpeed tests to measure improvement
+1. **Monitor:** Continue tracking bundle size with each story/epic
+2. **Threshold trigger:** Address when bundle exceeds 700KB or gzipped exceeds 220KB
+3. **Quick win:** Start with Option A (route-based splitting)
+4. Measure results
+5. Add Option B (manual chunks) if still >500KB
+6. Validate all features work correctly after optimization
+7. Run Lighthouse/PageSpeed tests to measure improvement
+
+**Current Assessment (Story 3.1):**
+- ✅ Gzipped size still reasonable: 189 KB (< 200 KB threshold)
+- ✅ PWA caching mitigates repeated downloads
+- ✅ Home WiFi typical usage minimizes impact
+- ⚠️ Growing trend suggests addressing before Epic 6
+- 💡 **Recommendation:** Monitor but don't address yet; revisit after Epic 4
 
 ---
 
 ## Summary (Updated)
 
-| Issue | Priority | Estimated Effort | Impact | Story |
-|-------|----------|------------------|--------|-------|
-| #1: Loading state refactoring | Medium | 1-2 hours | Maintainability | 1.3 |
-| #2: Defensive validation | Medium | 1-2 hours | User Experience | 1.3 |
-| #3: Concurrent operations | Medium | 2-6 hours | Correctness | 1.3 |
-| #4: ESLint comment | Low | 5 minutes | Documentation | 1.3 |
-| #5: readonly modifiers | Low | 1-2 hours | Type Safety | 1.3 |
-| #6: Desktop PWA verification | Medium | 1-2 hours | Quality Assurance | 1.10 |
-| #7: Bundle size optimization | Medium | 4-6 hours | Performance | 1.10 |
+| Issue | Priority | Estimated Effort | Impact | Story | Status |
+|-------|----------|------------------|--------|-------|--------|
+| #1: Loading state refactoring | Medium | 1-2 hours | Maintainability | 1.3 | Open |
+| #2: Defensive validation | Medium | 1-2 hours | User Experience | 1.3 | Open |
+| #3: Concurrent operations | Medium | 2-6 hours | Correctness | 1.3 | Open |
+| #4: ESLint comment | Low | 5 minutes | Documentation | 1.3 | Open |
+| #5: readonly modifiers | Low | 1-2 hours | Type Safety | 1.3 | Open |
+| #6: Desktop PWA verification | Medium | 1-2 hours | Quality Assurance | 1.10 | Open |
+| #7: Bundle size optimization | Low→Medium | 4-6 hours | Performance | 1.10, 3.1 | Monitoring |
+| #8: Stock level UI space | High | 2-4 hours | Mobile UX | 2.2 | Open |
+| #9: Timing test anti-pattern | Medium | 2-9 hours | Test Reliability | 2.2 | Open |
+| **#10: Event-driven sync** | **Medium** | **3-4 hours** | **Performance/Architecture** | **3.1** | **Open** |
 
-**Total Estimated Effort:** 10-21 hours depending on approach
+**Total Estimated Effort:** 16-34 hours depending on approach
 
 ## Prioritization Guidance (Updated)
 
@@ -429,9 +462,11 @@ Implement both route-based code splitting AND manual chunk configuration for opt
 - Issue #6 (Desktop PWA verification) - Required for full AC3 compliance
 
 **Address Before Scale:**
-- Issue #7 (Bundle optimization) - Important for performance and UX
 - Issue #2 (Defensive validation) - Better UX as app grows
 - Issue #1 (Loading refactoring) - Easier maintenance
+
+**Monitor and Reassess:**
+- Issue #7 (Bundle optimization) - Monitor with each epic; address when exceeds 700KB or after Epic 4
 
 **Address When Convenient:**
 - Issue #4 (ESLint comment) - Quick win
@@ -787,6 +822,9 @@ Timing assertions in unit tests create more problems than they solve. If AC requ
 **Address Now (Before Next Story):**
 - Issue #8 (Stock level UI space) - Critical for mobile UX, affects primary user flow
 
+**Address After Epic 3 Completes:**
+- Issue #10 (Event-driven sync) - Replace polling before Epic 4 adds more contexts
+
 **Address Before Production:**
 - Issue #3 (Concurrent operations) - At least add tests documenting behavior
 - Issue #6 (Desktop PWA verification) - Required for full AC3 compliance
@@ -803,6 +841,168 @@ Timing assertions in unit tests create more problems than they solve. If AC requ
 
 ---
 
-*Last Updated: 2026-01-23*
-*Identified During: Story 1.3 Code Review (Issues #1-5), Story 1.10 Code Review (Issues #6-7), Story 2.2 Implementation (Issue #8), Story 2.2 CI Failure (Issue #9)*
+## Story 3.1 Code Review - Cross-Context Synchronization
+
+### Issue #10: Replace Polling with Event-Driven Synchronization
+**Priority:** Medium
+**Category:** Architecture / Performance
+**Location:** `src/features/shopping/components/ShoppingList.tsx:15-18`
+**Story:** 3.1
+
+**Description:**
+ShoppingList currently uses polling (5-second interval) to detect stock level changes from InventoryContext. This is a temporary solution that works but creates unnecessary database queries and battery drain on mobile devices.
+
+**Current Implementation:**
+```tsx
+// Refresh every 5 seconds to catch stock level changes from InventoryContext
+const interval = setInterval(() => {
+  loadShoppingList();
+}, 5000);
+```
+
+**Problems:**
+1. **Unnecessary queries** - Database polled every 5 seconds even when data unchanged
+2. **Battery drain** - Constant background activity on mobile devices
+3. **Scalability** - Pattern doesn't scale with more features (Epic 4-6)
+4. **Reactive lag** - Up to 5-second delay before UI updates
+5. **Not event-driven** - React/modern web pattern is event-based, not polling
+
+**When It Becomes Critical:**
+- Epic 4+ adds more features requiring cross-context updates
+- Multiple contexts polling simultaneously (compounding effect)
+- User complaints about battery drain
+- Need for instant updates (<1 second)
+
+**Proposed Solutions:**
+
+**Option A: Event Emitter Pattern (Recommended)**
+Create lightweight event bus for cross-context communication:
+
+```tsx
+// src/utils/eventBus.ts
+class EventBus {
+  private events: Map<string, Set<Function>> = new Map();
+
+  on(event: string, callback: Function) {
+    if (!this.events.has(event)) {
+      this.events.set(event, new Set());
+    }
+    this.events.get(event)!.add(callback);
+  }
+
+  off(event: string, callback: Function) {
+    this.events.get(event)?.delete(callback);
+  }
+
+  emit(event: string, data?: any) {
+    this.events.get(event)?.forEach(callback => callback(data));
+  }
+}
+
+export const eventBus = new EventBus();
+```
+
+**Usage:**
+```tsx
+// InventoryContext.tsx
+const updateProduct = async (id, updates) => {
+  // ... update logic
+  eventBus.emit('inventory:product:updated', { id, updates });
+};
+
+// ShoppingList.tsx
+useEffect(() => {
+  loadShoppingList();
+
+  const handleProductUpdate = () => {
+    loadShoppingList();
+  };
+
+  eventBus.on('inventory:product:updated', handleProductUpdate);
+  return () => eventBus.off('inventory:product:updated', handleProductUpdate);
+}, [loadShoppingList]);
+```
+
+**Benefits:**
+- Instant updates (no 5-second lag)
+- Zero unnecessary queries
+- Scales to any number of contexts
+- Standard event-driven pattern
+- Minimal code changes
+
+**Estimated Effort:** 3-4 hours
+- Create event bus utility: 1 hour
+- Update InventoryContext to emit events: 1 hour
+- Update ShoppingList to listen: 30 minutes
+- Update ShoppingContext to listen: 30 minutes
+- Testing: 1 hour
+
+---
+
+**Option B: Lift State to App-Level Context**
+Create shared AppContext that both Inventory and Shopping consume:
+
+```tsx
+// AppContext manages all product data
+// InventoryContext and ShoppingContext become views/filters
+```
+
+**Benefits:**
+- Single source of truth
+- No cross-context communication needed
+- Cleaner architecture
+
+**Drawbacks:**
+- Major refactor (6-8 hours)
+- Breaks existing patterns
+- Out of scope for tech debt item
+
+---
+
+**Option C: React Query / SWR (Future Consideration)**
+Replace custom contexts with data-fetching library:
+
+**Benefits:**
+- Automatic caching, synchronization, revalidation
+- Industry-standard solution
+- Built-in optimizations
+
+**Drawbacks:**
+- Requires learning new library
+- Major architectural shift
+- Better as separate epic/story
+
+---
+
+**Recommended Path:**
+1. **Now:** Keep 5-second polling (acceptable performance)
+2. **After Epic 3 completes:** Implement Option A (event emitter)
+3. **Future (Epic 6+):** Consider Option C (React Query) for production
+
+**Acceptance Criteria for Fix:**
+- Shopping list updates within <1 second of stock level change
+- Zero polling intervals in codebase
+- No database queries when data unchanged
+- Battery usage comparable to static app
+- All existing tests pass
+- No regressions in functionality
+
+**Testing Checklist:**
+- [ ] Shopping list updates immediately when stock changes in Inventory
+- [ ] No polling intervals found in DevTools
+- [ ] Database queries only on actual data changes
+- [ ] Count badge updates instantly
+- [ ] Multiple rapid stock changes handled correctly
+- [ ] Event listeners cleaned up on unmount (no memory leaks)
+
+**Trade-offs:**
+Event bus adds slight architectural complexity but is standard pattern used by Redux, Zustand, and other state libraries. Benefits far outweigh minimal added complexity.
+
+**Estimated Effort:** 3-4 hours
+
+---
+
+*Last Updated: 2026-01-28*
+*Identified During: Story 1.3 Code Review (Issues #1-5), Story 1.10 Code Review (Issues #6-7), Story 2.2 Implementation (Issue #8), Story 2.2 CI Failure (Issue #9), Story 3.1 Code Review (Issue #10)*
+*Updated During: Story 3.1 Code Review (Issue #7 bundle size progression)*
 *Referenced During: Story 1.9 Code Review (TODO comment tracking)*

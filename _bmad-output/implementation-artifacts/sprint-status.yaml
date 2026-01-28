@@ -58,8 +58,8 @@ development_status:
   2-2-enhanced-visual-stock-level-indicators: done
   epic-2-retrospective: optional
 
-  epic-3: backlog
-  3-1-view-shopping-list-with-automatic-item-addition: backlog
+  epic-3: in-progress
+  3-1-view-shopping-list-with-automatic-item-addition: done
   3-2-automatic-removal-from-shopping-list-when-replenished: backlog
   3-3-manual-shopping-list-management-safety-nets: backlog
   epic-3-retrospective: optional

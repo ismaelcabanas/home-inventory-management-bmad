@@ -370,6 +370,62 @@
     <action if="definition-of-done validation fails">HALT - Address DoD failures before completing</action>
   </step>
 
+  <step n="9.5" goal="Push branch and create pull request">
+    <critical>This step automates PR creation when story is marked as review</critical>
+
+    <!-- First, commit any pending changes -->
+    <action>Check git status for uncommitted changes</action>
+    <check if="uncommitted changes exist">
+      <ask>There are uncommitted changes. Would you like to commit them before creating PR? [y/N]</ask>
+      <check if="user confirms">
+        <ask>Enter commit message (or press Enter for auto-generated):</ask>
+        <action>Commit changes with user message or auto-generated message</action>
+      </check>
+    </check>
+
+    <!-- Push branch to remote -->
+    <action>Check if remote branch exists</action>
+    <check if="remote branch does NOT exist">
+      <action>Push branch to remote with upstream tracking: git push -u origin {{branch_name}}</action>
+      <output>📤 Branch pushed to remote: {{branch_name}}</output>
+    </check>
+    <check if="remote branch exists">
+      <action>Push latest commits: git push</action>
+      <output>📤 Latest commits pushed to remote</output>
+    </check>
+
+    <!-- Create PR using gh CLI -->
+    <action>Generate PR title from story: "{{story_id}}: {{story_title}}"</action>
+    <action>Generate PR body from:
+      - Story summary (Story section)
+      - Acceptance criteria met
+      - Implementation highlights (Dev Notes, File List)
+      - Test results
+    </action>
+
+    <check if="gh CLI is available">
+      <action>Create PR using: gh pr create --title "{{pr_title}}" --body "{{pr_body}}"</action>
+      <output>✅ Pull request created successfully!
+        URL: {{pr_url}}
+      </output>
+    </check>
+
+    <check if="gh CLI is NOT available">
+      <output>⚠️ GitHub CLI (gh) not found. To create PR manually:
+
+        1. Visit: https://github.com/{{repo_owner}}/{{repo_name}}/pull/new/{{branch_name}}
+        2. Use this title: {{pr_title}}
+        3. Use this body:
+
+        ---
+        {{pr_body}}
+        ---
+
+        💡 Install gh CLI for automatic PR creation: brew install gh && gh auth login
+      </output>
+    </check>
+  </step>
+
   <step n="10" goal="Completion communication and user support">
     <action>Execute the enhanced definition-of-done checklist using the validation framework</action>
     <action>Prepare a concise summary in Dev Agent Record → Completion Notes</action>
@@ -377,6 +433,29 @@
     <action>Communicate to {user_name} that story implementation is complete and ready for review</action>
     <action>Summarize key accomplishments: story ID, story key, title, key changes made, tests added, files modified</action>
     <action>Provide the story file path and current status (now "review")</action>
+
+    <check if="PR was created successfully">
+      <action>Include PR URL in completion message</action>
+      <output>🎉 **Story Implementation Complete!**
+
+        Story: {{story_id}} - {{story_title}}
+        Status: review
+        Pull Request: {{pr_url}}
+
+        All tasks completed, all tests passing, ready for code review.
+      </output>
+    </check>
+
+    <check if="PR was NOT created">
+      <output>🎉 **Story Implementation Complete!**
+
+        Story: {{story_id}} - {{story_title}}
+        Status: review
+
+        All tasks completed, all tests passing.
+        Please create a PR manually (see instructions above) or run `code-review` workflow.
+      </output>
+    </check>
 
     <action>Based on {user_skill_level}, ask if user needs any explanations about:
       - What was implemented and how it works
@@ -393,10 +472,10 @@
 
     <action>Once explanations are complete (or user indicates no questions), suggest logical next steps</action>
     <action>Recommended next steps (flexible based on project setup):
-      - Review the implemented story and test the changes
+      - Review the PR: {{pr_url}}
+      - Run `code-review` workflow for peer review (recommended: use different LLM)
       - Verify all acceptance criteria are met
-      - Ensure deployment readiness if applicable
-      - Run `code-review` workflow for peer review
+      - Check CI/CD pipeline results on PR
     </action>
 
     <output>💡 **Tip:** For best results, run `code-review` using a **different** LLM than the one that implemented this story.</output>

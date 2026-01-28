@@ -1,14 +1,31 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { AppLayout } from './AppLayout';
+import { ShoppingProvider } from '@/features/shopping/context/ShoppingContext';
+import { InventoryProvider } from '@/features/inventory/context/InventoryContext';
+
+// Mock useShoppingList hook
+vi.mock('@/features/shopping/context/ShoppingContext', () => ({
+  useShoppingList: () => ({
+    state: { items: [], loading: false, error: null, count: 0 },
+    loadShoppingList: vi.fn(),
+    refreshCount: vi.fn(),
+    clearError: vi.fn(),
+  }),
+  ShoppingProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 
 describe('AppLayout', () => {
   const renderAppLayout = (children: React.ReactNode) => {
     return render(
-      <BrowserRouter>
-        <AppLayout>{children}</AppLayout>
-      </BrowserRouter>
+      <InventoryProvider>
+        <ShoppingProvider>
+          <BrowserRouter>
+            <AppLayout>{children}</AppLayout>
+          </BrowserRouter>
+        </ShoppingProvider>
+      </InventoryProvider>
     );
   };
 

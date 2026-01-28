@@ -1,7 +1,8 @@
-import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
+import { BottomNavigation, BottomNavigationAction, Paper, Badge } from '@mui/material';
 import { Home as HomeIcon, ShoppingCart as ShoppingCartIcon, CameraAlt as CameraIcon } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useShoppingList } from '@/features/shopping/context/ShoppingContext';
 
 /**
  * Bottom navigation bar for mobile-first navigation.
@@ -14,6 +15,7 @@ export function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const [value, setValue] = useState(0);
+  const { state: { count } } = useShoppingList();
 
   // Update active tab based on current route
   useEffect(() => {
@@ -70,7 +72,15 @@ export function BottomNav() {
         />
         <BottomNavigationAction
           label="Shopping"
-          icon={<ShoppingCartIcon />}
+          icon={
+            count > 0 ? (
+              <Badge badgeContent={count} color="primary">
+                <ShoppingCartIcon />
+              </Badge>
+            ) : (
+              <ShoppingCartIcon />
+            )
+          }
         />
         <BottomNavigationAction
           label="Scan"

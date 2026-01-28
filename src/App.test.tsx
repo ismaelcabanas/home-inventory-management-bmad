@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 import { inventoryService } from '@/services/inventory';
+import { shoppingService } from '@/services/shopping';
 
 // Mock the inventory service
 vi.mock('@/services/inventory', () => ({
@@ -12,9 +13,22 @@ vi.mock('@/services/inventory', () => ({
   },
 }));
 
+// Mock the shopping service to avoid polling in tests
+vi.mock('@/services/shopping', () => ({
+  shoppingService: {
+    getShoppingListItems: vi.fn(),
+    getShoppingListCount: vi.fn(),
+  },
+}));
+
+const mockShoppingService = vi.mocked(shoppingService);
+
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Set up default mock return values for shopping service
+    mockShoppingService.getShoppingListItems.mockResolvedValue([]);
+    mockShoppingService.getShoppingListCount.mockResolvedValue(0);
   });
 
   it('renders without crashing', async () => {
@@ -53,8 +67,7 @@ describe('App', () => {
 
     // Navigate to shopping list
     await user.click(screen.getByRole('button', { name: /shopping/i }));
-    expect(await screen.findByText('Shopping List')).toBeInTheDocument();
-    expect(screen.getByText('Coming in Epic 3')).toBeInTheDocument();
+    expect(await screen.findByText(/shopping list/i)).toBeInTheDocument();
 
     // Navigate to receipt scanner
     await user.click(screen.getByRole('button', { name: /scan/i }));
@@ -93,7 +106,7 @@ describe('App', () => {
 
     // Navigate to shopping (works fine)
     await user.click(screen.getByRole('button', { name: /shopping/i }));
-    expect(await screen.findByText('Shopping List')).toBeInTheDocument();
+    expect(await screen.findByText(/shopping list/i)).toBeInTheDocument();
 
     // Navigate to scan (works fine)
     await user.click(screen.getByRole('button', { name: /scan/i }));

@@ -1,15 +1,29 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import { BottomNav } from './BottomNav';
+import { ShoppingProvider } from '@/features/shopping/context/ShoppingContext';
+
+// Mock useShoppingList hook
+vi.mock('@/features/shopping/context/ShoppingContext', () => ({
+  useShoppingList: () => ({
+    state: { items: [], loading: false, error: null, count: 0 },
+    loadShoppingList: vi.fn(),
+    refreshCount: vi.fn(),
+    clearError: vi.fn(),
+  }),
+  ShoppingProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 
 describe('BottomNav', () => {
   const renderBottomNav = () => {
     return render(
-      <BrowserRouter>
-        <BottomNav />
-      </BrowserRouter>
+      <ShoppingProvider>
+        <BrowserRouter>
+          <BottomNav />
+        </BrowserRouter>
+      </ShoppingProvider>
     );
   };
 
@@ -50,9 +64,11 @@ describe('BottomNav', () => {
   it('should default to Inventory for unknown routes', () => {
     // Use MemoryRouter to start at an unknown route
     render(
-      <MemoryRouter initialEntries={['/unknown-route']}>
-        <BottomNav />
-      </MemoryRouter>
+      <ShoppingProvider>
+        <MemoryRouter initialEntries={['/unknown-route']}>
+          <BottomNav />
+        </MemoryRouter>
+      </ShoppingProvider>
     );
 
     // On unknown routes, the default case should activate
