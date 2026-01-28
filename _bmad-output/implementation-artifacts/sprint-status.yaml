@@ -60,7 +60,7 @@ development_status:
 
   epic-3: in-progress
   3-1-view-shopping-list-with-automatic-item-addition: done
-  3-2-automatic-removal-from-shopping-list-when-replenished: backlog
+  3-2-automatic-removal-from-shopping-list-when-replenished: review
   3-3-manual-shopping-list-management-safety-nets: backlog
   epic-3-retrospective: optional
 
