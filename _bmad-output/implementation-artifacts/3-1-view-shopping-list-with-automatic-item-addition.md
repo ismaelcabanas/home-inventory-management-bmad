@@ -1,6 +1,6 @@
 # Story 3.1: View Shopping List with Automatic Item Addition
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
