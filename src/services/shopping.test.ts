@@ -127,22 +127,56 @@ describe('ShoppingService', () => {
   });
 
   describe('getShoppingListCount', () => {
-    it('should return count of products on shopping list', async () => {
-      const mockCount = vi.fn().mockResolvedValue(3);
+    it('should return count of Low and Empty products only (defensive filtering)', async () => {
+      // Mock returns all products, but only Low/Empty should be counted
+      const mockToArray = vi.fn().mockResolvedValue(mockProducts);
       mockFilter.mockReturnValue({
-        count: mockCount,
+        toArray: mockToArray,
       } as never);
 
       const result = await shoppingService.getShoppingListCount();
 
-      expect(result).toBe(3);
-      expect(mockCount).toHaveBeenCalled();
+      // Should count only Low (Milk) and Empty (Bread) = 2
+      expect(result).toBe(2);
+      expect(mockToArray).toHaveBeenCalled();
+    });
+
+    it('should exclude High products from count (Story 3.2 - auto-removal)', async () => {
+      const productsWithHigh = [
+        { ...mockProducts[0] }, // Low - should count
+        { ...mockProducts[2] }, // High - should NOT count
+      ];
+      const mockToArray = vi.fn().mockResolvedValue(productsWithHigh);
+      mockFilter.mockReturnValue({
+        toArray: mockToArray,
+      } as never);
+
+      const result = await shoppingService.getShoppingListCount();
+
+      // Only Low product should be counted
+      expect(result).toBe(1);
+    });
+
+    it('should exclude Medium products from count', async () => {
+      const productsWithMedium = [
+        { ...mockProducts[1] }, // Empty - should count
+        { ...mockProducts[3] }, // Medium - should NOT count
+      ];
+      const mockToArray = vi.fn().mockResolvedValue(productsWithMedium);
+      mockFilter.mockReturnValue({
+        toArray: mockToArray,
+      } as never);
+
+      const result = await shoppingService.getShoppingListCount();
+
+      // Only Empty product should be counted
+      expect(result).toBe(1);
     });
 
     it('should return 0 when shopping list is empty', async () => {
-      const mockCount = vi.fn().mockResolvedValue(0);
+      const mockToArray = vi.fn().mockResolvedValue([]);
       mockFilter.mockReturnValue({
-        count: mockCount,
+        toArray: mockToArray,
       } as never);
 
       const result = await shoppingService.getShoppingListCount();
@@ -150,11 +184,31 @@ describe('ShoppingService', () => {
       expect(result).toBe(0);
     });
 
+    it('should match filtering logic of getShoppingListItems', async () => {
+      const mockToArray = vi.fn().mockResolvedValue(mockProducts);
+      mockFilter.mockReturnValue({
+        toArray: mockToArray,
+      } as never);
+
+      const items = await shoppingService.getShoppingListItems();
+
+      // Reset mock for second call
+      vi.clearAllMocks();
+      mockFilter.mockReturnValue({
+        toArray: mockToArray,
+      } as never);
+
+      const count = await shoppingService.getShoppingListCount();
+
+      // Count should match number of items returned
+      expect(count).toBe(items.length);
+    });
+
     it('should handle database errors gracefully', async () => {
       const mockError = new Error('Database connection failed');
-      const mockCount = vi.fn().mockRejectedValue(mockError);
+      const mockToArray = vi.fn().mockRejectedValue(mockError);
       mockFilter.mockReturnValue({
-        count: mockCount,
+        toArray: mockToArray,
       } as never);
 
       await expect(shoppingService.getShoppingListCount()).rejects.toThrow();

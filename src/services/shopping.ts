@@ -32,9 +32,18 @@ export class ShoppingService {
 
   async getShoppingListCount(): Promise<number> {
     try {
-      const count = await db.products
+      // Query products where isOnShoppingList is true
+      const items = await db.products
         .filter((product) => product.isOnShoppingList === true)
-        .count();
+        .toArray();
+
+      // Defensive: Double-check stock level (in case DB inconsistency)
+      // Must match the filtering logic in getShoppingListItems()
+      const filteredItems = items.filter(
+        (product) => product.stockLevel === 'low' || product.stockLevel === 'empty'
+      );
+
+      const count = filteredItems.length;
 
       logger.debug('Shopping list count', { count });
       return count;
