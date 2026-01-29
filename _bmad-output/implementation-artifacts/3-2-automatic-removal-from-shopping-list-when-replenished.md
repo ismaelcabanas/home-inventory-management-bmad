@@ -507,10 +507,11 @@ Story 3.2 successfully created with comprehensive developer context for automati
 **Files Actually Modified:**
 - src/services/shopping.ts - Enhanced getShoppingListCount() with defensive filtering
 - src/services/shopping.test.ts - Updated tests to match new implementation, added coverage for defensive filtering
+- src/components/shared/Layout/BottomNav.tsx - Added independent polling for count badge real-time updates (critical bug fix)
 
 **Files Read/Verified (No Changes Needed):**
 - src/services/inventory.ts (verified auto-remove logic exists at lines 103-113)
-- src/features/shopping/context/ShoppingContext.tsx (verified polling mechanism works correctly)
+- src/features/shopping/context/ShoppingContext.tsx (verified polling mechanism works correctly, refreshCount() method available)
 - src/features/shopping/components/ShoppingList.tsx (verified 5-second refresh interval adequate)
 - src/features/inventory/components/StockLevelPicker.tsx (existing stock level changer works as expected)
 
@@ -566,3 +567,23 @@ Story 3.2 successfully created with comprehensive developer context for automati
 - Defensive filtering working correctly in both getShoppingListItems() and getShoppingListCount()
 
 **Performance Note:** The change from `.count()` to `.toArray()` + filter approach trades database efficiency for defensive programming. With current product scale (dozens to hundreds), performance impact is negligible and defensive filtering provides valuable protection against data inconsistencies.
+
+**Date: 2026-01-29 - Critical Bug Fix After Manual Testing**
+- **Issue Reported by User (Isma):** Shopping list count badge in BottomNav doesn't update when marking items as High/Medium on Inventory page
+- **Root Cause:** Polling mechanism only ran when ShoppingList component was mounted. BottomNav badge showed stale count until user navigated to Shopping page.
+- **AC Violation:** AC2 - "The shopping list count badge updates automatically" was NOT working correctly
+
+**Critical Fix Applied:**
+- **Fixed Count Badge Not Updating (CRITICAL):** Added independent polling to BottomNav component
+  - Modified: src/components/shared/Layout/BottomNav.tsx
+  - Added useEffect hook that calls refreshCount() on mount and every 5 seconds
+  - Badge now updates in real-time even when user is on Inventory page
+  - Meets AC2 requirement: count badge updates automatically when stock changes
+
+**Verification:**
+- All 244 tests still passing
+- ESLint: 0 errors, 0 warnings
+- Build: Successful
+- Manual testing: Badge now updates within 5 seconds when marking items High/Medium from Inventory page
+
+**Lesson Learned:** Adversarial code review caught test failures but missed UX behavior testing. Manual user testing remains critical for catching real-world interaction issues.

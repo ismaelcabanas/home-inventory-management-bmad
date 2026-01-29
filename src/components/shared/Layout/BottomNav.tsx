@@ -15,7 +15,7 @@ export function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const [value, setValue] = useState(0);
-  const { state: { count } } = useShoppingList();
+  const { state: { count }, refreshCount } = useShoppingList();
 
   // Update active tab based on current route
   useEffect(() => {
@@ -33,6 +33,20 @@ export function BottomNav() {
         setValue(0);
     }
   }, [location.pathname]);
+
+  // Refresh shopping list count every 5 seconds for real-time badge updates
+  // This ensures the badge updates even when user is on Inventory page
+  useEffect(() => {
+    // Initial load
+    refreshCount();
+
+    // Poll every 5 seconds to catch stock level changes
+    const interval = setInterval(() => {
+      refreshCount();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [refreshCount]);
 
   const handleNavigation = (_event: React.SyntheticEvent, newValue: number) => {
     // Don't set value here - let useEffect handle it based on location
