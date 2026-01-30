@@ -23,7 +23,7 @@ export function ShoppingListItem({ product }: ShoppingListItemProps) {
       newCheckedState ? `${product.name} collected` : `${product.name} uncollected`
     );
     setSnackbarOpen(true);
-  }, [product.isChecked, product.name, toggleItemChecked]);
+  }, [product.id, product.isChecked, product.name, toggleItemChecked]);
 
   const handleSnackbarClose = useCallback(() => {
     setSnackbarOpen(false);

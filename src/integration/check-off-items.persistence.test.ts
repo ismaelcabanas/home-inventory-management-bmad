@@ -107,7 +107,7 @@ describe('Check-Off Items Persistence Tests (Story 4.1)', () => {
       await shoppingService.updateCheckedState(product.id, true);
 
       // Verify checked state
-      let updated = await db.products.get(product.id);
+      const updated = await db.products.get(product.id);
       expect(updated?.isChecked).toBe(true);
 
       // Simulate navigation: load shopping list items (like navigating away and back)
@@ -124,7 +124,7 @@ describe('Check-Off Items Persistence Tests (Story 4.1)', () => {
       await inventoryService.updateProduct(product.id, { stockLevel: 'low' });
 
       // Verify unchecked state
-      let updated = await db.products.get(product.id);
+      const updated = await db.products.get(product.id);
       expect(updated?.isChecked).toBe(false);
 
       // Simulate navigation: load shopping list items
