@@ -4,6 +4,7 @@ import { ShoppingList } from './ShoppingList';
 import { ShoppingProvider } from '../context/ShoppingContext';
 import * as ShoppingContext from '../context/ShoppingContext';
 import React from 'react';
+import type { Product } from '@/types/product';
 
 // Mock dependencies
 vi.mock('@/services/shopping', () => ({
@@ -24,6 +25,7 @@ const mockRefreshCount = vi.fn();
 const mockClearError = vi.fn();
 const mockAddToList = vi.fn().mockResolvedValue(undefined);
 const mockRemoveFromList = vi.fn().mockResolvedValue(undefined);
+const mockToggleItemChecked = vi.fn().mockResolvedValue(undefined);
 
 vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
   state: { items: [], loading: false, error: null, count: 0 },
@@ -32,30 +34,34 @@ vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
   clearError: mockClearError,
   addToList: mockAddToList,
   removeFromList: mockRemoveFromList,
+  toggleItemChecked: mockToggleItemChecked, // Story 4.1: Add toggleItemChecked mock
 }));
 
-const mockProducts = [
+const mockProducts: Product[] = [
   {
     id: '1',
     name: 'Milk',
-    stockLevel: 'low' as const,
+    stockLevel: 'low',
     isOnShoppingList: true,
+    isChecked: false, // Story 4.1: Add isChecked field
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-10'),
   },
   {
     id: '2',
     name: 'Bread',
-    stockLevel: 'empty' as const,
+    stockLevel: 'empty',
     isOnShoppingList: true,
+    isChecked: false, // Story 4.1: Add isChecked field
     createdAt: new Date('2024-01-02'),
     updatedAt: new Date('2024-01-15'),
   },
   {
     id: '3',
     name: 'Eggs',
-    stockLevel: 'high' as const,
+    stockLevel: 'high',
     isOnShoppingList: false,
+    isChecked: false, // Story 4.1: Add isChecked field
     createdAt: new Date('2024-01-03'),
     updatedAt: new Date('2024-01-05'),
   },
@@ -78,6 +84,7 @@ describe('ShoppingList', () => {
       clearError: mockClearError,
       addToList: mockAddToList,
       removeFromList: mockRemoveFromList,
+      toggleItemChecked: mockToggleItemChecked,
     }));
   });
 
@@ -90,6 +97,7 @@ describe('ShoppingList', () => {
         clearError: mockClearError,
         addToList: mockAddToList,
         removeFromList: mockRemoveFromList,
+      toggleItemChecked: mockToggleItemChecked,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -117,6 +125,7 @@ describe('ShoppingList', () => {
         clearError: mockClearError,
         addToList: mockAddToList,
         removeFromList: mockRemoveFromList,
+      toggleItemChecked: mockToggleItemChecked,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -134,6 +143,7 @@ describe('ShoppingList', () => {
         clearError: mockClearError,
         addToList: mockAddToList,
         removeFromList: mockRemoveFromList,
+      toggleItemChecked: mockToggleItemChecked,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -150,6 +160,7 @@ describe('ShoppingList', () => {
         clearError: mockClearError,
         addToList: mockAddToList,
         removeFromList: mockRemoveFromList,
+      toggleItemChecked: mockToggleItemChecked,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -170,6 +181,7 @@ describe('ShoppingList', () => {
         clearError: mockClearError,
         addToList: mockAddToList,
         removeFromList: mockRemoveFromList,
+      toggleItemChecked: mockToggleItemChecked,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -189,6 +201,7 @@ describe('ShoppingList', () => {
         clearError: mockClearError,
         addToList: mockAddToList,
         removeFromList: mockRemoveFromList,
+      toggleItemChecked: mockToggleItemChecked,
       }));
 
       render(<ShoppingList />, { wrapper });

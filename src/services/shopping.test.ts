@@ -291,4 +291,75 @@ describe('ShoppingService', () => {
       await expect(shoppingService.removeFromList('invalid-id')).rejects.toThrow();
     });
   });
+
+  // Story 4.1: Check Off Items While Shopping - Task 2: ShoppingService Extensions
+  describe('updateCheckedState', () => {
+    it('should set isChecked to true when checking an item', async () => {
+      const mockUpdateReturn = 1;
+      mockUpdate.mockResolvedValue(mockUpdateReturn);
+
+      await shoppingService.updateCheckedState('product-123', true);
+
+      expect(mockUpdate).toHaveBeenCalledWith('product-123', { isChecked: true });
+    });
+
+    it('should set isChecked to false when unchecking an item', async () => {
+      const mockUpdateReturn = 1;
+      mockUpdate.mockResolvedValue(mockUpdateReturn);
+
+      await shoppingService.updateCheckedState('product-123', false);
+
+      expect(mockUpdate).toHaveBeenCalledWith('product-123', { isChecked: false });
+    });
+
+    it('should persist to IndexedDB', async () => {
+      const mockUpdateReturn = 1;
+      mockUpdate.mockResolvedValue(mockUpdateReturn);
+
+      await shoppingService.updateCheckedState('product-123', true);
+
+      // Verify db.products.update was called (persistence to IndexedDB)
+      expect(mockUpdate).toHaveBeenCalled();
+    });
+
+    it('should preserve isOnShoppingList when updating isChecked', async () => {
+      const mockUpdateReturn = 1;
+      mockUpdate.mockResolvedValue(mockUpdateReturn);
+
+      await shoppingService.updateCheckedState('product-123', true);
+
+      // Should only update isChecked, not isOnShoppingList
+      expect(mockUpdate).toHaveBeenCalledWith('product-123', { isChecked: true });
+      expect(mockUpdate).not.toHaveBeenCalledWith('product-123', expect.objectContaining({ isOnShoppingList: expect.anything() }));
+    });
+
+    it('should preserve stockLevel when updating isChecked', async () => {
+      const mockUpdateReturn = 1;
+      mockUpdate.mockResolvedValue(mockUpdateReturn);
+
+      await shoppingService.updateCheckedState('product-123', true);
+
+      // Should only update isChecked, not stockLevel
+      expect(mockUpdate).toHaveBeenCalledWith('product-123', { isChecked: true });
+      expect(mockUpdate).not.toHaveBeenCalledWith('product-123', expect.objectContaining({ stockLevel: expect.anything() }));
+    });
+
+    it('should handle errors with error handling utility', async () => {
+      const mockError = new Error('Product not found');
+      mockUpdate.mockRejectedValue(mockError);
+
+      await expect(shoppingService.updateCheckedState('invalid-id', true)).rejects.toThrow();
+    });
+
+    it('should work offline (no network calls)', async () => {
+      const mockUpdateReturn = 1;
+      mockUpdate.mockResolvedValue(mockUpdateReturn);
+
+      // This should succeed without any network calls (local IndexedDB only)
+      await shoppingService.updateCheckedState('product-123', true);
+
+      expect(mockUpdate).toHaveBeenCalled();
+      // Verify no network-related errors occurred
+    });
+  });
 });

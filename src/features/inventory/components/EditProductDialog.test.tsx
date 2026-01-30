@@ -10,6 +10,7 @@ const mockProduct: Product = {
   createdAt: new Date(),
   updatedAt: new Date(),
   isOnShoppingList: false,
+  isChecked: false, // Story 4.1: Add isChecked field
 };
 
 describe('EditProductDialog', () => {

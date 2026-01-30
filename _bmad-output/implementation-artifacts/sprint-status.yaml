@@ -61,11 +61,11 @@ development_status:
   epic-3: in-progress
   3-1-view-shopping-list-with-automatic-item-addition: done
   3-2-automatic-removal-from-shopping-list-when-replenished: done
-  3-3-manual-shopping-list-management-safety-nets: in-progress
+  3-3-manual-shopping-list-management-safety-nets: done
   epic-3-retrospective: optional
 
-  epic-4: backlog
-  4-1-check-off-items-while-shopping: backlog
+  epic-4: in-progress
+  4-1-check-off-items-while-shopping: done
   4-2-shopping-progress-indicator: backlog
   4-3-mobile-optimized-shopping-list-layout: backlog
   epic-4-retrospective: optional

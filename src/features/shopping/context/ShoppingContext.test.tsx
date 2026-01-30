@@ -12,6 +12,7 @@ vi.mock('@/services/shopping', () => ({
     getShoppingListCount: vi.fn(),
     addToList: vi.fn(),
     removeFromList: vi.fn(),
+    updateCheckedState: vi.fn(), // Story 4.1: Add updateCheckedState mock
   },
 }));
 
@@ -26,20 +27,22 @@ vi.mock('@/utils/logger', () => ({
 const mockShoppingService = vi.mocked(shoppingService);
 
 describe('ShoppingContext', () => {
-  const mockProducts = [
+  const mockProducts: Product[] = [
     {
       id: '1',
       name: 'Milk',
-      stockLevel: 'low' as const,
+      stockLevel: 'low',
       isOnShoppingList: true,
+      isChecked: false, // Story 4.1: Add isChecked field
       createdAt: new Date('2024-01-01'),
       updatedAt: new Date('2024-01-10'),
     },
     {
       id: '2',
       name: 'Bread',
-      stockLevel: 'empty' as const,
+      stockLevel: 'empty',
       isOnShoppingList: true,
+      isChecked: false, // Story 4.1: Add isChecked field
       createdAt: new Date('2024-01-02'),
       updatedAt: new Date('2024-01-15'),
     },
@@ -199,12 +202,13 @@ describe('ShoppingContext', () => {
 
   describe('Auto-Remove Functionality (Story 3.2)', () => {
     it('should loadShoppingList exclude products where isOnShoppingList is false', async () => {
-      const mockProductsWithHighStock = [
+      const mockProductsWithHighStock: Product[] = [
         {
           id: '1',
           name: 'Milk',
-          stockLevel: 'low' as const,
+          stockLevel: 'low',
           isOnShoppingList: true,
+          isChecked: false, // Story 4.1: Add isChecked field
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-10'),
         },
@@ -351,12 +355,13 @@ describe('ShoppingContext', () => {
 
     it('should include manually added Medium/High products in shopping list (Story 3.3)', async () => {
       // Story 3.3: Manual add allows Medium/High products on list
-      const productsWithMedium = [
+      const productsWithMedium: Product[] = [
         {
           id: '1',
           name: 'Milk',
-          stockLevel: 'medium' as const,  // Medium stock, manually added
+          stockLevel: 'medium',  // Medium stock, manually added
           isOnShoppingList: true,          // Manually added
+          isChecked: false, // Story 4.1: Add isChecked field
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-10'),
         },
@@ -375,6 +380,214 @@ describe('ShoppingContext', () => {
       expect(result.current.state.items).toHaveLength(1);
       expect(result.current.state.items[0]?.stockLevel).toBe('medium');
       expect(result.current.state.count).toBe(1);
+    });
+  });
+
+  // Story 4.1: Check Off Items While Shopping - Task 3: ShoppingContext Extensions
+  describe('Check/Uncheck Functionality (Story 4.1)', () => {
+    const mockProductsWithChecked: Product[] = [
+      {
+        id: '1',
+        name: 'Milk',
+        stockLevel: 'low',
+        isOnShoppingList: true,
+        isChecked: false,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-10'),
+      },
+      {
+        id: '2',
+        name: 'Bread',
+        stockLevel: 'empty',
+        isOnShoppingList: true,
+        isChecked: false,
+        createdAt: new Date('2024-01-02'),
+        updatedAt: new Date('2024-01-15'),
+      },
+    ];
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      // Setup default mock for updateCheckedState
+      mockShoppingService.updateCheckedState.mockResolvedValue(undefined);
+    });
+
+    it('should expose toggleItemChecked method', () => {
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      expect(result.current).toHaveProperty('toggleItemChecked');
+      expect(typeof result.current.toggleItemChecked).toBe('function');
+    });
+
+    it('should toggleItemChecked call shoppingService.updateCheckedState with true when unchecked', async () => {
+      // Load products with isChecked: false
+      const mockUncheckedProduct: Product[] = [
+        {
+          id: 'product-123',
+          name: 'Milk',
+          stockLevel: 'low',
+          isOnShoppingList: true,
+          isChecked: false, // Unchecked
+          createdAt: new Date('2024-01-01'),
+          updatedAt: new Date('2024-01-10'),
+        },
+      ];
+
+      mockShoppingService.getShoppingListItems.mockResolvedValue(mockUncheckedProduct);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      // Load the shopping list with unchecked item
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      // Now toggle it to checked
+      await act(async () => {
+        await result.current.toggleItemChecked('product-123');
+      });
+
+      expect(mockShoppingService.updateCheckedState).toHaveBeenCalledWith('product-123', true);
+    });
+
+    it('should toggleItemChecked call shoppingService.updateCheckedState with false when checked', async () => {
+      // Load a product with isChecked: true
+      const mockCheckedProduct: Product[] = [
+        {
+          id: 'product-123',
+          name: 'Milk',
+          stockLevel: 'low',
+          isOnShoppingList: true,
+          isChecked: true,
+          createdAt: new Date('2024-01-01'),
+          updatedAt: new Date('2024-01-10'),
+        },
+      ];
+
+      mockShoppingService.getShoppingListItems.mockResolvedValue(mockCheckedProduct);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      // Load the shopping list with checked item
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      // Now toggle it to unchecked
+      await act(async () => {
+        await result.current.toggleItemChecked('product-123');
+      });
+
+      expect(mockShoppingService.updateCheckedState).toHaveBeenCalledWith('product-123', false);
+    });
+
+    it('should toggleItemChecked handle errors and set error state', async () => {
+      const mockError = new Error('Failed to update checked state');
+      mockShoppingService.updateCheckedState.mockRejectedValue(mockError);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        try {
+          await result.current.toggleItemChecked('invalid-id');
+        } catch {
+          // Expected - error is re-thrown for component-level handling
+        }
+      });
+
+      expect(result.current.state.error).toBeTruthy();
+    });
+
+    it('should multiple items can be checked independently', async () => {
+      mockShoppingService.getShoppingListItems.mockResolvedValue(mockProductsWithChecked);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      // Check first item
+      await act(async () => {
+        await result.current.toggleItemChecked('1');
+      });
+
+      expect(mockShoppingService.updateCheckedState).toHaveBeenCalledWith('1', true);
+
+      // Check second item
+      await act(async () => {
+        await result.current.toggleItemChecked('2');
+      });
+
+      expect(mockShoppingService.updateCheckedState).toHaveBeenCalledWith('2', true);
+
+      // Both items should have been updated
+      expect(mockShoppingService.updateCheckedState).toHaveBeenCalledTimes(2);
+    });
+
+    it('should toggleItemChecked use optimistic UI updates (no loading state)', async () => {
+      mockShoppingService.updateCheckedState.mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => resolve(undefined), 10))
+      );
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      // Load initial products
+      const mockCheckedProduct: Product[] = [
+        {
+          id: '1',
+          name: 'Milk',
+          stockLevel: 'low',
+          isOnShoppingList: true,
+          isChecked: false,
+          createdAt: new Date('2024-01-01'),
+          updatedAt: new Date('2024-01-10'),
+        },
+      ];
+
+      mockShoppingService.getShoppingListItems.mockResolvedValue(mockCheckedProduct);
+
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      const initialLoading = result.current.state.loading;
+      expect(initialLoading).toBe(false);
+
+      // Toggle item - should update optimistically WITHOUT setting loading state
+      act(() => {
+        result.current.toggleItemChecked('1');
+      });
+
+      // Story 4.1 Code Review Fix #4: No global loading state for single-item toggle
+      // The UI should update immediately via optimistic update
+      expect(result.current.state.loading).toBe(false);
+
+      await waitFor(() => {
+        expect(mockShoppingService.updateCheckedState).toHaveBeenCalledWith('1', true);
+      });
+    });
+
+    it('should CHECK_ITEM action update product isChecked state in reducer', async () => {
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      // Load initial products
+      mockShoppingService.getShoppingListItems.mockResolvedValue(mockProductsWithChecked);
+
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      const initialCount = result.current.state.items.length;
+      expect(initialCount).toBe(2);
+
+      // The toggleItemChecked method should update the service
+      // and the state should reflect the change
+      await act(async () => {
+        await result.current.toggleItemChecked('1');
+      });
+
+      expect(mockShoppingService.updateCheckedState).toHaveBeenCalledWith('1', true);
     });
   });
 });

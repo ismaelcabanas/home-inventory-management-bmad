@@ -24,7 +24,8 @@ export type ShoppingAction =
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'UPDATE_COUNT'; payload: number }
   | { type: 'ADD_TO_LIST'; payload: string }
-  | { type: 'REMOVE_FROM_LIST'; payload: string };
+  | { type: 'REMOVE_FROM_LIST'; payload: string }
+  | { type: 'SET_CHECKED_STATE'; payload: { productId: string; isChecked: boolean } }; // Story 4.1: Check/Uncheck items
 
 // Context value interface
 export interface ShoppingContextValue {
@@ -34,6 +35,7 @@ export interface ShoppingContextValue {
   clearError: () => void;
   addToList: (productId: string) => Promise<void>;
   removeFromList: (productId: string) => Promise<void>;
+  toggleItemChecked: (productId: string) => Promise<void>; // Story 4.1: Check/Uncheck items
 }
 
 // Create context
@@ -80,6 +82,18 @@ function shoppingReducer(state: ShoppingState, action: ShoppingAction): Shopping
         ...state,
         count: Math.max(0, state.count - 1),
       };
+
+    case 'SET_CHECKED_STATE': {
+      // Story 4.1: Update isChecked state for a specific product
+      const { productId, isChecked } = action.payload;
+      const updatedItems = state.items.map((item) =>
+        item.id === productId ? { ...item, isChecked } : item
+      );
+      return {
+        ...state,
+        items: updatedItems,
+      };
+    }
 
     default:
       return state;
@@ -185,6 +199,40 @@ export function ShoppingProvider({ children }: ShoppingProviderProps) {
     []
   );
 
+  // Story 4.1: Toggle item checked state (check/uncheck)
+  // Story 4.1 Code Review Fix #4: Use optimistic UI updates instead of global loading state
+  // This prevents janky UI and provides instant feedback (<1 second response time)
+  const toggleItemChecked = useCallback(
+    async (productId: string) => {
+      try {
+        logger.debug('Toggling item checked state', { productId });
+
+        // Find the current product to determine its current state
+        const currentProduct = state.items.find((item) => item.id === productId);
+        const newCheckedState = currentProduct?.isChecked === false ? true : false;
+
+        // OPTIMISTIC UPDATE: Update UI immediately for instant feedback
+        // This provides <1 second response time as required by AC2/AC3
+        dispatch({ type: 'SET_CHECKED_STATE', payload: { productId, isChecked: newCheckedState } });
+
+        // Then persist to IndexedDB (fire and forget - local DB is fast)
+        await shoppingService.updateCheckedState(productId, newCheckedState);
+
+        logger.info('Item checked state toggled', { productId, isChecked: newCheckedState });
+      } catch (error) {
+        const appError = handleError(error);
+        logger.error('Failed to toggle item checked state', appError.details);
+        // Revert optimistic update on error
+        const revertedState = state.items.find((item) => item.id === productId)?.isChecked ?? false;
+        dispatch({ type: 'SET_CHECKED_STATE', payload: { productId, isChecked: revertedState } });
+        dispatch({ type: 'SET_ERROR', payload: appError.message });
+        throw error;
+      }
+      // Note: No loading state for single-item toggle - IndexedDB is fast enough
+    },
+    [state.items]
+  );
+
   const value: ShoppingContextValue = useMemo(
     () => ({
       state,
@@ -193,8 +241,9 @@ export function ShoppingProvider({ children }: ShoppingProviderProps) {
       clearError,
       addToList,
       removeFromList,
+      toggleItemChecked,
     }),
-    [state, loadShoppingList, refreshCount, clearError, addToList, removeFromList]
+    [state, loadShoppingList, refreshCount, clearError, addToList, removeFromList, toggleItemChecked]
   );
 
   return (
