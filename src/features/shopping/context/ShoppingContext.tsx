@@ -22,7 +22,9 @@ export type ShoppingAction =
   | { type: 'SET_ITEMS'; payload: Product[] }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'UPDATE_COUNT'; payload: number };
+  | { type: 'UPDATE_COUNT'; payload: number }
+  | { type: 'ADD_TO_LIST'; payload: string }
+  | { type: 'REMOVE_FROM_LIST'; payload: string };
 
 // Context value interface
 export interface ShoppingContextValue {
@@ -30,6 +32,8 @@ export interface ShoppingContextValue {
   loadShoppingList: () => Promise<void>;
   refreshCount: () => Promise<void>;
   clearError: () => void;
+  addToList: (productId: string) => Promise<void>;
+  removeFromList: (productId: string) => Promise<void>;
 }
 
 // Create context
@@ -64,6 +68,18 @@ function shoppingReducer(state: ShoppingState, action: ShoppingAction): Shopping
 
     case 'UPDATE_COUNT':
       return { ...state, count: action.payload };
+
+    case 'ADD_TO_LIST':
+      return {
+        ...state,
+        count: state.count + 1,
+      };
+
+    case 'REMOVE_FROM_LIST':
+      return {
+        ...state,
+        count: Math.max(0, state.count - 1),
+      };
 
     default:
       return state;
@@ -117,14 +133,68 @@ export function ShoppingProvider({ children }: ShoppingProviderProps) {
     dispatch({ type: 'SET_ERROR', payload: null });
   }, []);
 
+  // Add product to shopping list (manual override)
+  const addToList = useCallback(
+    async (productId: string) => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: true });
+        logger.debug('Adding product to shopping list', { productId });
+
+        await shoppingService.addToList(productId);
+
+        // Update count to reflect the addition
+        const newCount = await shoppingService.getShoppingListCount();
+        dispatch({ type: 'UPDATE_COUNT', payload: newCount });
+
+        logger.info('Product added to shopping list', { productId });
+      } catch (error) {
+        const appError = handleError(error);
+        logger.error('Failed to add product to shopping list', appError.details);
+        dispatch({ type: 'SET_ERROR', payload: appError.message });
+        throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    },
+    []
+  );
+
+  // Remove product from shopping list (manual override)
+  const removeFromList = useCallback(
+    async (productId: string) => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: true });
+        logger.debug('Removing product from shopping list', { productId });
+
+        await shoppingService.removeFromList(productId);
+
+        // Update count to reflect the removal
+        const newCount = await shoppingService.getShoppingListCount();
+        dispatch({ type: 'UPDATE_COUNT', payload: newCount });
+
+        logger.info('Product removed from shopping list', { productId });
+      } catch (error) {
+        const appError = handleError(error);
+        logger.error('Failed to remove product from shopping list', appError.details);
+        dispatch({ type: 'SET_ERROR', payload: appError.message });
+        throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    },
+    []
+  );
+
   const value: ShoppingContextValue = useMemo(
     () => ({
       state,
       loadShoppingList,
       refreshCount,
       clearError,
+      addToList,
+      removeFromList,
     }),
-    [state, loadShoppingList, refreshCount, clearError]
+    [state, loadShoppingList, refreshCount, clearError, addToList, removeFromList]
   );
 
   return (

@@ -7,9 +7,12 @@ vi.mock('./database', () => ({
   db: {
     products: {
       filter: vi.fn(),
+      update: vi.fn(),
     },
   },
 }));
+
+const mockUpdate = vi.mocked(db.products.update);
 
 // Mock logger
 vi.mock('@/utils/logger', () => ({
@@ -63,7 +66,7 @@ describe('ShoppingService', () => {
   });
 
   describe('getShoppingListItems', () => {
-    it('should return only Low and Empty products from shopping list', async () => {
+    it('should return all products where isOnShoppingList is true', async () => {
       const mockToArray = vi.fn().mockResolvedValue(mockProducts);
       mockFilter.mockReturnValue({
         toArray: mockToArray,
@@ -71,24 +74,41 @@ describe('ShoppingService', () => {
 
       const result = await shoppingService.getShoppingListItems();
 
-      // Should filter to only Low and Empty (defensive programming)
-      expect(result).toHaveLength(2);
-      expect(result.every((p) => p.stockLevel === 'low' || p.stockLevel === 'empty')).toBe(true);
-      expect(result).toEqual([mockProducts[0], mockProducts[1]]);
+      // Story 3.3: Returns all products with isOnShoppingList: true (including Medium/High manually added)
+      expect(result).toHaveLength(mockProducts.length);
+      expect(result).toEqual(mockProducts);
     });
 
-    it('should exclude High and Medium products from results', async () => {
-      const mockToArray = vi.fn().mockResolvedValue(mockProducts);
+    it('should include manually added Medium and High products (Story 3.3)', async () => {
+      // Create test data with Medium and High products that were manually added
+      const productsWithManualAdd = [
+        { ...mockProducts[0] }, // Low - automatic
+        { ...mockProducts[1] }, // Empty - automatic
+        { ...mockProducts[2], isOnShoppingList: true },  // High - manually added (changed from false to true)
+        { ...mockProducts[3], isOnShoppingList: true },  // Medium - manually added (changed from false to true)
+      ];
+
+      const mockToArray = vi.fn().mockResolvedValue(productsWithManualAdd);
       mockFilter.mockReturnValue({
         toArray: mockToArray,
       } as never);
 
       const result = await shoppingService.getShoppingListItems();
 
-      const highMediumProducts = result.filter(
-        (p) => p.stockLevel === 'high' || p.stockLevel === 'medium'
-      );
-      expect(highMediumProducts).toHaveLength(0);
+      // Should include Medium (Cheese) and High (Eggs) products that were manually added
+      const mediumProduct = result.find((p) => p.name === 'Cheese');
+      const highProduct = result.find((p) => p.name === 'Eggs');
+
+      expect(mediumProduct).toBeDefined();
+      expect(mediumProduct?.stockLevel).toBe('medium');
+      expect(mediumProduct?.isOnShoppingList).toBe(true);
+
+      expect(highProduct).toBeDefined();
+      expect(highProduct?.stockLevel).toBe('high');
+      expect(highProduct?.isOnShoppingList).toBe(true);
+
+      // All 4 products should be returned (no stock level filtering)
+      expect(result).toHaveLength(4);
     });
 
     it('should sort results by updatedAt descending (most recently changed first)', async () => {
@@ -127,8 +147,7 @@ describe('ShoppingService', () => {
   });
 
   describe('getShoppingListCount', () => {
-    it('should return count of Low and Empty products only (defensive filtering)', async () => {
-      // Mock returns all products, but only Low/Empty should be counted
+    it('should return count of all products with isOnShoppingList: true', async () => {
       const mockToArray = vi.fn().mockResolvedValue(mockProducts);
       mockFilter.mockReturnValue({
         toArray: mockToArray,
@@ -136,15 +155,15 @@ describe('ShoppingService', () => {
 
       const result = await shoppingService.getShoppingListCount();
 
-      // Should count only Low (Milk) and Empty (Bread) = 2
-      expect(result).toBe(2);
+      // Story 3.3: Count all products with isOnShoppingList: true (including Medium/High)
+      expect(result).toBe(mockProducts.length);
       expect(mockToArray).toHaveBeenCalled();
     });
 
-    it('should exclude High products from count (Story 3.2 - auto-removal)', async () => {
+    it('should include manually added High products in count (Story 3.3)', async () => {
       const productsWithHigh = [
         { ...mockProducts[0] }, // Low - should count
-        { ...mockProducts[2] }, // High - should NOT count
+        { ...mockProducts[2] }, // High - should ALSO count (manually added)
       ];
       const mockToArray = vi.fn().mockResolvedValue(productsWithHigh);
       mockFilter.mockReturnValue({
@@ -153,14 +172,14 @@ describe('ShoppingService', () => {
 
       const result = await shoppingService.getShoppingListCount();
 
-      // Only Low product should be counted
-      expect(result).toBe(1);
+      // Both products should be counted
+      expect(result).toBe(2);
     });
 
-    it('should exclude Medium products from count', async () => {
+    it('should include manually added Medium products in count (Story 3.3)', async () => {
       const productsWithMedium = [
         { ...mockProducts[1] }, // Empty - should count
-        { ...mockProducts[3] }, // Medium - should NOT count
+        { ...mockProducts[3] }, // Medium - should ALSO count (manually added)
       ];
       const mockToArray = vi.fn().mockResolvedValue(productsWithMedium);
       mockFilter.mockReturnValue({
@@ -169,8 +188,8 @@ describe('ShoppingService', () => {
 
       const result = await shoppingService.getShoppingListCount();
 
-      // Only Empty product should be counted
-      expect(result).toBe(1);
+      // Both products should be counted
+      expect(result).toBe(2);
     });
 
     it('should return 0 when shopping list is empty', async () => {
@@ -212,6 +231,64 @@ describe('ShoppingService', () => {
       } as never);
 
       await expect(shoppingService.getShoppingListCount()).rejects.toThrow();
+    });
+  });
+
+  describe('addToList', () => {
+    it('should set isOnShoppingList to true for the given product', async () => {
+      const mockUpdateReturn = 1;
+      mockUpdate.mockResolvedValue(mockUpdateReturn);
+
+      await shoppingService.addToList('product-123');
+
+      expect(mockUpdate).toHaveBeenCalledWith('product-123', { isOnShoppingList: true });
+    });
+
+    it('should preserve existing stockLevel when adding to list', async () => {
+      const mockUpdateReturn = 1;
+      mockUpdate.mockResolvedValue(mockUpdateReturn);
+
+      await shoppingService.addToList('product-123');
+
+      // Should only update isOnShoppingList, not stockLevel
+      expect(mockUpdate).toHaveBeenCalledWith('product-123', { isOnShoppingList: true });
+      expect(mockUpdate).not.toHaveBeenCalledWith('product-123', expect.objectContaining({ stockLevel: expect.anything() }));
+    });
+
+    it('should handle errors when adding to list', async () => {
+      const mockError = new Error('Product not found');
+      mockUpdate.mockRejectedValue(mockError);
+
+      await expect(shoppingService.addToList('invalid-id')).rejects.toThrow();
+    });
+  });
+
+  describe('removeFromList', () => {
+    it('should set isOnShoppingList to false for the given product', async () => {
+      const mockUpdateReturn = 1;
+      mockUpdate.mockResolvedValue(mockUpdateReturn);
+
+      await shoppingService.removeFromList('product-123');
+
+      expect(mockUpdate).toHaveBeenCalledWith('product-123', { isOnShoppingList: false });
+    });
+
+    it('should preserve existing stockLevel when removing from list', async () => {
+      const mockUpdateReturn = 1;
+      mockUpdate.mockResolvedValue(mockUpdateReturn);
+
+      await shoppingService.removeFromList('product-123');
+
+      // Should only update isOnShoppingList, not stockLevel
+      expect(mockUpdate).toHaveBeenCalledWith('product-123', { isOnShoppingList: false });
+      expect(mockUpdate).not.toHaveBeenCalledWith('product-123', expect.objectContaining({ stockLevel: expect.anything() }));
+    });
+
+    it('should handle errors when removing from list', async () => {
+      const mockError = new Error('Product not found');
+      mockUpdate.mockRejectedValue(mockError);
+
+      await expect(shoppingService.removeFromList('invalid-id')).rejects.toThrow();
     });
   });
 });

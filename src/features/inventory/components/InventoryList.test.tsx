@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { InventoryProvider } from '@/features/inventory/context/InventoryContext';
+import { ShoppingProvider } from '@/features/shopping/context/ShoppingContext';
 import { inventoryService } from '@/services/inventory';
 import { InventoryList } from './InventoryList';
 import type { Product } from '@/types/product';
@@ -15,6 +16,16 @@ vi.mock('@/services/inventory', () => ({
   },
 }));
 
+// Mock the shopping service (Story 3.3: ProductCard now uses useShoppingList)
+vi.mock('@/services/shopping', () => ({
+  shoppingService: {
+    getShoppingListItems: vi.fn(),
+    getShoppingListCount: vi.fn(),
+    addToList: vi.fn().mockResolvedValue(undefined),
+    removeFromList: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 const mockProduct: Product = {
   id: '1',
   name: 'Milk',
@@ -25,6 +36,14 @@ const mockProduct: Product = {
 };
 
 describe('InventoryList', () => {
+  // Wrapper that provides both InventoryContext and ShoppingContext
+  // Story 3.3: ProductCard now requires ShoppingProvider for useShoppingList hook
+  const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <InventoryProvider>
+      <ShoppingProvider>{children}</ShoppingProvider>
+    </InventoryProvider>
+  );
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -32,11 +51,7 @@ describe('InventoryList', () => {
   it('should render empty state when no products', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       expect(screen.getByText('No products yet. Add your first product!')).toBeInTheDocument();
@@ -46,11 +61,7 @@ describe('InventoryList', () => {
   it('should render products when available', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -62,11 +73,7 @@ describe('InventoryList', () => {
   it('should open add product dialog when button clicked', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       expect(screen.getByText('Add Product')).toBeInTheDocument();
@@ -81,11 +88,7 @@ describe('InventoryList', () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
     vi.mocked(inventoryService.addProduct).mockResolvedValue(mockProduct);
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       expect(screen.getByText('Add Product')).toBeInTheDocument();
@@ -111,11 +114,7 @@ describe('InventoryList', () => {
   it('should display error alert when loadProducts fails', async () => {
     vi.mocked(inventoryService.getProducts).mockRejectedValue(new Error('Failed to load products'));
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       expect(screen.getByText('Failed to load products')).toBeInTheDocument();
@@ -126,11 +125,7 @@ describe('InventoryList', () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
     vi.mocked(inventoryService.addProduct).mockRejectedValue(new Error('Failed to add product'));
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       expect(screen.getByText('Add Product')).toBeInTheDocument();
@@ -157,11 +152,7 @@ describe('InventoryList', () => {
   it('should have accessible button with proper ARIA', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       const addButton = screen.getByRole('button', { name: /add product/i });
@@ -173,11 +164,7 @@ describe('InventoryList', () => {
   it('should support keyboard navigation for add button', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       const addButton = screen.getByRole('button', { name: /add product/i });
@@ -189,11 +176,7 @@ describe('InventoryList', () => {
   it('should have proper heading hierarchy', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       const heading = screen.getByRole('heading', { name: /inventory/i, level: 1 });
@@ -206,11 +189,7 @@ describe('InventoryList', () => {
     const products = [mockProduct, { ...mockProduct, id: '2', name: 'Bread' }];
     vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
 
-    const { unmount } = render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    const { unmount } = render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -220,11 +199,7 @@ describe('InventoryList', () => {
     // Simulate page reload by unmounting and remounting
     unmount();
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     // Verify data is loaded again (simulating persistence)
     await waitFor(() => {
@@ -237,11 +212,7 @@ describe('InventoryList', () => {
   it('should open edit dialog when edit button clicked', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -258,11 +229,7 @@ describe('InventoryList', () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
     vi.mocked(inventoryService.updateProduct).mockResolvedValue();
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -283,11 +250,7 @@ describe('InventoryList', () => {
   it('should open delete confirmation dialog when delete button clicked', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -304,11 +267,7 @@ describe('InventoryList', () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
     vi.mocked(inventoryService.deleteProduct).mockResolvedValue();
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -325,11 +284,7 @@ describe('InventoryList', () => {
   it('should cancel delete operation', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -350,11 +305,7 @@ describe('InventoryList', () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
     vi.mocked(inventoryService.deleteProduct).mockResolvedValue();
 
-    render(
-      <InventoryProvider>
-        <InventoryList />
-      </InventoryProvider>
-    );
+    render(<InventoryList />, { wrapper });
 
     await waitFor(() => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -373,11 +324,7 @@ describe('InventoryList', () => {
     it('should render search bar when products exist', async () => {
       vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
 
-      render(
-        <InventoryProvider>
-          <InventoryList />
-        </InventoryProvider>
-      );
+      render(<InventoryList />, { wrapper });
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText('Search products...')).toBeInTheDocument();
@@ -387,11 +334,7 @@ describe('InventoryList', () => {
     it('should not render search bar when no products', async () => {
       vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
 
-      render(
-        <InventoryProvider>
-          <InventoryList />
-        </InventoryProvider>
-      );
+      render(<InventoryList />, { wrapper });
 
       await waitFor(() => {
         expect(screen.queryByPlaceholderText('Search products...')).not.toBeInTheDocument();
@@ -406,11 +349,7 @@ describe('InventoryList', () => {
       ];
       vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
 
-      render(
-        <InventoryProvider>
-          <InventoryList />
-        </InventoryProvider>
-      );
+      render(<InventoryList />, { wrapper });
 
       await waitFor(() => {
         expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -431,11 +370,7 @@ describe('InventoryList', () => {
         { id: '1', name: 'MILK', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
       ]);
 
-      render(
-        <InventoryProvider>
-          <InventoryList />
-        </InventoryProvider>
-      );
+      render(<InventoryList />, { wrapper });
 
       await waitFor(() => {
         expect(screen.getByText('MILK')).toBeInTheDocument();
@@ -454,11 +389,7 @@ describe('InventoryList', () => {
         { id: '1', name: 'Milk', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false },
       ]);
 
-      render(
-        <InventoryProvider>
-          <InventoryList />
-        </InventoryProvider>
-      );
+      render(<InventoryList />, { wrapper });
 
       await waitFor(() => {
         expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -479,11 +410,7 @@ describe('InventoryList', () => {
       ];
       vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
 
-      render(
-        <InventoryProvider>
-          <InventoryList />
-        </InventoryProvider>
-      );
+      render(<InventoryList />, { wrapper });
 
       await waitFor(() => {
         expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -516,11 +443,7 @@ describe('InventoryList', () => {
       ];
       vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
 
-      render(
-        <InventoryProvider>
-          <InventoryList />
-        </InventoryProvider>
-      );
+      render(<InventoryList />, { wrapper });
 
       await waitFor(() => {
         expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -545,11 +468,7 @@ describe('InventoryList', () => {
       }));
       vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
 
-      render(
-        <InventoryProvider>
-          <InventoryList />
-        </InventoryProvider>
-      );
+      render(<InventoryList />, { wrapper });
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText('Search products...')).toBeInTheDocument();
@@ -581,11 +500,7 @@ describe('InventoryList', () => {
       ];
       vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
 
-      render(
-        <InventoryProvider>
-          <InventoryList />
-        </InventoryProvider>
-      );
+      render(<InventoryList />, { wrapper });
 
       await waitFor(() => {
         expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -611,11 +526,7 @@ describe('InventoryList', () => {
       vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
       vi.mocked(inventoryService.deleteProduct).mockResolvedValue();
 
-      render(
-        <InventoryProvider>
-          <InventoryList />
-        </InventoryProvider>
-      );
+      render(<InventoryList />, { wrapper });
 
       await waitFor(() => {
         expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -652,11 +563,7 @@ describe('InventoryList', () => {
       vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
       vi.mocked(inventoryService.updateProduct).mockResolvedValue();
 
-      render(
-        <InventoryProvider>
-          <InventoryList />
-        </InventoryProvider>
-      );
+      render(<InventoryList />, { wrapper });
 
       await waitFor(() => {
         expect(screen.getByText('Milk')).toBeInTheDocument();

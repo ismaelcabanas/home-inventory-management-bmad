@@ -22,12 +22,16 @@ vi.mock('./ShoppingListItem', () => ({
 const mockLoadShoppingList = vi.fn();
 const mockRefreshCount = vi.fn();
 const mockClearError = vi.fn();
+const mockAddToList = vi.fn().mockResolvedValue(undefined);
+const mockRemoveFromList = vi.fn().mockResolvedValue(undefined);
 
 vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
   state: { items: [], loading: false, error: null, count: 0 },
   loadShoppingList: mockLoadShoppingList,
   refreshCount: mockRefreshCount,
   clearError: mockClearError,
+  addToList: mockAddToList,
+  removeFromList: mockRemoveFromList,
 }));
 
 const mockProducts = [
@@ -72,6 +76,8 @@ describe('ShoppingList', () => {
       loadShoppingList: mockLoadShoppingList,
       refreshCount: mockRefreshCount,
       clearError: mockClearError,
+      addToList: mockAddToList,
+      removeFromList: mockRemoveFromList,
     }));
   });
 
@@ -82,6 +88,8 @@ describe('ShoppingList', () => {
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -107,6 +115,8 @@ describe('ShoppingList', () => {
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -122,6 +132,8 @@ describe('ShoppingList', () => {
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -136,6 +148,8 @@ describe('ShoppingList', () => {
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -154,6 +168,8 @@ describe('ShoppingList', () => {
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -171,6 +187,8 @@ describe('ShoppingList', () => {
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
       }));
 
       render(<ShoppingList />, { wrapper });
