@@ -10,6 +10,8 @@ vi.mock('@/services/shopping', () => ({
   shoppingService: {
     getShoppingListItems: vi.fn(),
     getShoppingListCount: vi.fn(),
+    addToList: vi.fn(),
+    removeFromList: vi.fn(),
   },
 }));
 
@@ -88,6 +90,15 @@ describe('ShoppingContext', () => {
       }).toThrow('useShoppingList must be used within a ShoppingProvider');
 
       console.error = consoleError;
+    });
+
+    it('should expose addToList and removeFromList methods', () => {
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      expect(result.current).toHaveProperty('addToList');
+      expect(result.current).toHaveProperty('removeFromList');
+      expect(typeof result.current.addToList).toBe('function');
+      expect(typeof result.current.removeFromList).toBe('function');
     });
   });
 
@@ -254,6 +265,115 @@ describe('ShoppingContext', () => {
         await result.current.refreshCount();
       });
 
+      expect(result.current.state.count).toBe(1);
+    });
+  });
+
+  describe('Manual Add/Remove Functionality (Story 3.3)', () => {
+    it('should addToList call shoppingService.addToList and dispatch action', async () => {
+      mockShoppingService.addToList.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.addToList('product-123');
+      });
+
+      expect(mockShoppingService.addToList).toHaveBeenCalledWith('product-123');
+      expect(mockShoppingService.addToList).toHaveBeenCalledTimes(1);
+    });
+
+    it('should removeFromList call shoppingService.removeFromList', async () => {
+      mockShoppingService.removeFromList.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.removeFromList('product-123');
+      });
+
+      expect(mockShoppingService.removeFromList).toHaveBeenCalledWith('product-123');
+      expect(mockShoppingService.removeFromList).toHaveBeenCalledTimes(1);
+    });
+
+    it('should addToList handle errors and set error state', async () => {
+      const mockError = new Error('Failed to add to list');
+      mockShoppingService.addToList.mockRejectedValue(mockError);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        try {
+          await result.current.addToList('invalid-id');
+        } catch {
+          // Expected - error is re-thrown for component-level handling
+        }
+      });
+
+      expect(result.current.state.error).toBeTruthy();
+    });
+
+    it('should removeFromList handle errors and set error state', async () => {
+      const mockError = new Error('Failed to remove from list');
+      mockShoppingService.removeFromList.mockRejectedValue(mockError);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        try {
+          await result.current.removeFromList('invalid-id');
+        } catch {
+          // Expected - error is re-thrown for component-level handling
+        }
+      });
+
+      expect(result.current.state.error).toBeTruthy();
+    });
+
+    it('should addToList set loading state during operation', async () => {
+      mockShoppingService.addToList.mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => resolve(undefined), 10))
+      );
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      act(() => {
+        result.current.addToList('product-123');
+      });
+
+      // Loading should be true during operation
+      expect(result.current.state.loading).toBe(true);
+
+      await waitFor(() => {
+        expect(result.current.state.loading).toBe(false);
+      });
+    });
+
+    it('should include manually added Medium/High products in shopping list (Story 3.3)', async () => {
+      // Story 3.3: Manual add allows Medium/High products on list
+      const productsWithMedium = [
+        {
+          id: '1',
+          name: 'Milk',
+          stockLevel: 'medium' as const,  // Medium stock, manually added
+          isOnShoppingList: true,          // Manually added
+          createdAt: new Date('2024-01-01'),
+          updatedAt: new Date('2024-01-10'),
+        },
+      ];
+
+      mockShoppingService.getShoppingListItems.mockResolvedValue(productsWithMedium);
+      mockShoppingService.getShoppingListCount.mockResolvedValue(1);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      // Medium stock product should appear because it was manually added
+      expect(result.current.state.items).toHaveLength(1);
+      expect(result.current.state.items[0]?.stockLevel).toBe('medium');
       expect(result.current.state.count).toBe(1);
     });
   });
