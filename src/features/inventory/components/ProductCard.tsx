@@ -14,9 +14,10 @@ export interface ProductCardProps {
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
   onStockLevelChange?: (productId: string, stockLevel: StockLevel) => Promise<void>;
+  onShoppingListChange?: () => Promise<void>; // Story 3.3: Callback to refresh inventory after add/remove
 }
 
-export const ProductCard = memo(function ProductCard({ product, onEdit, onDelete, onStockLevelChange }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ product, onEdit, onDelete, onStockLevelChange, onShoppingListChange }: ProductCardProps) {
   const [announceMessage, setAnnounceMessage] = useState<string>('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -41,6 +42,11 @@ export const ProductCard = memo(function ProductCard({ product, onEdit, onDelete
       }
       setSnackbarOpen(true);
       setTimeout(() => setAnnounceMessage(''), 2000);
+
+      // Refresh inventory to get updated isOnShoppingList value
+      if (onShoppingListChange) {
+        await onShoppingListChange();
+      }
     } catch {
       // Error handled by ShoppingContext (shows snackbar via error state)
       // Silently catch here to prevent unhandled rejection

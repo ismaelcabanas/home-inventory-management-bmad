@@ -157,6 +157,15 @@ export function InventoryList() {
     }
   };
 
+  // Story 3.3: Refresh inventory after shopping list add/remove operations
+  const handleShoppingListChange = async () => {
+    try {
+      await loadProducts();
+    } catch {
+      // Error already handled by InventoryContext
+    }
+  };
+
   return (
     <Container maxWidth="md" sx={{ py: 3 }}>
       {/* Header */}
@@ -215,6 +224,7 @@ export function InventoryList() {
               onEdit={handleEditProduct}
               onDelete={handleDeleteProduct}
               onStockLevelChange={handleStockLevelChange}
+              onShoppingListChange={handleShoppingListChange}
             />
           ))}
         </Box>
