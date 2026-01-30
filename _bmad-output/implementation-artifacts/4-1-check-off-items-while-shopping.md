@@ -115,65 +115,65 @@ This is the first story in Epic 4 - In-Store Shopping Experience. Epic 3 establi
 ## Tasks / Subtasks
 
 ### Task 1: Database Schema Extension - Add isChecked Flag (AC: #4, #5, #6)
-- [ ] Subtask 1.1: Read src/services/database.ts to understand current Product schema
-- [ ] Subtask 1.2: Add isChecked field to Product interface
+- [x] Subtask 1.1: Read src/services/database.ts to understand current Product schema
+- [x] Subtask 1.2: Add isChecked field to Product interface
   - Type: boolean
   - Default: false
   - IndexedDB index: Add 'isChecked' to products table index
-- [ ] Subtask 1.3: Create database migration from version 1 to version 2
+- [x] Subtask 1.3: Create database migration from version 1 to version 2
   - Add isChecked field with default value false for existing products
   - Use Dexie.js version upgrade mechanism
   - Test migration with existing data (no data loss)
-- [ ] Subtask 1.4: Update database version in src/services/database.ts
+- [x] Subtask 1.4: Update database version in src/services/database.ts
   - Increment version from 1 to 2
   - Add upgrade logic to populate isChecked field
   - Ensure backward compatibility
 
 ### Task 2: Extend ShoppingService with Check/Uncheck Methods (AC: #2, #3, #4, #5)
-- [ ] Subtask 2.1: Read src/services/shopping.ts to understand current ShoppingService implementation
-- [ ] Subtask 2.2: Add updateCheckedState(productId: string, isChecked: boolean) method to ShoppingService
+- [x] Subtask 2.1: Read src/services/shopping.ts to understand current ShoppingService implementation
+- [x] Subtask 2.2: Add updateCheckedState(productId: string, isChecked: boolean) method to ShoppingService
   - Updates the product's isChecked flag
   - Persists change to IndexedDB
   - Returns the updated product
   - Does NOT modify isOnShoppingList (collection state independent)
   - Does NOT modify stockLevel
-- [ ] Subtask 2.3: Add error handling with handleError utility
-- [ ] Subtask 2.4: Add logging with logger utility
-- [ ] Subtask 2.5: Verify offline functionality (no network calls, local IndexedDB only)
+- [x] Subtask 2.3: Add error handling with handleError utility
+- [x] Subtask 2.4: Add logging with logger utility
+- [x] Subtask 2.5: Verify offline functionality (no network calls, local IndexedDB only)
 
 ### Task 3: Extend ShoppingContext with Check/Uncheck Actions (AC: #2, #3, #6)
-- [ ] Subtask 3.1: Read src/features/shopping/context/ShoppingContext.tsx to understand current implementation
-- [ ] Subtask 3.2: Add 'CHECK_ITEM' action type to ShoppingAction
+- [x] Subtask 3.1: Read src/features/shopping/context/ShoppingContext.tsx to understand current implementation
+- [x] Subtask 3.2: Add 'CHECK_ITEM' action type to ShoppingAction
   - Payload: { productId: string, isChecked: boolean }
-- [ ] Subtask 3.3: Add 'UNCHECK_ITEM' action type to ShoppingAction (or combine with CHECK_ITEM)
+- [x] Subtask 3.3: Add 'UNCHECK_ITEM' action type to ShoppingAction (or combine with CHECK_ITEM)
   - Consider: Single 'SET_CHECKED_STATE' action with boolean payload is cleaner
-- [ ] Subtask 3.4: Update reducer to handle CHECK_ITEM action
+- [x] Subtask 3.4: Update reducer to handle CHECK_ITEM action
   - Update product's isChecked flag in state
   - Preserve immutability (create new state object)
-- [ ] Subtask 3.5: Update reducer to handle UNCHECK_ITEM action
-- [ ] Subtask 3.6: Add toggleItemChecked(productId: string) method to ShoppingContext provider
+- [x] Subtask 3.5: Update reducer to handle UNCHECK_ITEM action
+- [x] Subtask 3.6: Add toggleItemChecked(productId: string) method to ShoppingContext provider
   - Dispatches CHECK_ITEM or UNCHECK_ITEM action as appropriate
   - Calls shoppingService.updateCheckedState()
   - Handles errors with try/catch
-  - Sets loading state appropriately (if needed for this operation)
-- [ ] Subtask 3.7: Update useShoppingList hook to expose toggleItemChecked method
+  - Uses optimistic UI updates (no loading state for single-item toggle) - Code Review Fix #4
+- [x] Subtask 3.7: Update useShoppingList hook to expose toggleItemChecked method
 
 ### Task 4: Update ShoppingListItem Component with Checkbox UI (AC: #1, #2, #3)
-- [ ] Subtask 4.1: Read src/features/shopping/components/ShoppingListItem.tsx to understand current implementation
-- [ ] Subtask 4.2: Import MUI Checkbox component
-- [ ] Subtask 4.3: Import useShoppingList hook from ShoppingContext
-- [ ] Subtask 4.4: Add Checkbox component to ShoppingListItem layout
+- [x] Subtask 4.1: Read src/features/shopping/components/ShoppingListItem.tsx to understand current implementation
+- [x] Subtask 4.2: Import MUI Checkbox component
+- [x] Subtask 4.3: Import useShoppingList hook from ShoppingContext
+- [x] Subtask 4.4: Add Checkbox component to ShoppingListItem layout
   - Position on left side of item (standard mobile pattern)
   - Use size="medium" for 48px touch target (accessibility)
   - Wire checked state to product.isChecked
-- [ ] Subtask 4.5: Add onChange handler to Checkbox
+- [x] Subtask 4.5: Add onChange handler to Checkbox
   - Call shoppingContext.toggleItemChecked(product.id)
-  - Optional: Show snackbar confirmation on check/uncheck
-- [ ] Subtask 4.6: Add conditional styling for checked items
+  - Show snackbar confirmation on check/uncheck - Code Review Fix #2
+- [x] Subtask 4.6: Add conditional styling for checked items
   - If isChecked === true: Apply strikethrough to text OR reduce opacity
   - Use MUI Typography with sx prop for strikethrough
   - Use MUI Box with sx prop for opacity
-- [ ] Subtask 4.7: Ensure checkbox is accessible
+- [x] Subtask 4.7: Ensure checkbox is accessible
   - Add aria-label for screen readers
   - Ensure sufficient touch target size (48px minimum)
   - Test with keyboard navigation
@@ -200,15 +200,15 @@ This is the first story in Epic 4 - In-Store Shopping Experience. Epic 3 establi
   - [ ] Test unchecked items show normal styling
   - [ ] Test checkbox toggles between checked and unchecked
   - [ ] Test visual confirmation appears (snackbar or animation)
-- [ ] Subtask 5.4: Create integration tests for persistence (ShoppingList tests)
-  - [ ] Test collection state persists across navigation
-  - [ ] Test collection state persists across app restarts
-  - [ ] Test checked items remain checked after refresh
-  - [ ] Test unchecked items remain unchecked after refresh
-- [ ] Subtask 5.5: Create offline functionality tests
-  - [ ] Test checkbox operations work without network
-  - [ ] Test collection state persists offline
-  - [ ] Test no network errors appear during offline check/uncheck
+- [x] Subtask 5.4: Create integration tests for persistence (ShoppingList tests) - Code Review Fix #3
+  - [x] Test collection state persists across navigation
+  - [x] Test collection state persists across app restarts
+  - [x] Test checked items remain checked after refresh
+  - [x] Test unchecked items remain unchecked after refresh
+- [x] Subtask 5.5: Create offline functionality tests - Code Review Fix #3 (included in integration tests)
+  - [x] Test checkbox operations work without network
+  - [x] Test collection state persists offline
+  - [x] Test no network errors appear during offline check/uncheck
 - [ ] Subtask 5.6: Run full test suite and verify all tests pass
 - [ ] Subtask 5.7: Check test coverage maintains ≥92%
 

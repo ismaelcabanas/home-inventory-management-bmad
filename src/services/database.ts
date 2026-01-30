@@ -15,12 +15,12 @@ class InventoryDatabase extends Dexie {
     // Story 4.1: Version 2 - Add isChecked field for check-off items while shopping
     this.version(2).stores({
       products: 'id, name, stockLevel, isOnShoppingList, isChecked, updatedAt'
-    }).upgrade(async () => {
+    }).upgrade(tx => {
       // Migration: Set isChecked = false for all existing products
       // This ensures backward compatibility when users upgrade from version 1
-      // Note: The migration is handled automatically by Dexie when upgrading from v1 to v2
-      // New products will have isChecked: false by default
-      // Existing products will be updated with isChecked: false
+      return tx.products.toCollection().modify(product => {
+        product.isChecked = false;
+      });
     });
   }
 }

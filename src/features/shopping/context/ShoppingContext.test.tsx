@@ -525,22 +525,46 @@ describe('ShoppingContext', () => {
       expect(mockShoppingService.updateCheckedState).toHaveBeenCalledTimes(2);
     });
 
-    it('should toggleItemChecked set loading state during operation', async () => {
+    it('should toggleItemChecked use optimistic UI updates (no loading state)', async () => {
       mockShoppingService.updateCheckedState.mockImplementation(
         () => new Promise((resolve) => setTimeout(() => resolve(undefined), 10))
       );
 
       const { result } = renderHook(() => useShoppingList(), { wrapper });
 
-      act(() => {
-        result.current.toggleItemChecked('product-123');
+      // Load initial products
+      const mockCheckedProduct: Product[] = [
+        {
+          id: '1',
+          name: 'Milk',
+          stockLevel: 'low',
+          isOnShoppingList: true,
+          isChecked: false,
+          createdAt: new Date('2024-01-01'),
+          updatedAt: new Date('2024-01-10'),
+        },
+      ];
+
+      mockShoppingService.getShoppingListItems.mockResolvedValue(mockCheckedProduct);
+
+      await act(async () => {
+        await result.current.loadShoppingList();
       });
 
-      // Loading should be true during operation
-      expect(result.current.state.loading).toBe(true);
+      const initialLoading = result.current.state.loading;
+      expect(initialLoading).toBe(false);
+
+      // Toggle item - should update optimistically WITHOUT setting loading state
+      act(() => {
+        result.current.toggleItemChecked('1');
+      });
+
+      // Story 4.1 Code Review Fix #4: No global loading state for single-item toggle
+      // The UI should update immediately via optimistic update
+      expect(result.current.state.loading).toBe(false);
 
       await waitFor(() => {
-        expect(result.current.state.loading).toBe(false);
+        expect(mockShoppingService.updateCheckedState).toHaveBeenCalledWith('1', true);
       });
     });
 

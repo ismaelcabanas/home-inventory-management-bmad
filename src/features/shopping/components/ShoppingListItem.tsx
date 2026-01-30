@@ -1,4 +1,5 @@
-import { ListItem, ListItemText, Chip, Checkbox, Box } from '@mui/material';
+import { useState, useCallback } from 'react';
+import { ListItem, ListItemText, Chip, Checkbox, Box, Snackbar, Alert } from '@mui/material';
 import { STOCK_LEVEL_CONFIG } from '@/features/inventory/components/stockLevelConfig';
 import type { Product } from '@/types/product';
 import { useShoppingList } from '@/features/shopping/context/ShoppingContext';
@@ -10,10 +11,23 @@ interface ShoppingListItemProps {
 export function ShoppingListItem({ product }: ShoppingListItemProps) {
   const stockConfig = STOCK_LEVEL_CONFIG[product.stockLevel];
   const { toggleItemChecked } = useShoppingList();
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
-  const handleCheckboxChange = () => {
+  const handleCheckboxChange = useCallback(() => {
+    const newCheckedState = !product.isChecked;
     toggleItemChecked(product.id);
-  };
+
+    // Story 4.1 AC2/AC3: Show visual confirmation (snackbar) on check/uncheck
+    setSnackbarMessage(
+      newCheckedState ? `${product.name} collected` : `${product.name} uncollected`
+    );
+    setSnackbarOpen(true);
+  }, [product.isChecked, product.name, toggleItemChecked]);
+
+  const handleSnackbarClose = useCallback(() => {
+    setSnackbarOpen(false);
+  }, []);
 
   return (
     <ListItem>
@@ -54,6 +68,18 @@ export function ShoppingListItem({ product }: ShoppingListItemProps) {
           }
         />
       </Box>
+
+      {/* Story 4.1 AC2/AC3: Visual confirmation (snackbar) for check/uncheck actions */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={2000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity="success" sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </ListItem>
   );
 }

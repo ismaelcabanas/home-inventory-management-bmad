@@ -200,31 +200,35 @@ export function ShoppingProvider({ children }: ShoppingProviderProps) {
   );
 
   // Story 4.1: Toggle item checked state (check/uncheck)
+  // Story 4.1 Code Review Fix #4: Use optimistic UI updates instead of global loading state
+  // This prevents janky UI and provides instant feedback (<1 second response time)
   const toggleItemChecked = useCallback(
     async (productId: string) => {
       try {
-        dispatch({ type: 'SET_LOADING', payload: true });
         logger.debug('Toggling item checked state', { productId });
 
         // Find the current product to determine its current state
         const currentProduct = state.items.find((item) => item.id === productId);
         const newCheckedState = currentProduct?.isChecked === false ? true : false;
 
-        // Update the checked state in the database
-        await shoppingService.updateCheckedState(productId, newCheckedState);
-
-        // Update the local state immediately for UI reactivity
+        // OPTIMISTIC UPDATE: Update UI immediately for instant feedback
+        // This provides <1 second response time as required by AC2/AC3
         dispatch({ type: 'SET_CHECKED_STATE', payload: { productId, isChecked: newCheckedState } });
+
+        // Then persist to IndexedDB (fire and forget - local DB is fast)
+        await shoppingService.updateCheckedState(productId, newCheckedState);
 
         logger.info('Item checked state toggled', { productId, isChecked: newCheckedState });
       } catch (error) {
         const appError = handleError(error);
         logger.error('Failed to toggle item checked state', appError.details);
+        // Revert optimistic update on error
+        const revertedState = state.items.find((item) => item.id === productId)?.isChecked ?? false;
+        dispatch({ type: 'SET_CHECKED_STATE', payload: { productId, isChecked: revertedState } });
         dispatch({ type: 'SET_ERROR', payload: appError.message });
         throw error;
-      } finally {
-        dispatch({ type: 'SET_LOADING', payload: false });
       }
+      // Note: No loading state for single-item toggle - IndexedDB is fast enough
     },
     [state.items]
   );

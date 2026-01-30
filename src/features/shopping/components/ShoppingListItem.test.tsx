@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ShoppingListItem } from './ShoppingListItem';
 import { STOCK_LEVEL_CONFIG } from '@/features/inventory/components/stockLevelConfig';
 
@@ -183,6 +183,53 @@ describe('ShoppingListItem', () => {
         // MUI Checkbox size="medium" provides 48px touch target
         expect(width).toBeGreaterThanOrEqual(40);
         expect(height).toBeGreaterThanOrEqual(40);
+      }
+    });
+
+    it('should show visual confirmation snackbar when item is checked', async () => {
+      render(<ShoppingListItem product={mockProduct} />);
+
+      const checkbox = document.querySelector('input[type="checkbox"]');
+      if (checkbox) {
+        fireEvent.click(checkbox);
+
+        // Story 4.1 AC2/AC3: Visual confirmation (snackbar) should appear
+        // MUI Snackbar uses role="alert" for the Alert component
+        await waitFor(() => {
+          const alert = screen.getByRole('alert');
+          expect(alert).toBeInTheDocument();
+        });
+      }
+    });
+
+    it('should show collected message when checking unchecked item', async () => {
+      render(<ShoppingListItem product={mockProduct} />);
+
+      const checkbox = document.querySelector('input[type="checkbox"]');
+      if (checkbox) {
+        fireEvent.click(checkbox);
+
+        // Story 4.1 AC2: Visual confirmation should show "collected" message
+        await waitFor(() => {
+          const alert = screen.getByRole('alert');
+          expect(alert).toHaveTextContent('Milk collected');
+        });
+      }
+    });
+
+    it('should show uncollected message when unchecking checked item', async () => {
+      const checkedProduct = { ...mockProduct, isChecked: true };
+      render(<ShoppingListItem product={checkedProduct} />);
+
+      const checkbox = document.querySelector('input[type="checkbox"]');
+      if (checkbox) {
+        fireEvent.click(checkbox);
+
+        // Story 4.1 AC3: Visual confirmation should show "uncollected" message
+        await waitFor(() => {
+          const alert = screen.getByRole('alert');
+          expect(alert).toHaveTextContent('Milk uncollected');
+        });
       }
     });
   });
