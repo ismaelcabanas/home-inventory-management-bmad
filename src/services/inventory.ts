@@ -54,6 +54,7 @@ export class InventoryService {
         createdAt: new Date(),
         updatedAt: new Date(),
         isOnShoppingList: false,
+        isChecked: false, // Story 4.1: Add isChecked field
       };
 
       await db.products.add(product);

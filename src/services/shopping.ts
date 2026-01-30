@@ -75,6 +75,24 @@ export class ShoppingService {
       throw appError;
     }
   }
+
+  // Story 4.1: Check Off Items While Shopping - updateCheckedState method
+  async updateCheckedState(productId: string, isChecked: boolean): Promise<void> {
+    try {
+      logger.debug('Updating product checked state', { productId, isChecked });
+
+      // Update only the isChecked flag
+      // Does NOT modify isOnShoppingList (checked items stay on list)
+      // Does NOT modify stockLevel
+      await db.products.update(productId, { isChecked });
+
+      logger.info('Product checked state updated', { productId, isChecked });
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to update product checked state', appError.details);
+      throw appError;
+    }
+  }
 }
 
 // Export singleton instance

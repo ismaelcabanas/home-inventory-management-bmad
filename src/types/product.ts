@@ -7,4 +7,5 @@ export interface Product {
   createdAt: Date;
   updatedAt: Date;
   isOnShoppingList: boolean;
+  isChecked: boolean; // Story 4.1: Track collection state independently from list membership
 }
