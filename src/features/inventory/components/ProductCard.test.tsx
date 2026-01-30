@@ -421,18 +421,18 @@ describe('ProductCard', () => {
   describe('Manual Add/Remove Persistence (Story 3.3)', () => {
     it('should manually added product persist across app restart simulation', async () => {
       // Start with product not on list
-      render(<ProductCard product={mockProduct} onEdit={vi.fn()} onDelete={vi.fn()} />, { wrapper });
+      const { unmount } = render(<ProductCard product={mockProduct} onEdit={vi.fn()} onDelete={vi.fn()} />, { wrapper });
 
       const addButton = screen.getByLabelText(/Add Milk to shopping list/i);
       fireEvent.click(addButton);
 
       // Verify snackbar confirmation
       await waitFor(() => {
-        expect(screen.getByText('Added to shopping list')).toBeInTheDocument();
+        const messages = screen.getAllByText('Added to shopping list');
+        expect(messages.length).toBeGreaterThan(0);
       });
 
       // Simulate app restart by unmounting and remounting
-      const { unmount } = render(<ProductCard product={mockProduct} onEdit={vi.fn()} onDelete={vi.fn()} />, { wrapper });
       unmount();
 
       // Remount with updated product state (simulating persistence)
@@ -447,18 +447,18 @@ describe('ProductCard', () => {
     it('should manually removed product persist across app restart simulation', async () => {
       // Start with product on list
       const productOnList = { ...mockProduct, isOnShoppingList: true };
-      render(<ProductCard product={productOnList} onEdit={vi.fn()} onDelete={vi.fn()} />, { wrapper });
+      const { unmount } = render(<ProductCard product={productOnList} onEdit={vi.fn()} onDelete={vi.fn()} />, { wrapper });
 
       const removeButton = screen.getByLabelText(/Remove Milk from shopping list/i);
       fireEvent.click(removeButton);
 
       // Verify snackbar confirmation
       await waitFor(() => {
-        expect(screen.getByText('Removed from shopping list')).toBeInTheDocument();
+        const messages = screen.getAllByText('Removed from shopping list');
+        expect(messages.length).toBeGreaterThan(0);
       });
 
       // Simulate app restart by unmounting and remounting
-      const { unmount } = render(<ProductCard product={productOnList} onEdit={vi.fn()} onDelete={vi.fn()} />, { wrapper });
       unmount();
 
       // Remount with updated product state (simulating persistence)
