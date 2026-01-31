@@ -210,7 +210,6 @@ This is a new story in Epic 4 - In-Store Shopping Experience. Story 4.1 implemen
   - [x] Test shopping mode persists across app restarts
 - [x] Subtask 6.6: Run full test suite and verify all tests pass
 - [x] Subtask 6.7: Check test coverage maintains ≥92%
-
 ### Task 7: Verify Integration and Regression Testing (AC: #1, #2, #3, #4, #5, #6)
 - [ ] Subtask 7.1: Verify Story 4.1 check-off functionality still works in Shopping Mode
 - [ ] Subtask 7.2: Verify checkboxes are hidden in Planning Mode
