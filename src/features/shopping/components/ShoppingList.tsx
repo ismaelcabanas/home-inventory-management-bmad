@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, CircularProgress, Alert, List, Button } from '@mui/material';
+import { Box, Typography, CircularProgress, Alert, List, Fab, Zoom } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CheckroomIcon from '@mui/icons-material/Checkroom';
 import { useShoppingList } from '../context/ShoppingContext';
@@ -39,31 +39,33 @@ function ShoppingListContent() {
     }
   };
 
+  // Story 4.4: FAB position - above BottomNav (which is typically 56-80px)
+  const fabStyle = {
+    position: 'fixed' as const,
+    bottom: 80, // Above BottomNav
+    right: 16,
+    zIndex: 1000,
+  };
+
   if (loading) {
     return (
       <Box>
-        {/* Story 4.4: Compact inline Shopping Mode toggle with title */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="h6">Shopping List</Typography>
-          <Button
-            variant={isShoppingMode ? 'outlined' : 'contained'}
-            color={isShoppingMode ? 'secondary' : 'primary'}
-            size="small"
-            startIcon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-            onClick={handleModeToggle}
-            disabled={isTransitioning}
-            aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
-            sx={{
-              minHeight: 48, // 48px minimum touch target (NFR8.1)
-              minWidth: 120,
-            }}
-          >
-            {isShoppingMode ? 'Finish' : 'Shop'}
-          </Button>
-        </Box>
+        <Typography variant="h6">Shopping List</Typography>
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
           <CircularProgress />
         </Box>
+        {/* Story 4.4: FAB always visible */}
+        <Zoom in>
+          <Fab
+            color={isShoppingMode ? 'secondary' : 'primary'}
+            onClick={handleModeToggle}
+            disabled={isTransitioning}
+            aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
+            sx={fabStyle}
+          >
+            {isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
+          </Fab>
+        </Zoom>
       </Box>
     );
   }
@@ -71,28 +73,22 @@ function ShoppingListContent() {
   if (error) {
     return (
       <Box>
-        {/* Story 4.4: Compact inline Shopping Mode toggle with title */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="h6">Shopping List</Typography>
-          <Button
-            variant={isShoppingMode ? 'outlined' : 'contained'}
-            color={isShoppingMode ? 'secondary' : 'primary'}
-            size="small"
-            startIcon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-            onClick={handleModeToggle}
-            disabled={isTransitioning}
-            aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
-            sx={{
-              minHeight: 48,
-              minWidth: 120,
-            }}
-          >
-            {isShoppingMode ? 'Finish' : 'Shop'}
-          </Button>
-        </Box>
+        <Typography variant="h6">Shopping List</Typography>
         <Alert severity="error" onClose={clearError}>
           {error}
         </Alert>
+        {/* Story 4.4: FAB always visible */}
+        <Zoom in>
+          <Fab
+            color={isShoppingMode ? 'secondary' : 'primary'}
+            onClick={handleModeToggle}
+            disabled={isTransitioning}
+            aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
+            sx={fabStyle}
+          >
+            {isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
+          </Fab>
+        </Zoom>
       </Box>
     );
   }
@@ -100,60 +96,50 @@ function ShoppingListContent() {
   if (items.length === 0) {
     return (
       <Box>
-        {/* Story 4.4: Compact inline Shopping Mode toggle with title */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="h6">Shopping List</Typography>
-          <Button
-            variant={isShoppingMode ? 'outlined' : 'contained'}
-            color={isShoppingMode ? 'secondary' : 'primary'}
-            size="small"
-            startIcon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-            onClick={handleModeToggle}
-            disabled={isTransitioning}
-            aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
-            sx={{
-              minHeight: 48,
-              minWidth: 120,
-            }}
-          >
-            {isShoppingMode ? 'Finish' : 'Shop'}
-          </Button>
-        </Box>
+        <Typography variant="h6">Shopping List</Typography>
         <EmptyState
           title="Your shopping list is empty"
           message="Mark items as Low or Empty in inventory to auto-add them here"
         />
+        {/* Story 4.4: FAB always visible */}
+        <Zoom in>
+          <Fab
+            color={isShoppingMode ? 'secondary' : 'primary'}
+            onClick={handleModeToggle}
+            disabled={isTransitioning}
+            aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
+            sx={fabStyle}
+          >
+            {isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
+          </Fab>
+        </Zoom>
       </Box>
     );
   }
 
   return (
-    <Box>
-      {/* Story 4.4: Compact inline Shopping Mode toggle with title */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h6">Shopping List ({items.length})</Typography>
-        <Button
-          variant={isShoppingMode ? 'outlined' : 'contained'}
-          color={isShoppingMode ? 'secondary' : 'primary'}
-          size="small"
-          startIcon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-          onClick={handleModeToggle}
-          disabled={isTransitioning}
-          aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
-          sx={{
-            minHeight: 48, // 48px minimum touch target (NFR8.1)
-            minWidth: 120,
-          }}
-        >
-          {isShoppingMode ? 'Finish' : 'Shop'}
-        </Button>
-      </Box>
-
+    <Box pb={8} // Padding at bottom so items aren't covered by FAB
+>
+      <Typography variant="h6" gutterBottom>
+        Shopping List ({items.length})
+      </Typography>
       <List>
         {items.map((item) => (
           <ShoppingListItem key={item.id} product={item} isShoppingMode={isShoppingMode} />
         ))}
       </List>
+      {/* Story 4.4: FAB for Shopping Mode toggle */}
+      <Zoom in>
+        <Fab
+          color={isShoppingMode ? 'secondary' : 'primary'}
+          onClick={handleModeToggle}
+          disabled={isTransitioning}
+          aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
+          sx={fabStyle}
+        >
+          {isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
+        </Fab>
+      </Zoom>
     </Box>
   );
 }

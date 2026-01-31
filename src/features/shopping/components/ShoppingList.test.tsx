@@ -235,13 +235,13 @@ describe('ShoppingList', () => {
 
   // Story 4.4: Shopping Mode Toggle Button Tests
   describe('Shopping Mode Toggle (Story 4.4)', () => {
-    it('should render Shopping Mode toggle button', () => {
+    it('should render Shopping Mode FAB button', () => {
       render(<ShoppingList />, { wrapper });
 
-      expect(screen.getByRole('button', { name: /start shopping/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /start shopping mode/i })).toBeInTheDocument();
     });
 
-    it('should show "Start Shopping" button when in Planning Mode', () => {
+    it('should show Shopping cart icon FAB when in Planning Mode', () => {
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
         state: { items: [], loading: false, error: null, count: 0, isShoppingMode: false },
         loadShoppingList: mockLoadShoppingList,
@@ -256,12 +256,13 @@ describe('ShoppingList', () => {
 
       render(<ShoppingList />, { wrapper });
 
-      // Accessible name comes from aria-label
+      // FAB with shopping cart icon
       expect(screen.getByRole('button', { name: /start shopping mode/i })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /end shopping mode/i })).not.toBeInTheDocument();
+      expect(screen.getByTestId('ShoppingCartIcon')).toBeInTheDocument();
+      expect(screen.queryByTestId('CheckroomIcon')).not.toBeInTheDocument();
     });
 
-    it('should show "Finish Shopping" button when in Shopping Mode', () => {
+    it('should show Checkroom icon FAB when in Shopping Mode', () => {
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
         state: { items: [], loading: false, error: null, count: 0, isShoppingMode: true },
         loadShoppingList: mockLoadShoppingList,
@@ -276,12 +277,12 @@ describe('ShoppingList', () => {
 
       render(<ShoppingList />, { wrapper });
 
-      // Accessible name comes from aria-label
+      // FAB with checkroom icon
       expect(screen.getByRole('button', { name: /end shopping mode/i })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /start shopping mode/i })).not.toBeInTheDocument();
+      expect(screen.getByTestId('CheckroomIcon')).toBeInTheDocument();
     });
 
-    it('should call startShoppingMode when Start Shopping button is clicked', async () => {
+    it('should call startShoppingMode when FAB is clicked in Planning Mode', async () => {
       const user = userEvent.setup();
 
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
@@ -303,7 +304,7 @@ describe('ShoppingList', () => {
       expect(mockStartShoppingMode).toHaveBeenCalledTimes(1);
     });
 
-    it('should call endShoppingMode when Finish Shopping button is clicked', async () => {
+    it('should call endShoppingMode when FAB is clicked in Shopping Mode', async () => {
       const user = userEvent.setup();
 
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
