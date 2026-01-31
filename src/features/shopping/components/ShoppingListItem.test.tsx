@@ -157,13 +157,9 @@ describe('ShoppingListItem', () => {
       const listItem = document.querySelector('.MuiListItem-root');
       expect(listItem).toBeInTheDocument();
 
-      if (listItem) {
-        const styles = window.getComputedStyle(listItem);
-        // MUI converts 'space-between' to its CSS value
-        // The important thing is that both elements exist and the checkbox is visible
-        expect(checkbox).toBeInTheDocument();
-        expect(productName).toBeInTheDocument();
-      }
+      // The important thing is that both elements exist and the checkbox is visible
+      expect(checkbox).toBeInTheDocument();
+      expect(productName).toBeInTheDocument();
     });
 
     it('should checkbox have accessibility attributes', () => {
