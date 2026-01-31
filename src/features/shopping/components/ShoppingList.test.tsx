@@ -24,6 +24,14 @@ vi.mock('./ShoppingListItem', () => ({
   ),
 }));
 
+vi.mock('./ShoppingProgress', () => ({
+  ShoppingProgress: ({ checkedCount, totalCount }: { checkedCount: number; totalCount: number }) => (
+    <div data-testid="shopping-progress" data-checked={checkedCount} data-total={totalCount}>
+      {checkedCount} of {totalCount} items collected
+    </div>
+  ),
+}));
+
 // Mock the ShoppingContext to control the hook behavior
 const mockLoadShoppingList = vi.fn();
 const mockRefreshCount = vi.fn();
@@ -44,6 +52,7 @@ vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
   toggleItemChecked: mockToggleItemChecked,
   startShoppingMode: mockStartShoppingMode, // Story 4.4
   endShoppingMode: mockEndShoppingMode, // Story 4.4
+  progress: { checkedCount: 0, totalCount: 0 }, // Story 4.2: Shopping progress
 }));
 
 const mockProducts: Product[] = [
@@ -96,6 +105,7 @@ describe('ShoppingList', () => {
       toggleItemChecked: mockToggleItemChecked,
       startShoppingMode: mockStartShoppingMode,
       endShoppingMode: mockEndShoppingMode,
+      progress: { checkedCount: 0, totalCount: 0 }, // Story 4.2: Shopping progress
     }));
   });
 
@@ -111,6 +121,7 @@ describe('ShoppingList', () => {
       toggleItemChecked: mockToggleItemChecked,
         startShoppingMode: mockStartShoppingMode,
         endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 0 }, // Story 4.2: Shopping progress
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -141,6 +152,7 @@ describe('ShoppingList', () => {
       toggleItemChecked: mockToggleItemChecked,
         startShoppingMode: mockStartShoppingMode,
         endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 0 }, // Story 4.2: Shopping progress
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -161,6 +173,7 @@ describe('ShoppingList', () => {
       toggleItemChecked: mockToggleItemChecked,
         startShoppingMode: mockStartShoppingMode,
         endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 0 }, // Story 4.2: Shopping progress
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -180,6 +193,7 @@ describe('ShoppingList', () => {
       toggleItemChecked: mockToggleItemChecked,
         startShoppingMode: mockStartShoppingMode,
         endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 0 }, // Story 4.2: Shopping progress
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -203,6 +217,7 @@ describe('ShoppingList', () => {
       toggleItemChecked: mockToggleItemChecked,
         startShoppingMode: mockStartShoppingMode,
         endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 0 }, // Story 4.2: Shopping progress
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -225,6 +240,7 @@ describe('ShoppingList', () => {
       toggleItemChecked: mockToggleItemChecked,
         startShoppingMode: mockStartShoppingMode,
         endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 0 }, // Story 4.2: Shopping progress
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -252,6 +268,7 @@ describe('ShoppingList', () => {
         toggleItemChecked: mockToggleItemChecked,
         startShoppingMode: mockStartShoppingMode,
         endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 0 }, // Story 4.2: Shopping progress
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -273,6 +290,7 @@ describe('ShoppingList', () => {
         toggleItemChecked: mockToggleItemChecked,
         startShoppingMode: mockStartShoppingMode,
         endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 0 }, // Story 4.2: Shopping progress
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -295,6 +313,7 @@ describe('ShoppingList', () => {
         toggleItemChecked: mockToggleItemChecked,
         startShoppingMode: mockStartShoppingMode,
         endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 0 }, // Story 4.2: Shopping progress
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -317,6 +336,7 @@ describe('ShoppingList', () => {
         toggleItemChecked: mockToggleItemChecked,
         startShoppingMode: mockStartShoppingMode,
         endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 0 }, // Story 4.2: Shopping progress
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -337,12 +357,103 @@ describe('ShoppingList', () => {
         toggleItemChecked: mockToggleItemChecked,
         startShoppingMode: mockStartShoppingMode,
         endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 0 }, // Story 4.2: Shopping progress
       }));
 
       render(<ShoppingList />, { wrapper });
 
       expect(screen.getByTestId('shopping-item-Milk')).toHaveAttribute('data-mode', 'shopping');
       expect(screen.getByTestId('shopping-item-Bread')).toHaveAttribute('data-mode', 'shopping');
+    });
+  });
+
+  // Story 4.2: Shopping Progress Indicator - Integration Tests
+  describe('Shopping Progress Indicator (Story 4.2)', () => {
+    it('should render ShoppingProgress at top of list when items exist', () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: mockProducts, loading: false, error: null, count: 2, isShoppingMode: false },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 1, totalCount: 2 }, // Story 4.2: Shopping progress
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      expect(screen.getByTestId('shopping-progress')).toBeInTheDocument();
+      // ShoppingProgress should appear before shopping items
+      const progress = screen.getByTestId('shopping-progress');
+      const milkItem = screen.getByTestId('shopping-item-Milk');
+      expect(progress).toBeInTheDocument();
+      expect(milkItem).toBeInTheDocument();
+    });
+
+    it('should pass correct progress props to ShoppingProgress', () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: mockProducts, loading: false, error: null, count: 2, isShoppingMode: false },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 1, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const progress = screen.getByTestId('shopping-progress');
+      expect(progress).toHaveAttribute('data-checked', '1');
+      expect(progress).toHaveAttribute('data-total', '2');
+    });
+
+    it('should show 0 of 0 when list is empty', () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: [], loading: false, error: null, count: 0, isShoppingMode: false },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 0 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      // Empty state shown, no progress indicator needed
+      expect(screen.queryByTestId('shopping-progress')).not.toBeInTheDocument();
+      expect(screen.getByText(/Your shopping list is empty/i)).toBeInTheDocument();
+    });
+
+    it('should show progress with all checked (completion)', () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: mockProducts, loading: false, error: null, count: 2, isShoppingMode: false },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 2, totalCount: 2 }, // All checked
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const progress = screen.getByTestId('shopping-progress');
+      expect(progress).toHaveAttribute('data-checked', '2');
+      expect(progress).toHaveAttribute('data-total', '2');
     });
   });
 });

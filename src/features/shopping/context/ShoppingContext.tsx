@@ -29,6 +29,12 @@ export type ShoppingAction =
   | { type: 'SET_CHECKED_STATE'; payload: { productId: string; isChecked: boolean } } // Story 4.1: Check/Uncheck items
   | { type: 'SET_SHOPPING_MODE'; payload: boolean }; // Story 4.4: Shopping Mode toggle
 
+// Story 4.2: Progress calculation interface
+export interface ShoppingProgress {
+  checkedCount: number;
+  totalCount: number;
+}
+
 // Context value interface
 export interface ShoppingContextValue {
   state: ShoppingState;
@@ -40,6 +46,7 @@ export interface ShoppingContextValue {
   toggleItemChecked: (productId: string) => Promise<void>; // Story 4.1: Check/Uncheck items
   startShoppingMode: () => Promise<void>; // Story 4.4: Enter Shopping Mode
   endShoppingMode: () => Promise<void>; // Story 4.4: Exit Shopping Mode
+  progress: ShoppingProgress; // Story 4.2: Shopping progress indicator
 }
 
 // Create context
@@ -303,6 +310,13 @@ export function ShoppingProvider({ children }: ShoppingProviderProps) {
     loadShoppingMode();
   }, []);
 
+  // Story 4.2: Compute shopping progress from items
+  const progress: ShoppingProgress = useMemo(() => {
+    const totalCount = state.items.length;
+    const checkedCount = state.items.filter((item) => item.isChecked).length;
+    return { checkedCount, totalCount };
+  }, [state.items]);
+
   const value: ShoppingContextValue = useMemo(
     () => ({
       state,
@@ -314,8 +328,9 @@ export function ShoppingProvider({ children }: ShoppingProviderProps) {
       toggleItemChecked,
       startShoppingMode,
       endShoppingMode,
+      progress, // Story 4.2: Shopping progress indicator
     }),
-    [state, loadShoppingList, refreshCount, clearError, addToList, removeFromList, toggleItemChecked, startShoppingMode, endShoppingMode]
+    [state, loadShoppingList, refreshCount, clearError, addToList, removeFromList, toggleItemChecked, startShoppingMode, endShoppingMode, progress]
   );
 
   return (

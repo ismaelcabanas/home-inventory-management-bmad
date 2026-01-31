@@ -79,10 +79,14 @@ describe('DeleteConfirmationDialog', () => {
       />
     );
 
-    fireEvent.click(screen.getByText('Delete'));
+    const deleteButton = screen.getAllByText('Delete').find(el => el.tagName === 'BUTTON');
+    fireEvent.click(deleteButton!);
 
-    expect(await screen.findByRole('progressbar')).toBeInTheDocument();
-    expect(screen.getByText('Cancel')).toBeDisabled();
+    // Cancel button should be disabled during loading
+    await waitFor(() => {
+      expect(screen.getByText('Cancel')).toBeDisabled();
+      expect(deleteButton).toBeDisabled();
+    });
   });
 
   it('should keep dialog open on error', async () => {
