@@ -42,23 +42,23 @@ function ShoppingListContent() {
   if (loading) {
     return (
       <Box>
-        {/* Story 4.4: Shopping Mode toggle always visible */}
-        <Box sx={{ mb: 2 }}>
+        {/* Story 4.4: Compact inline Shopping Mode toggle with title */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h6">Shopping List</Typography>
           <Button
             variant={isShoppingMode ? 'outlined' : 'contained'}
             color={isShoppingMode ? 'secondary' : 'primary'}
-            fullWidth
-            size="large"
+            size="small"
             startIcon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
             onClick={handleModeToggle}
             disabled={isTransitioning}
             aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
             sx={{
-              minHeight: 48,
-              py: 1.5,
+              minHeight: 48, // 48px minimum touch target (NFR8.1)
+              minWidth: 120,
             }}
           >
-            {isShoppingMode ? 'Finish Shopping' : 'Start Shopping'}
+            {isShoppingMode ? 'Finish' : 'Shop'}
           </Button>
         </Box>
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -71,23 +71,23 @@ function ShoppingListContent() {
   if (error) {
     return (
       <Box>
-        {/* Story 4.4: Shopping Mode toggle always visible */}
-        <Box sx={{ mb: 2 }}>
+        {/* Story 4.4: Compact inline Shopping Mode toggle with title */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h6">Shopping List</Typography>
           <Button
             variant={isShoppingMode ? 'outlined' : 'contained'}
             color={isShoppingMode ? 'secondary' : 'primary'}
-            fullWidth
-            size="large"
+            size="small"
             startIcon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
             onClick={handleModeToggle}
             disabled={isTransitioning}
             aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
             sx={{
               minHeight: 48,
-              py: 1.5,
+              minWidth: 120,
             }}
           >
-            {isShoppingMode ? 'Finish Shopping' : 'Start Shopping'}
+            {isShoppingMode ? 'Finish' : 'Shop'}
           </Button>
         </Box>
         <Alert severity="error" onClose={clearError}>
@@ -100,23 +100,23 @@ function ShoppingListContent() {
   if (items.length === 0) {
     return (
       <Box>
-        {/* Story 4.4: Shopping Mode toggle always visible */}
-        <Box sx={{ mb: 2 }}>
+        {/* Story 4.4: Compact inline Shopping Mode toggle with title */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h6">Shopping List</Typography>
           <Button
             variant={isShoppingMode ? 'outlined' : 'contained'}
             color={isShoppingMode ? 'secondary' : 'primary'}
-            fullWidth
-            size="large"
+            size="small"
             startIcon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
             onClick={handleModeToggle}
             disabled={isTransitioning}
             aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
             sx={{
               minHeight: 48,
-              py: 1.5,
+              minWidth: 120,
             }}
           >
-            {isShoppingMode ? 'Finish Shopping' : 'Start Shopping'}
+            {isShoppingMode ? 'Finish' : 'Shop'}
           </Button>
         </Box>
         <EmptyState
@@ -129,29 +129,26 @@ function ShoppingListContent() {
 
   return (
     <Box>
-      {/* Story 4.4: Shopping Mode Toggle Button */}
-      <Box sx={{ mb: 2 }}>
+      {/* Story 4.4: Compact inline Shopping Mode toggle with title */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h6">Shopping List ({items.length})</Typography>
         <Button
           variant={isShoppingMode ? 'outlined' : 'contained'}
           color={isShoppingMode ? 'secondary' : 'primary'}
-          fullWidth
-          size="large"
+          size="small"
           startIcon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
           onClick={handleModeToggle}
           disabled={isTransitioning}
           aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
           sx={{
             minHeight: 48, // 48px minimum touch target (NFR8.1)
-            py: 1.5, // Extra padding for better touch target
+            minWidth: 120,
           }}
         >
-          {isShoppingMode ? 'Finish Shopping' : 'Start Shopping'}
+          {isShoppingMode ? 'Finish' : 'Shop'}
         </Button>
       </Box>
 
-      <Typography variant="h6" gutterBottom>
-        Shopping List ({items.length})
-      </Typography>
       <List>
         {items.map((item) => (
           <ShoppingListItem key={item.id} product={item} isShoppingMode={isShoppingMode} />

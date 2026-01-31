@@ -11,6 +11,8 @@ import type { Product } from '@/types/product';
 vi.mock('@/services/shopping', () => ({
   shoppingService: {
     getShoppingListItems: vi.fn(),
+    getShoppingMode: vi.fn().mockResolvedValue(false), // Story 4.4: Shopping Mode
+    setShoppingMode: vi.fn().mockResolvedValue(undefined), // Story 4.4: Shopping Mode
   },
 }));
 
