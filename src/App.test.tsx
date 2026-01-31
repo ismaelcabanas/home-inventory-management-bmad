@@ -70,7 +70,7 @@ describe('App', () => {
 
     // Navigate to shopping list
     await user.click(screen.getByRole('button', { name: /shopping/i }));
-    expect(await screen.findByText(/shopping list/i)).toBeInTheDocument();
+    expect(await screen.findByText('Your shopping list is empty')).toBeInTheDocument();
 
     // Navigate to receipt scanner
     await user.click(screen.getByRole('button', { name: /scan/i }));
@@ -109,7 +109,7 @@ describe('App', () => {
 
     // Navigate to shopping (works fine)
     await user.click(screen.getByRole('button', { name: /shopping/i }));
-    expect(await screen.findByText(/shopping list/i)).toBeInTheDocument();
+    expect(await screen.findByText('Your shopping list is empty')).toBeInTheDocument();
 
     // Navigate to scan (works fine)
     await user.click(screen.getByRole('button', { name: /scan/i }));
