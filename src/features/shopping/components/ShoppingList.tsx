@@ -119,14 +119,15 @@ function ShoppingListContent() {
   }
 
   return (
-    <Box pb={8} // Padding at bottom so items aren't covered by FAB
+    <Box pb={8} // Story 4.3: Extra padding to prevent FAB from covering last items
 >
       <Typography variant="h6" gutterBottom>
         Shopping List ({items.length})
       </Typography>
       {/* Story 4.2: Shopping Progress Indicator */}
       <ShoppingProgress checkedCount={progress.checkedCount} totalCount={progress.totalCount} />
-      <List>
+      {/* Story 4.3: BottomNav clearance padding (80px = 10 MUI spacing units) */}
+      <List sx={{ paddingBottom: 10 }}>
         {items.map((item) => (
           <ShoppingListItem key={item.id} product={item} isShoppingMode={isShoppingMode} />
         ))}
