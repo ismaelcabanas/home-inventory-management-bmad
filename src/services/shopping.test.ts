@@ -25,6 +25,34 @@ vi.mock('@/utils/logger', () => ({
 
 const mockFilter = vi.mocked(db.products.filter);
 
+// Mock localStorage
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => {
+      store[key] = value.toString();
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+    get length() {
+      return Object.keys(store).length;
+    },
+    key: (index: number) => Object.keys(store)[index] ?? null,
+  };
+})();
+
+Object.defineProperty(global, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+  configurable: true,
+});
+
 describe('ShoppingService', () => {
   const mockProducts = [
     {
@@ -360,6 +388,106 @@ describe('ShoppingService', () => {
 
       expect(mockUpdate).toHaveBeenCalled();
       // Verify no network-related errors occurred
+    });
+  });
+
+  // Story 4.4: Shopping Mode Toggle - Task 1: ShoppingService Mode State Methods
+  describe('getShoppingMode', () => {
+    beforeEach(() => {
+      // Clear localStorage before each test
+      localStorage.clear();
+    });
+
+    it('should return false when shopping mode is not set (default)', async () => {
+      const result = await shoppingService.getShoppingMode();
+
+      expect(result).toBe(false);
+    });
+
+    it('should return true when shopping mode is set to true', async () => {
+      localStorage.setItem('shoppingMode', 'true');
+
+      const result = await shoppingService.getShoppingMode();
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when shopping mode is explicitly set to false', async () => {
+      localStorage.setItem('shoppingMode', 'false');
+
+      const result = await shoppingService.getShoppingMode();
+
+      expect(result).toBe(false);
+    });
+
+    it('should handle corrupted localStorage data gracefully', async () => {
+      localStorage.setItem('shoppingMode', 'invalid');
+
+      const result = await shoppingService.getShoppingMode();
+
+      // Should default to false when data is invalid
+      expect(result).toBe(false);
+    });
+
+    it('should handle localStorage access errors', async () => {
+      // Mock localStorage.getItem to throw an error
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('localStorage access denied');
+      });
+
+      const result = await shoppingService.getShoppingMode();
+
+      // Should default to false when localStorage is unavailable
+      expect(result).toBe(false);
+
+      // Restore original
+      vi.spyOn(Storage.prototype, 'getItem').mockRestore();
+    });
+  });
+
+  describe('setShoppingMode', () => {
+    beforeEach(() => {
+      // Clear localStorage before each test
+      localStorage.clear();
+    });
+
+    it('should set shopping mode to true and persist to localStorage', async () => {
+      await shoppingService.setShoppingMode(true);
+
+      const storedValue = localStorage.getItem('shoppingMode');
+
+      expect(storedValue).toBe('true');
+    });
+
+    it('should set shopping mode to false and persist to localStorage', async () => {
+      await shoppingService.setShoppingMode(false);
+
+      const storedValue = localStorage.getItem('shoppingMode');
+
+      expect(storedValue).toBe('false');
+    });
+
+    it('should overwrite existing shopping mode value', async () => {
+      localStorage.setItem('shoppingMode', 'true');
+
+      await shoppingService.setShoppingMode(false);
+
+      const storedValue = localStorage.getItem('shoppingMode');
+
+      expect(storedValue).toBe('false');
+    });
+
+    it('should handle localStorage setItem errors gracefully', async () => {
+      // Mock localStorage.setItem to throw an error
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('localStorage access denied');
+      });
+
+      // Should not throw, should handle error gracefully
+      await expect(shoppingService.setShoppingMode(true)).resolves.not.toThrow();
+
+      // Restore original
+      vi.spyOn(Storage.prototype, 'setItem').mockRestore();
     });
   });
 });

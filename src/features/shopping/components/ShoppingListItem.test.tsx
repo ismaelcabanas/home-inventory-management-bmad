@@ -28,19 +28,22 @@ describe('ShoppingListItem', () => {
   };
 
   it('should render product name', () => {
-    render(<ShoppingListItem product={mockProduct} />);
+    render(<ShoppingListItem product={mockProduct} isShoppingMode={false} />);
 
     expect(screen.getByText('Milk')).toBeInTheDocument();
   });
 
   it('should render stock level chip', () => {
-    render(<ShoppingListItem product={mockProduct} />);
+    render(<ShoppingListItem product={mockProduct} isShoppingMode={false} />);
 
-    expect(screen.getByText('Low')).toBeInTheDocument();
+    const chip = screen.getByText('Low');
+    expect(chip).toBeInTheDocument();
+    // Verify chip has the correct class (MUI Chip)
+    expect(chip.className).toContain('MuiChip');
   });
 
   it('should use correct STOCK_LEVEL_CONFIG for styling', () => {
-    render(<ShoppingListItem product={mockProduct} />);
+    render(<ShoppingListItem product={mockProduct} isShoppingMode={false} />);
 
     const chip = screen.getByText('Low');
     const stockConfig = STOCK_LEVEL_CONFIG[mockProduct.stockLevel];
@@ -52,13 +55,13 @@ describe('ShoppingListItem', () => {
 
   it('should render Empty stock level correctly', () => {
     const emptyProduct = { ...mockProduct, stockLevel: 'empty' as const };
-    render(<ShoppingListItem product={emptyProduct} />);
+    render(<ShoppingListItem product={emptyProduct} isShoppingMode={false} />);
 
     expect(screen.getByText('Empty')).toBeInTheDocument();
   });
 
   it('should render with proper spacing and layout', () => {
-    render(<ShoppingListItem product={mockProduct} />);
+    render(<ShoppingListItem product={mockProduct} isShoppingMode={false} />);
 
     const listItem = document.querySelector('li');
     expect(listItem).toBeInTheDocument();
@@ -66,8 +69,8 @@ describe('ShoppingListItem', () => {
 
   // Story 4.1: Check Off Items While Shopping - Task 4: ShoppingListItem UI Updates
   describe('Checkbox Functionality (Story 4.1)', () => {
-    it('should display checkbox on shopping list items', () => {
-      render(<ShoppingListItem product={mockProduct} />);
+    it('should display checkbox on shopping list items when in Shopping Mode', () => {
+      render(<ShoppingListItem product={mockProduct} isShoppingMode={true} />);
 
       // MUI Checkbox renders as a checkbox input
       const checkbox = document.querySelector('input[type="checkbox"]');
@@ -76,7 +79,7 @@ describe('ShoppingListItem', () => {
 
     it('should checkbox reflect product.isChecked state when unchecked', () => {
       const uncheckedProduct = { ...mockProduct, isChecked: false };
-      render(<ShoppingListItem product={uncheckedProduct} />);
+      render(<ShoppingListItem product={uncheckedProduct} isShoppingMode={true} />);
 
       const checkbox = document.querySelector('input[type="checkbox"]') as HTMLInputElement;
       expect(checkbox).not.toBeChecked();
@@ -84,14 +87,14 @@ describe('ShoppingListItem', () => {
 
     it('should checkbox reflect product.isChecked state when checked', () => {
       const checkedProduct = { ...mockProduct, isChecked: true };
-      render(<ShoppingListItem product={checkedProduct} />);
+      render(<ShoppingListItem product={checkedProduct} isShoppingMode={true} />);
 
       const checkbox = document.querySelector('input[type="checkbox"]') as HTMLInputElement;
       expect(checkbox).toBeChecked();
     });
 
     it('should clicking checkbox call toggleItemChecked', () => {
-      render(<ShoppingListItem product={mockProduct} />);
+      render(<ShoppingListItem product={mockProduct} isShoppingMode={true} />);
 
       const checkbox = document.querySelector('input[type="checkbox"]');
       if (checkbox) {
@@ -103,7 +106,7 @@ describe('ShoppingListItem', () => {
 
     it('should checked items show strikethrough or dimmed styling', () => {
       const checkedProduct = { ...mockProduct, isChecked: true };
-      const { container } = render(<ShoppingListItem product={checkedProduct} />);
+      const { container } = render(<ShoppingListItem product={checkedProduct} isShoppingMode={true} />);
 
       // Find the Box wrapper (it should have the sx prop with textDecoration/opacity)
       const boxElement = container.querySelector('.MuiBox-root');
@@ -121,7 +124,7 @@ describe('ShoppingListItem', () => {
 
     it('should unchecked items show normal styling', () => {
       const uncheckedProduct = { ...mockProduct, isChecked: false };
-      render(<ShoppingListItem product={uncheckedProduct} />);
+      render(<ShoppingListItem product={uncheckedProduct} isShoppingMode={true} />);
 
       const productName = screen.getByText('Milk');
 
@@ -136,7 +139,7 @@ describe('ShoppingListItem', () => {
     });
 
     it('should checkbox be positioned on left side of item', () => {
-      render(<ShoppingListItem product={mockProduct} />);
+      render(<ShoppingListItem product={mockProduct} isShoppingMode={true} />);
 
       const checkbox = document.querySelector('input[type="checkbox"]');
       const productName = screen.getByText('Milk');
@@ -156,7 +159,7 @@ describe('ShoppingListItem', () => {
     });
 
     it('should checkbox have accessibility attributes', () => {
-      render(<ShoppingListItem product={mockProduct} />);
+      render(<ShoppingListItem product={mockProduct} isShoppingMode={true} />);
 
       const checkbox = document.querySelector('input[type="checkbox"]');
 
@@ -171,7 +174,7 @@ describe('ShoppingListItem', () => {
     });
 
     it('should checkbox have sufficient touch target size (48px minimum)', () => {
-      render(<ShoppingListItem product={mockProduct} />);
+      render(<ShoppingListItem product={mockProduct} isShoppingMode={true} />);
 
       const checkbox = document.querySelector('input[type="checkbox"]');
 
@@ -187,7 +190,7 @@ describe('ShoppingListItem', () => {
     });
 
     it('should show visual confirmation snackbar when item is checked', async () => {
-      render(<ShoppingListItem product={mockProduct} />);
+      render(<ShoppingListItem product={mockProduct} isShoppingMode={true} />);
 
       const checkbox = document.querySelector('input[type="checkbox"]');
       if (checkbox) {
@@ -203,7 +206,7 @@ describe('ShoppingListItem', () => {
     });
 
     it('should show collected message when checking unchecked item', async () => {
-      render(<ShoppingListItem product={mockProduct} />);
+      render(<ShoppingListItem product={mockProduct} isShoppingMode={true} />);
 
       const checkbox = document.querySelector('input[type="checkbox"]');
       if (checkbox) {
@@ -219,7 +222,7 @@ describe('ShoppingListItem', () => {
 
     it('should show uncollected message when unchecking checked item', async () => {
       const checkedProduct = { ...mockProduct, isChecked: true };
-      render(<ShoppingListItem product={checkedProduct} />);
+      render(<ShoppingListItem product={checkedProduct} isShoppingMode={true} />);
 
       const checkbox = document.querySelector('input[type="checkbox"]');
       if (checkbox) {
@@ -231,6 +234,65 @@ describe('ShoppingListItem', () => {
           expect(alert).toHaveTextContent('Milk uncollected');
         });
       }
+    });
+  });
+
+  // Story 4.4: Shopping Mode Toggle - Conditional Checkbox Rendering
+  describe('Shopping Mode Conditional Rendering (Story 4.4)', () => {
+    it('should NOT render checkbox when isShoppingMode is false (Planning Mode)', () => {
+      render(<ShoppingListItem product={mockProduct} isShoppingMode={false} />);
+
+      const checkbox = document.querySelector('input[type="checkbox"]');
+      expect(checkbox).not.toBeInTheDocument();
+    });
+
+    it('should render checkbox when isShoppingMode is true (Shopping Mode)', () => {
+      render(<ShoppingListItem product={mockProduct} isShoppingMode={true} />);
+
+      const checkbox = document.querySelector('input[type="checkbox"]');
+      expect(checkbox).toBeInTheDocument();
+    });
+
+    it('should preserve checked/unchecked states across mode transitions', () => {
+      // Render with checked state in Shopping Mode
+      const checkedProduct = { ...mockProduct, isChecked: true };
+      const { rerender } = render(<ShoppingListItem product={checkedProduct} isShoppingMode={true} />);
+
+      let checkbox = document.querySelector('input[type="checkbox"]') as HTMLInputElement;
+      expect(checkbox).toBeChecked();
+
+      // Switch to Planning Mode (checkbox completely removed from DOM)
+      rerender(<ShoppingListItem product={checkedProduct} isShoppingMode={false} />);
+      checkbox = document.querySelector('input[type="checkbox"]') as HTMLInputElement;
+      expect(checkbox).not.toBeInTheDocument();
+
+      // Switch back to Shopping Mode (checkbox visible again, state preserved from product prop)
+      rerender(<ShoppingListItem product={checkedProduct} isShoppingMode={true} />);
+      checkbox = document.querySelector('input[type="checkbox"]') as HTMLInputElement;
+      expect(checkbox).toBeInTheDocument();
+      expect(checkbox).toBeChecked();
+    });
+
+    it('should show product name in both Planning Mode and Shopping Mode', () => {
+      const { rerender } = render(<ShoppingListItem product={mockProduct} isShoppingMode={false} />);
+
+      // Product name visible in Planning Mode
+      expect(screen.getByText('Milk')).toBeInTheDocument();
+
+      // Product name still visible in Shopping Mode
+      rerender(<ShoppingListItem product={mockProduct} isShoppingMode={true} />);
+      expect(screen.getByText('Milk')).toBeInTheDocument();
+    });
+
+    it('should show stock level chip in both Planning Mode and Shopping Mode', () => {
+      const { rerender } = render(<ShoppingListItem product={mockProduct} isShoppingMode={false} />);
+
+      // Stock chip visible in Planning Mode
+      expect(screen.getByText('Low')).toBeInTheDocument();
+
+      // Stock chip still visible in Shopping Mode
+      rerender(<ShoppingListItem product={mockProduct} isShoppingMode={true} />);
+      expect(screen.getByText('Low')).toBeInTheDocument();
     });
   });
 });

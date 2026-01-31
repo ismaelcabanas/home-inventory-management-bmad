@@ -6,9 +6,10 @@ import { useShoppingList } from '@/features/shopping/context/ShoppingContext';
 
 interface ShoppingListItemProps {
   product: Product;
+  isShoppingMode: boolean; // Story 4.4: Shopping Mode state
 }
 
-export function ShoppingListItem({ product }: ShoppingListItemProps) {
+export function ShoppingListItem({ product, isShoppingMode }: ShoppingListItemProps) {
   const stockConfig = STOCK_LEVEL_CONFIG[product.stockLevel];
   const { toggleItemChecked } = useShoppingList();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -31,18 +32,21 @@ export function ShoppingListItem({ product }: ShoppingListItemProps) {
 
   return (
     <ListItem>
-      {/* Story 4.1: Checkbox positioned on left side (standard mobile pattern) */}
-      <Checkbox
-        checked={product.isChecked}
-        onChange={handleCheckboxChange}
-        size="medium" // 48px touch target for accessibility
-        aria-label={`Mark ${product.name} as ${product.isChecked ? 'uncollected' : 'collected'}`}
-        sx={{
-          // Ensure sufficient touch target size
-          width: 48,
-          height: 48,
-        }}
-      />
+      {/* Story 4.4: Checkbox only visible when in Shopping Mode */}
+      {/* Story 4.4: Conditional rendering for cleaner tests and behavior */}
+      {isShoppingMode && (
+        <Checkbox
+          checked={product.isChecked}
+          onChange={handleCheckboxChange}
+          size="medium" // 48px touch target for accessibility
+          aria-label={`Mark ${product.name} as ${product.isChecked ? 'uncollected' : 'collected'}`}
+          sx={{
+            // Ensure sufficient touch target size
+            width: 48,
+            height: 48,
+          }}
+        />
+      )}
 
       {/* Story 4.1: Conditional styling for checked items */}
       <Box
@@ -52,20 +56,16 @@ export function ShoppingListItem({ product }: ShoppingListItemProps) {
           transition: 'all 0.2s ease-in-out',
         }}
       >
-        <ListItemText
-          primary={product.name}
-          secondary={
-            <Chip
-              label={stockConfig.label}
-              sx={{
-                backgroundColor: stockConfig.chipColor,
-                color: stockConfig.textColor,
-                fontSize: '14px',
-                marginTop: 0.5,
-              }}
-              size="small"
-            />
-          }
+        <ListItemText primary={product.name} />
+        <Chip
+          label={stockConfig.label}
+          sx={{
+            backgroundColor: stockConfig.chipColor,
+            color: stockConfig.textColor,
+            fontSize: '14px',
+            marginTop: 0.5,
+          }}
+          size="small"
         />
       </Box>
 
