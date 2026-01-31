@@ -720,4 +720,221 @@ describe('ShoppingContext', () => {
       expect(result.current.state.isShoppingMode).toBe(false);
     });
   });
+
+  // Story 4.2: Shopping Progress Indicator - Task 4.2: Progress Calculation Tests
+  describe('Progress Calculation (Story 4.2)', () => {
+    const mockProductsForProgress: Product[] = [
+      {
+        id: '1',
+        name: 'Milk',
+        stockLevel: 'low',
+        isOnShoppingList: true,
+        isChecked: false,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-10'),
+      },
+      {
+        id: '2',
+        name: 'Bread',
+        stockLevel: 'empty',
+        isOnShoppingList: true,
+        isChecked: true,
+        createdAt: new Date('2024-01-02'),
+        updatedAt: new Date('2024-01-15'),
+      },
+      {
+        id: '3',
+        name: 'Eggs',
+        stockLevel: 'low',
+        isOnShoppingList: true,
+        isChecked: true,
+        createdAt: new Date('2024-01-03'),
+        updatedAt: new Date('2024-01-05'),
+      },
+    ];
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      mockShoppingService.getShoppingListItems.mockResolvedValue(mockProductsForProgress);
+      mockShoppingService.updateCheckedState.mockResolvedValue(undefined);
+    });
+
+    it('should expose progress property with checkedCount and totalCount', async () => {
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      expect(result.current).toHaveProperty('progress');
+      expect(result.current.progress).toHaveProperty('checkedCount');
+      expect(result.current.progress).toHaveProperty('totalCount');
+      expect(typeof result.current.progress.checkedCount).toBe('number');
+      expect(typeof result.current.progress.totalCount).toBe('number');
+    });
+
+    it('should calculate totalCount from shopping list items', async () => {
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      // 3 items on shopping list
+      expect(result.current.progress.totalCount).toBe(3);
+    });
+
+    it('should calculate checkedCount from items where isChecked is true', async () => {
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      // 2 items are checked (Bread and Eggs)
+      expect(result.current.progress.checkedCount).toBe(2);
+    });
+
+    it('should return 0 of 0 when shopping list is empty', async () => {
+      mockShoppingService.getShoppingListItems.mockResolvedValue([]);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      expect(result.current.progress.totalCount).toBe(0);
+      expect(result.current.progress.checkedCount).toBe(0);
+    });
+
+    it('should return 0 of Y when no items are checked', async () => {
+      const allUnchecked: Product[] = [
+        {
+          id: '1',
+          name: 'Milk',
+          stockLevel: 'low',
+          isOnShoppingList: true,
+          isChecked: false,
+          createdAt: new Date('2024-01-01'),
+          updatedAt: new Date('2024-01-10'),
+        },
+        {
+          id: '2',
+          name: 'Bread',
+          stockLevel: 'empty',
+          isOnShoppingList: true,
+          isChecked: false,
+          createdAt: new Date('2024-01-02'),
+          updatedAt: new Date('2024-01-15'),
+        },
+      ];
+
+      mockShoppingService.getShoppingListItems.mockResolvedValue(allUnchecked);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      expect(result.current.progress.totalCount).toBe(2);
+      expect(result.current.progress.checkedCount).toBe(0);
+    });
+
+    it('should return Y of Y when all items are checked', async () => {
+      const allChecked: Product[] = [
+        {
+          id: '1',
+          name: 'Milk',
+          stockLevel: 'low',
+          isOnShoppingList: true,
+          isChecked: true,
+          createdAt: new Date('2024-01-01'),
+          updatedAt: new Date('2024-01-10'),
+        },
+        {
+          id: '2',
+          name: 'Bread',
+          stockLevel: 'empty',
+          isOnShoppingList: true,
+          isChecked: true,
+          createdAt: new Date('2024-01-02'),
+          updatedAt: new Date('2024-01-15'),
+        },
+      ];
+
+      mockShoppingService.getShoppingListItems.mockResolvedValue(allChecked);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      expect(result.current.progress.totalCount).toBe(2);
+      expect(result.current.progress.checkedCount).toBe(2);
+    });
+
+    it('should update progress when item is checked', async () => {
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      // Initial: 2 of 3 checked
+      expect(result.current.progress.checkedCount).toBe(2);
+      expect(result.current.progress.totalCount).toBe(3);
+
+      // Check the unchecked item (Milk)
+      await act(async () => {
+        await result.current.toggleItemChecked('1');
+      });
+
+      // Now: 3 of 3 checked
+      expect(result.current.progress.checkedCount).toBe(3);
+      expect(result.current.progress.totalCount).toBe(3);
+    });
+
+    it('should update progress when item is unchecked', async () => {
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      // Initial: 2 of 3 checked
+      expect(result.current.progress.checkedCount).toBe(2);
+
+      // Uncheck one of the checked items (Bread)
+      await act(async () => {
+        await result.current.toggleItemChecked('2');
+      });
+
+      // Now: 1 of 3 checked
+      expect(result.current.progress.checkedCount).toBe(1);
+      expect(result.current.progress.totalCount).toBe(3);
+    });
+
+    it('should update progress immediately via context state change', async () => {
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.loadShoppingList();
+      });
+
+      const beforeCheck = result.current.progress.checkedCount;
+
+      // Toggle item checked
+      await act(async () => {
+        await result.current.toggleItemChecked('1');
+      });
+
+      const afterCheck = result.current.progress.checkedCount;
+
+      // Progress should have changed
+      expect(afterCheck).toBe(beforeCheck + 1);
+    });
+  });
 });

@@ -4,11 +4,12 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CheckroomIcon from '@mui/icons-material/Checkroom';
 import { useShoppingList } from '../context/ShoppingContext';
 import { ShoppingListItem } from './ShoppingListItem';
+import { ShoppingProgress } from './ShoppingProgress';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { FeatureErrorBoundary } from '@/components/shared/ErrorBoundary/FeatureErrorBoundary';
 
 function ShoppingListContent() {
-  const { state, loadShoppingList, clearError, startShoppingMode, endShoppingMode } = useShoppingList();
+  const { state, loadShoppingList, clearError, startShoppingMode, endShoppingMode, progress } = useShoppingList();
   const { items, loading, error, isShoppingMode } = state;
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -123,6 +124,8 @@ function ShoppingListContent() {
       <Typography variant="h6" gutterBottom>
         Shopping List ({items.length})
       </Typography>
+      {/* Story 4.2: Shopping Progress Indicator */}
+      <ShoppingProgress checkedCount={progress.checkedCount} totalCount={progress.totalCount} />
       <List>
         {items.map((item) => (
           <ShoppingListItem key={item.id} product={item} isShoppingMode={isShoppingMode} />
