@@ -23,6 +23,8 @@ vi.mock('@/services/shopping', () => ({
     getShoppingListCount: vi.fn(),
     addToList: vi.fn().mockResolvedValue(undefined),
     removeFromList: vi.fn().mockResolvedValue(undefined),
+    getShoppingMode: vi.fn().mockResolvedValue(false), // Story 4.4: Shopping Mode
+    setShoppingMode: vi.fn().mockResolvedValue(undefined), // Story 4.4: Shopping Mode
   },
 }));
 

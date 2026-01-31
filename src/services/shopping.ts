@@ -93,6 +93,46 @@ export class ShoppingService {
       throw appError;
     }
   }
+
+  // Story 4.4: Shopping Mode Toggle - Shopping Mode state management
+  private readonly SHOPPING_MODE_KEY = 'shoppingMode';
+
+  async getShoppingMode(): Promise<boolean> {
+    try {
+      const storedValue = localStorage.getItem(this.SHOPPING_MODE_KEY);
+
+      // Default to false if not set (Planning Mode is default)
+      if (storedValue === null) {
+        logger.debug('Shopping mode not set, defaulting to false');
+        return false;
+      }
+
+      // Parse and return boolean value
+      const mode = storedValue === 'true';
+      logger.debug('Shopping mode state retrieved', { mode });
+      return mode;
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to get shopping mode state', appError.details);
+      // Default to false on error (safer default - Planning Mode)
+      return false;
+    }
+  }
+
+  async setShoppingMode(mode: boolean): Promise<void> {
+    try {
+      logger.debug('Setting shopping mode state', { mode });
+
+      // Store as string in localStorage
+      localStorage.setItem(this.SHOPPING_MODE_KEY, mode.toString());
+
+      logger.info('Shopping mode state updated', { mode });
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to set shopping mode state', appError.details);
+      throw appError;
+    }
+  }
 }
 
 // Export singleton instance

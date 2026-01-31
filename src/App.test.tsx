@@ -18,6 +18,8 @@ vi.mock('@/services/shopping', () => ({
   shoppingService: {
     getShoppingListItems: vi.fn(),
     getShoppingListCount: vi.fn(),
+    getShoppingMode: vi.fn(), // Story 4.4: Shopping Mode
+    setShoppingMode: vi.fn(), // Story 4.4: Shopping Mode
   },
 }));
 
@@ -29,6 +31,7 @@ describe('App', () => {
     // Set up default mock return values for shopping service
     mockShoppingService.getShoppingListItems.mockResolvedValue([]);
     mockShoppingService.getShoppingListCount.mockResolvedValue(0);
+    mockShoppingService.getShoppingMode.mockResolvedValue(false); // Story 4.4: Default to Planning Mode
   });
 
   it('renders without crashing', async () => {
@@ -67,7 +70,7 @@ describe('App', () => {
 
     // Navigate to shopping list
     await user.click(screen.getByRole('button', { name: /shopping/i }));
-    expect(await screen.findByText(/shopping list/i)).toBeInTheDocument();
+    expect(await screen.findByText('Your shopping list is empty')).toBeInTheDocument();
 
     // Navigate to receipt scanner
     await user.click(screen.getByRole('button', { name: /scan/i }));
@@ -106,7 +109,7 @@ describe('App', () => {
 
     // Navigate to shopping (works fine)
     await user.click(screen.getByRole('button', { name: /shopping/i }));
-    expect(await screen.findByText(/shopping list/i)).toBeInTheDocument();
+    expect(await screen.findByText('Your shopping list is empty')).toBeInTheDocument();
 
     // Navigate to scan (works fine)
     await user.click(screen.getByRole('button', { name: /scan/i }));

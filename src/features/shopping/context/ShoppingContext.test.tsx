@@ -13,6 +13,8 @@ vi.mock('@/services/shopping', () => ({
     addToList: vi.fn(),
     removeFromList: vi.fn(),
     updateCheckedState: vi.fn(), // Story 4.1: Add updateCheckedState mock
+    getShoppingMode: vi.fn(), // Story 4.4: Add getShoppingMode mock
+    setShoppingMode: vi.fn(), // Story 4.4: Add setShoppingMode mock
   },
 }));
 
@@ -588,6 +590,134 @@ describe('ShoppingContext', () => {
       });
 
       expect(mockShoppingService.updateCheckedState).toHaveBeenCalledWith('1', true);
+    });
+  });
+
+  // Story 4.4: Shopping Mode Toggle - Task 2: ShoppingContext Extensions
+  describe('Shopping Mode Functionality (Story 4.4)', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      // Setup default mocks for shopping mode
+      mockShoppingService.getShoppingMode.mockResolvedValue(false);
+      mockShoppingService.setShoppingMode.mockResolvedValue(undefined);
+    });
+
+    it('should expose isShoppingMode state property', () => {
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      expect(result.current.state).toHaveProperty('isShoppingMode');
+      expect(typeof result.current.state.isShoppingMode).toBe('boolean');
+    });
+
+    it('should expose startShoppingMode method', () => {
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      expect(result.current).toHaveProperty('startShoppingMode');
+      expect(typeof result.current.startShoppingMode).toBe('function');
+    });
+
+    it('should expose endShoppingMode method', () => {
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      expect(result.current).toHaveProperty('endShoppingMode');
+      expect(typeof result.current.endShoppingMode).toBe('function');
+    });
+
+    it('should startShoppingMode call service and dispatch SET_SHOPPING_MODE action', async () => {
+      mockShoppingService.setShoppingMode.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.startShoppingMode();
+      });
+
+      expect(mockShoppingService.setShoppingMode).toHaveBeenCalledWith(true);
+      expect(result.current.state.isShoppingMode).toBe(true);
+    });
+
+    it('should endShoppingMode call service and dispatch SET_SHOPPING_MODE action', async () => {
+      mockShoppingService.setShoppingMode.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.endShoppingMode();
+      });
+
+      expect(mockShoppingService.setShoppingMode).toHaveBeenCalledWith(false);
+      expect(result.current.state.isShoppingMode).toBe(false);
+    });
+
+    it('should load shopping mode state on component mount', async () => {
+      mockShoppingService.getShoppingMode.mockResolvedValue(true);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await waitFor(() => {
+        expect(mockShoppingService.getShoppingMode).toHaveBeenCalled();
+        expect(result.current.state.isShoppingMode).toBe(true);
+      });
+    });
+
+    it('should default to false when shopping mode is not set', async () => {
+      mockShoppingService.getShoppingMode.mockResolvedValue(false);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await waitFor(() => {
+        expect(mockShoppingService.getShoppingMode).toHaveBeenCalled();
+        expect(result.current.state.isShoppingMode).toBe(false);
+      });
+    });
+
+    it('should handle errors in startShoppingMode gracefully', async () => {
+      const mockError = new Error('Failed to start shopping mode');
+      mockShoppingService.setShoppingMode.mockRejectedValue(mockError);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        try {
+          await result.current.startShoppingMode();
+        } catch {
+          // Expected - error is re-thrown for component-level handling
+        }
+      });
+
+      expect(result.current.state.error).toBeTruthy();
+    });
+
+    it('should handle errors in endShoppingMode gracefully', async () => {
+      const mockError = new Error('Failed to end shopping mode');
+      mockShoppingService.setShoppingMode.mockRejectedValue(mockError);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        try {
+          await result.current.endShoppingMode();
+        } catch {
+          // Expected - error is re-thrown for component-level handling
+        }
+      });
+
+      expect(result.current.state.error).toBeTruthy();
+    });
+
+    it('should handle errors in getShoppingMode gracefully', async () => {
+      const mockError = new Error('Failed to get shopping mode');
+      mockShoppingService.getShoppingMode.mockRejectedValue(mockError);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      // Should not throw, should default to false
+      await waitFor(() => {
+        expect(mockShoppingService.getShoppingMode).toHaveBeenCalled();
+      });
+
+      // When getShoppingMode fails, it should default to false (Planning Mode)
+      expect(result.current.state.isShoppingMode).toBe(false);
     });
   });
 });

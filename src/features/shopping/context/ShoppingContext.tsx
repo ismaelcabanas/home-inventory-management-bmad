@@ -1,7 +1,7 @@
 // TODO (Tech Debt #4): Add explanation for why react-refresh/only-export-components is disabled
 // See: docs/technical-debt.md - Issue #4
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useReducer, ReactNode, useMemo, useCallback } from 'react';
+import { createContext, useContext, useReducer, ReactNode, useMemo, useCallback, useEffect } from 'react';
 import { shoppingService } from '@/services/shopping';
 import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
@@ -15,6 +15,7 @@ export interface ShoppingState {
   loading: boolean;
   error: string | null;
   count: number;
+  isShoppingMode: boolean; // Story 4.4: Shopping Mode state
 }
 
 // Action types
@@ -25,7 +26,8 @@ export type ShoppingAction =
   | { type: 'UPDATE_COUNT'; payload: number }
   | { type: 'ADD_TO_LIST'; payload: string }
   | { type: 'REMOVE_FROM_LIST'; payload: string }
-  | { type: 'SET_CHECKED_STATE'; payload: { productId: string; isChecked: boolean } }; // Story 4.1: Check/Uncheck items
+  | { type: 'SET_CHECKED_STATE'; payload: { productId: string; isChecked: boolean } } // Story 4.1: Check/Uncheck items
+  | { type: 'SET_SHOPPING_MODE'; payload: boolean }; // Story 4.4: Shopping Mode toggle
 
 // Context value interface
 export interface ShoppingContextValue {
@@ -36,6 +38,8 @@ export interface ShoppingContextValue {
   addToList: (productId: string) => Promise<void>;
   removeFromList: (productId: string) => Promise<void>;
   toggleItemChecked: (productId: string) => Promise<void>; // Story 4.1: Check/Uncheck items
+  startShoppingMode: () => Promise<void>; // Story 4.4: Enter Shopping Mode
+  endShoppingMode: () => Promise<void>; // Story 4.4: Exit Shopping Mode
 }
 
 // Create context
@@ -47,6 +51,7 @@ const initialState: ShoppingState = {
   loading: false,
   error: null,
   count: 0,
+  isShoppingMode: false, // Story 4.4: Default to Planning Mode
 };
 
 // Reducer function
@@ -92,6 +97,14 @@ function shoppingReducer(state: ShoppingState, action: ShoppingAction): Shopping
       return {
         ...state,
         items: updatedItems,
+      };
+    }
+
+    case 'SET_SHOPPING_MODE': {
+      // Story 4.4: Update shopping mode state
+      return {
+        ...state,
+        isShoppingMode: action.payload,
       };
     }
 
@@ -233,6 +246,63 @@ export function ShoppingProvider({ children }: ShoppingProviderProps) {
     [state.items]
   );
 
+  // Story 4.4: Start Shopping Mode
+  const startShoppingMode = useCallback(async () => {
+    try {
+      logger.debug('Starting shopping mode');
+
+      // Persist to localStorage
+      await shoppingService.setShoppingMode(true);
+
+      // Update state
+      dispatch({ type: 'SET_SHOPPING_MODE', payload: true });
+
+      logger.info('Shopping mode started');
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to start shopping mode', appError.details);
+      dispatch({ type: 'SET_ERROR', payload: appError.message });
+      throw error;
+    }
+  }, []);
+
+  // Story 4.4: End Shopping Mode
+  const endShoppingMode = useCallback(async () => {
+    try {
+      logger.debug('Ending shopping mode');
+
+      // Persist to localStorage
+      await shoppingService.setShoppingMode(false);
+
+      // Update state
+      dispatch({ type: 'SET_SHOPPING_MODE', payload: false });
+
+      logger.info('Shopping mode ended');
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to end shopping mode', appError.details);
+      dispatch({ type: 'SET_ERROR', payload: appError.message });
+      throw error;
+    }
+  }, []);
+
+  // Story 4.4: Load shopping mode state on component mount
+  useEffect(() => {
+    const loadShoppingMode = async () => {
+      try {
+        const mode = await shoppingService.getShoppingMode();
+        dispatch({ type: 'SET_SHOPPING_MODE', payload: mode });
+        logger.debug('Shopping mode state loaded on mount', { mode });
+      } catch (error) {
+        const appError = handleError(error);
+        logger.error('Failed to load shopping mode state', appError.details);
+        // Default to false (Planning Mode) on error - don't set error state
+      }
+    };
+
+    loadShoppingMode();
+  }, []);
+
   const value: ShoppingContextValue = useMemo(
     () => ({
       state,
@@ -242,8 +312,10 @@ export function ShoppingProvider({ children }: ShoppingProviderProps) {
       addToList,
       removeFromList,
       toggleItemChecked,
+      startShoppingMode,
+      endShoppingMode,
     }),
-    [state, loadShoppingList, refreshCount, clearError, addToList, removeFromList, toggleItemChecked]
+    [state, loadShoppingList, refreshCount, clearError, addToList, removeFromList, toggleItemChecked, startShoppingMode, endShoppingMode]
   );
 
   return (

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ShoppingList } from './ShoppingList';
 import { ShoppingProvider } from '../context/ShoppingContext';
 import * as ShoppingContext from '../context/ShoppingContext';
@@ -10,12 +11,16 @@ import type { Product } from '@/types/product';
 vi.mock('@/services/shopping', () => ({
   shoppingService: {
     getShoppingListItems: vi.fn(),
+    getShoppingMode: vi.fn().mockResolvedValue(false), // Story 4.4: Shopping Mode
+    setShoppingMode: vi.fn().mockResolvedValue(undefined), // Story 4.4: Shopping Mode
   },
 }));
 
 vi.mock('./ShoppingListItem', () => ({
-  ShoppingListItem: ({ product }: { product: { name: string } }) => (
-    <div data-testid={`shopping-item-${product.name}`}>{product.name}</div>
+  ShoppingListItem: ({ product, isShoppingMode }: { product: { name: string }; isShoppingMode?: boolean }) => (
+    <div data-testid={`shopping-item-${product.name}`} data-mode={isShoppingMode ? 'shopping' : 'planning'}>
+      {product.name}
+    </div>
   ),
 }));
 
@@ -26,15 +31,19 @@ const mockClearError = vi.fn();
 const mockAddToList = vi.fn().mockResolvedValue(undefined);
 const mockRemoveFromList = vi.fn().mockResolvedValue(undefined);
 const mockToggleItemChecked = vi.fn().mockResolvedValue(undefined);
+const mockStartShoppingMode = vi.fn().mockResolvedValue(undefined);
+const mockEndShoppingMode = vi.fn().mockResolvedValue(undefined);
 
 vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
-  state: { items: [], loading: false, error: null, count: 0 },
+  state: { items: [], loading: false, error: null, count: 0, isShoppingMode: false },
   loadShoppingList: mockLoadShoppingList,
   refreshCount: mockRefreshCount,
   clearError: mockClearError,
   addToList: mockAddToList,
   removeFromList: mockRemoveFromList,
-  toggleItemChecked: mockToggleItemChecked, // Story 4.1: Add toggleItemChecked mock
+  toggleItemChecked: mockToggleItemChecked,
+  startShoppingMode: mockStartShoppingMode, // Story 4.4
+  endShoppingMode: mockEndShoppingMode, // Story 4.4
 }));
 
 const mockProducts: Product[] = [
@@ -78,26 +87,30 @@ describe('ShoppingList', () => {
     cleanup();
     // Reset default mock implementation
     vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
-      state: { items: [], loading: false, error: null, count: 0 },
+      state: { items: [], loading: false, error: null, count: 0, isShoppingMode: false },
       loadShoppingList: mockLoadShoppingList,
       refreshCount: mockRefreshCount,
       clearError: mockClearError,
       addToList: mockAddToList,
       removeFromList: mockRemoveFromList,
       toggleItemChecked: mockToggleItemChecked,
+      startShoppingMode: mockStartShoppingMode,
+      endShoppingMode: mockEndShoppingMode,
     }));
   });
 
   describe('loading state', () => {
     it('should render loading state initially', () => {
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
-        state: { items: [], loading: true, error: null, count: 0 },
+        state: { items: [], loading: true, error: null, count: 0, isShoppingMode: false },
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
         addToList: mockAddToList,
         removeFromList: mockRemoveFromList,
       toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -119,13 +132,15 @@ describe('ShoppingList', () => {
   describe('list display', () => {
     it('should render list of items when products exist', () => {
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
-        state: { items: mockProducts, loading: false, error: null, count: 2 },
+        state: { items: mockProducts, loading: false, error: null, count: 2, isShoppingMode: false },
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
         addToList: mockAddToList,
         removeFromList: mockRemoveFromList,
       toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -137,13 +152,15 @@ describe('ShoppingList', () => {
 
     it('should display Low and Empty products', () => {
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
-        state: { items: mockProducts.slice(0, 2), loading: false, error: null, count: 2 },
+        state: { items: mockProducts.slice(0, 2), loading: false, error: null, count: 2, isShoppingMode: false },
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
         addToList: mockAddToList,
         removeFromList: mockRemoveFromList,
       toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -154,13 +171,15 @@ describe('ShoppingList', () => {
 
     it('should filter out High and Medium products', () => {
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
-        state: { items: mockProducts.slice(0, 2), loading: false, error: null, count: 2 },
+        state: { items: mockProducts.slice(0, 2), loading: false, error: null, count: 2, isShoppingMode: false },
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
         addToList: mockAddToList,
         removeFromList: mockRemoveFromList,
       toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -175,13 +194,15 @@ describe('ShoppingList', () => {
       ];
 
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
-        state: { items: productsSorted, loading: false, error: null, count: 2 },
+        state: { items: productsSorted, loading: false, error: null, count: 2, isShoppingMode: false },
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
         addToList: mockAddToList,
         removeFromList: mockRemoveFromList,
       toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
       }));
 
       render(<ShoppingList />, { wrapper });
@@ -195,18 +216,133 @@ describe('ShoppingList', () => {
   describe('error state', () => {
     it('should display error when state.error exists', () => {
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
-        state: { items: [], loading: false, error: 'Failed to load', count: 0 },
+        state: { items: [], loading: false, error: 'Failed to load', count: 0, isShoppingMode: false },
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
         addToList: mockAddToList,
         removeFromList: mockRemoveFromList,
       toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
       }));
 
       render(<ShoppingList />, { wrapper });
 
       expect(screen.getByText('Failed to load')).toBeInTheDocument();
+    });
+  });
+
+  // Story 4.4: Shopping Mode Toggle Button Tests
+  describe('Shopping Mode Toggle (Story 4.4)', () => {
+    it('should render Shopping Mode FAB button', () => {
+      render(<ShoppingList />, { wrapper });
+
+      expect(screen.getByRole('button', { name: /start shopping mode/i })).toBeInTheDocument();
+    });
+
+    it('should show Shopping cart icon FAB when in Planning Mode', () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: [], loading: false, error: null, count: 0, isShoppingMode: false },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      // FAB with shopping cart icon
+      expect(screen.getByRole('button', { name: /start shopping mode/i })).toBeInTheDocument();
+      expect(screen.getByTestId('ShoppingCartIcon')).toBeInTheDocument();
+      expect(screen.queryByTestId('CheckroomIcon')).not.toBeInTheDocument();
+    });
+
+    it('should show Checkroom icon FAB when in Shopping Mode', () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: [], loading: false, error: null, count: 0, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      // FAB with checkroom icon
+      expect(screen.getByRole('button', { name: /end shopping mode/i })).toBeInTheDocument();
+      expect(screen.getByTestId('CheckroomIcon')).toBeInTheDocument();
+    });
+
+    it('should call startShoppingMode when FAB is clicked in Planning Mode', async () => {
+      const user = userEvent.setup();
+
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: [], loading: false, error: null, count: 0, isShoppingMode: false },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      await user.click(screen.getByRole('button', { name: /start shopping mode/i }));
+
+      expect(mockStartShoppingMode).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call endShoppingMode when FAB is clicked in Shopping Mode', async () => {
+      const user = userEvent.setup();
+
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: [], loading: false, error: null, count: 0, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      await user.click(screen.getByRole('button', { name: /end shopping mode/i }));
+
+      expect(mockEndShoppingMode).toHaveBeenCalledTimes(1);
+    });
+
+    it('should pass isShoppingMode prop to ShoppingListItem components', () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: mockProducts, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      expect(screen.getByTestId('shopping-item-Milk')).toHaveAttribute('data-mode', 'shopping');
+      expect(screen.getByTestId('shopping-item-Bread')).toHaveAttribute('data-mode', 'shopping');
     });
   });
 });
