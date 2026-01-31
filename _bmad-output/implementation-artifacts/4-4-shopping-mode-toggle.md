@@ -1,6 +1,6 @@
 # Story 4.4: Shopping Mode Toggle
 
-Status: review
+Status: done
 
 ## Story
 
