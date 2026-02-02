@@ -3,10 +3,18 @@ import { renderHook, act } from '@testing-library/react';
 import { ReceiptProvider, useReceiptContext } from './ReceiptContext';
 import * as errorHandler from '@/utils/errorHandler';
 import * as logger from '@/utils/logger';
+import { ocrService } from '@/services/ocr';
 
 // Mock the utilities
 vi.mock('@/utils/errorHandler');
 vi.mock('@/utils/logger');
+
+// Mock OCR service
+vi.mock('@/services/ocr', () => ({
+  ocrService: {
+    processReceipt: vi.fn(),
+  },
+}));
 
 // Mock navigator.mediaDevices
 const createMockStream = () => ({
@@ -376,6 +384,204 @@ describe('ReceiptContext', () => {
 
       expect(oldMockTrack.stop).toHaveBeenCalled();
       expect(result.current.state.videoStream).toBe(newMockStream);
+    });
+  });
+
+  describe('OCR Processing - Story 5.2', () => {
+    // Create fresh wrapper for OCR tests to avoid state pollution
+    const freshWrapper = ({ children }: { children: React.ReactNode }) => (
+      <ReceiptProvider key="ocr-test-fresh">{children}</ReceiptProvider>
+    );
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    describe('processReceiptWithOCR', () => {
+      it('should transition through OCR states: idle -> processing -> completed', async () => {
+        const mockProducts = [
+          {
+            id: '1',
+            name: 'Milk',
+            confidence: 0.9,
+            isCorrect: false,
+          },
+          {
+            id: '2',
+            name: 'Bread',
+            confidence: 0.85,
+            isCorrect: false,
+          },
+        ];
+
+        vi.mocked(ocrService.processReceipt).mockResolvedValue({
+          products: mockProducts,
+          rawText: 'MILK $4.99\nBREAD $2.50',
+        });
+
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: freshWrapper });
+
+        // Set captured image
+        act(() => {
+          result.current.state.capturedImage = 'data:image/jpeg;base64,test';
+        });
+
+        // Process receipt
+        await act(async () => {
+          await result.current.processReceiptWithOCR('data:image/jpeg;base64,test');
+        });
+
+        // Verify state transitions
+        expect(ocrService.processReceipt).toHaveBeenCalledWith('data:image/jpeg;base64,test');
+        expect(result.current.state.ocrState).toBe('completed');
+        expect(result.current.state.recognizedProducts).toEqual(mockProducts);
+        expect(result.current.state.processingProgress).toBe(100);
+        expect(logger.logger.info).toHaveBeenCalledWith(
+          'OCR processing complete',
+          expect.objectContaining({
+            productsFound: 2,
+          })
+        );
+      });
+
+      it('should handle OCR processing errors and transition to error state', async () => {
+        const mockError = new Error('OCR processing failed');
+        vi.mocked(ocrService.processReceipt).mockRejectedValue(mockError);
+
+        vi.mocked(errorHandler.handleError).mockReturnValue({
+          message: 'Failed to process receipt. Please try again.',
+          details: { originalError: mockError },
+        });
+
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: freshWrapper });
+
+        // Process receipt
+        await act(async () => {
+          try {
+            await result.current.processReceiptWithOCR('data:image/jpeg;base64,test');
+          } catch {
+            // Expected to throw
+          }
+        });
+
+        // Verify error state
+        expect(result.current.state.ocrState).toBe('error');
+        expect(result.current.state.error).toBe('Failed to process receipt. Please try again.');
+        expect(logger.logger.error).toHaveBeenCalledWith(
+          'OCR processing failed',
+          expect.any(Object)
+        );
+      });
+
+      it('should update processing progress to 100 on completion', async () => {
+        const mockProducts = [
+          { id: '1', name: 'Milk', confidence: 0.9, isCorrect: false },
+        ];
+
+        vi.mocked(ocrService.processReceipt).mockResolvedValue({
+          products: mockProducts,
+          rawText: 'MILK $4.99',
+        });
+
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: freshWrapper });
+
+        // Set captured image
+        act(() => {
+          result.current.state.capturedImage = 'data:image/jpeg;base64,test';
+        });
+
+        await act(async () => {
+          await result.current.processReceiptWithOCR('data:image/jpeg;base64,test');
+        });
+
+        // Progress should be 100 on completion
+        expect(result.current.state.processingProgress).toBe(100);
+        expect(result.current.state.recognizedProducts).toEqual(mockProducts);
+      });
+    });
+
+    describe('OCR Error Recovery', () => {
+      it('should clear error and allow retry', async () => {
+        const mockError = new Error('OCR timeout');
+        vi.mocked(ocrService.processReceipt).mockRejectedValueOnce(mockError);
+
+        vi.mocked(errorHandler.handleError).mockReturnValue({
+          message: 'OCR processing timed out. Please try again.',
+          details: { originalError: mockError },
+        });
+
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: freshWrapper });
+
+        // First attempt fails
+        await act(async () => {
+          try {
+            await result.current.processReceiptWithOCR('data:image/jpeg;base64,test');
+          } catch {
+            // Expected
+          }
+        });
+
+        expect(result.current.state.ocrState).toBe('error');
+        expect(result.current.state.error).toBeTruthy();
+
+        // Clear error
+        act(() => {
+          result.current.clearError();
+        });
+
+        expect(result.current.state.error).toBeNull();
+
+        // Retry should work
+        vi.mocked(ocrService.processReceipt).mockResolvedValueOnce({
+          products: [],
+          rawText: '',
+        });
+
+        await act(async () => {
+          await result.current.processReceiptWithOCR('data:image/jpeg;base64,test');
+        });
+
+        expect(result.current.state.ocrState).toBe('completed');
+      });
+
+      it('should handle worker initialization errors', async () => {
+        const mockError = new Error('Worker initialization failed');
+        vi.mocked(ocrService.processReceipt).mockRejectedValue(mockError);
+
+        vi.mocked(errorHandler.handleError).mockReturnValue({
+          message: 'Failed to process receipt. Please try again.',
+          details: { originalError: mockError },
+        });
+
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: freshWrapper });
+
+        await act(async () => {
+          try {
+            await result.current.processReceiptWithOCR('data:image/jpeg;base64,test');
+          } catch {
+            // Expected
+          }
+        });
+
+        expect(result.current.state.ocrState).toBe('error');
+        expect(result.current.state.cameraState).toBe('error'); // Error also sets cameraState
+      });
+    });
+
+    describe('OCR State Transitions', () => {
+      it('should have correct initial OCR state', () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: freshWrapper });
+
+        expect(result.current.state.ocrState).toBe('idle');
+        expect(result.current.state.processingProgress).toBe(0);
+        expect(result.current.state.recognizedProducts).toEqual([]);
+      });
+
+      it('should provide processReceiptWithOCR method', () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: freshWrapper });
+
+        expect(result.current.processReceiptWithOCR).toBeInstanceOf(Function);
+      });
     });
   });
 });

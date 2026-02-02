@@ -4,11 +4,13 @@
 import { createContext, useContext, useReducer, ReactNode, useMemo, useCallback, useRef, useEffect } from 'react';
 import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
+import { ocrService } from '@/services/ocr';
 import type {
   ReceiptState,
   ReceiptAction,
   ReceiptContextValue,
   CameraState,
+  OCRState,
 } from '@/features/receipt/types/receipt.types';
 
 // Create context
@@ -17,8 +19,11 @@ const ReceiptContext = createContext<ReceiptContextValue | undefined>(undefined)
 // Initial state
 const initialState: ReceiptState = {
   cameraState: 'idle',
+  ocrState: 'idle',
   videoStream: null,
   capturedImage: null,
+  processingProgress: 0,
+  recognizedProducts: [],
   error: null,
   feedbackMessage: '',
 };
@@ -30,6 +35,12 @@ function receiptReducer(state: ReceiptState, action: ReceiptAction): ReceiptStat
       return {
         ...state,
         cameraState: action.payload,
+      };
+
+    case 'SET_OCR_STATE':
+      return {
+        ...state,
+        ocrState: action.payload,
       };
 
     case 'SET_VIDEO_STREAM':
@@ -48,11 +59,24 @@ function receiptReducer(state: ReceiptState, action: ReceiptAction): ReceiptStat
         capturedImage: action.payload,
       };
 
+    case 'SET_PROCESSING_PROGRESS':
+      return {
+        ...state,
+        processingProgress: action.payload,
+      };
+
+    case 'SET_RECOGNIZED_PRODUCTS':
+      return {
+        ...state,
+        recognizedProducts: action.payload,
+      };
+
     case 'SET_ERROR':
       return {
         ...state,
         error: action.payload,
-        cameraState: action.payload ? 'error' : 'idle',
+        cameraState: action.payload ? 'error' : state.cameraState,
+        ocrState: action.payload ? 'error' : state.ocrState,
       };
 
     case 'SET_FEEDBACK_MESSAGE':
@@ -243,6 +267,40 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
     }
   }, [state.capturedImage, state.videoStream]);
 
+  // Process receipt with OCR
+  const processReceiptWithOCR = useCallback(async (imageDataUrl: string) => {
+    try {
+      logger.debug('Starting OCR processing');
+
+      // Set processing state
+      dispatch({ type: 'SET_OCR_STATE', payload: 'processing' as OCRState });
+      dispatch({ type: 'SET_PROCESSING_PROGRESS', payload: 0 });
+      dispatch({ type: 'SET_RECOGNIZED_PRODUCTS', payload: [] });
+
+      // Process with OCR service
+      const result = await ocrService.processReceipt(imageDataUrl);
+
+      // Update with results
+      dispatch({ type: 'SET_RECOGNIZED_PRODUCTS', payload: result.products });
+      dispatch({ type: 'SET_OCR_STATE', payload: 'completed' as OCRState });
+      dispatch({ type: 'SET_PROCESSING_PROGRESS', payload: 100 });
+
+      logger.info('OCR processing complete', {
+        productsFound: result.products.length,
+        rawTextLength: result.rawText.length,
+      });
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('OCR processing failed', appError.details);
+
+      // Set error state
+      dispatch({ type: 'SET_OCR_STATE', payload: 'error' as OCRState });
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to process receipt. Please try again.' });
+
+      throw error;
+    }
+  }, []);
+
   // Stop camera and cleanup
   const stopCamera = useCallback(() => {
     try {
@@ -278,11 +336,12 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       capturePhoto,
       retakePhoto,
       usePhoto,
+      processReceiptWithOCR,
       stopCamera,
       clearError,
       videoRef,
     }),
-    [state, requestCameraPermission, startCamera, capturePhoto, retakePhoto, usePhoto, stopCamera, clearError]
+    [state, requestCameraPermission, startCamera, capturePhoto, retakePhoto, usePhoto, processReceiptWithOCR, stopCamera, clearError]
   );
 
   return (

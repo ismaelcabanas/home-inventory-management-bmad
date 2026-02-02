@@ -1,20 +1,35 @@
 import { Box, Stack, Button } from '@mui/material';
 import { useReceiptContext } from '@/features/receipt/context/ReceiptContext';
+import { logger } from '@/utils/logger';
 
 /**
  * ImagePreview Component
  *
  * Displays the captured photo for confirmation with:
  * - Captured image preview
- * - "Use This Photo" button (primary action)
+ * - "Use This Photo" button (primary action) - triggers OCR processing
  * - "Retake" button (secondary action)
  */
 export function ImagePreview() {
-  const { state, retakePhoto, usePhoto } = useReceiptContext();
+  const { state, retakePhoto, processReceiptWithOCR, usePhoto: acceptPhoto } = useReceiptContext();
 
-  const useHandlePhoto = () => {
-    usePhoto();
-    // In future story (5.2), this will trigger OCR processing
+  const handleUsePhoto = async () => {
+    try {
+      if (!state.capturedImage) {
+        throw new Error('No captured image to process');
+      }
+
+      logger.debug('User confirmed photo, starting OCR processing');
+
+      // Stop camera first (synchronous action)
+      acceptPhoto();
+
+      // Then trigger OCR processing
+      await processReceiptWithOCR(state.capturedImage);
+    } catch (error) {
+      logger.error('Failed to process receipt with OCR', error);
+      // Error is handled by context state
+    }
   };
 
   const handleRetake = () => {
@@ -62,7 +77,7 @@ export function ImagePreview() {
         <Button
           variant="contained"
           color="primary"
-          onClick={useHandlePhoto}
+          onClick={handleUsePhoto}
           fullWidth
           sx={{
             py: 1.5,
