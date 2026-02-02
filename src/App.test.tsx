@@ -75,7 +75,8 @@ describe('App', () => {
     // Navigate to receipt scanner
     await user.click(screen.getByRole('button', { name: /scan/i }));
     expect(await screen.findByText('Receipt Scanner')).toBeInTheDocument();
-    expect(screen.getByText('Coming in Epic 5')).toBeInTheDocument();
+    expect(screen.getByText('Take a photo of your receipt to update inventory')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /scan receipt/i })).toBeInTheDocument();
 
     // Navigate back to inventory
     await user.click(screen.getByRole('button', { name: /inventory/i }));
