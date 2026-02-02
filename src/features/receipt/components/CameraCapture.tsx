@@ -98,11 +98,12 @@ export function CameraCapture() {
     <Box
       sx={{
         position: 'relative',
-        width: '100%',
-        height: '100%',
+        width: '100vw',
+        height: '100vh',
         display: 'flex',
         flexDirection: 'column',
         bgcolor: 'black',
+        overflow: 'hidden',
       }}
     >
       {/* Video element for live feed */}
@@ -136,8 +137,8 @@ export function CameraCapture() {
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            width: '80%',
-            height: '60%',
+            width: '90%',
+            height: '75%',
             border: '2px dashed rgba(255, 255, 255, 0.8)',
             borderRadius: 2,
             pointerEvents: 'none',
