@@ -12,7 +12,7 @@ import { useReceiptContext } from '@/features/receipt/context/ReceiptContext';
 export function ImagePreview() {
   const { state, retakePhoto, usePhoto } = useReceiptContext();
 
-  const handleUsePhoto = () => {
+  const useHandlePhoto = () => {
     usePhoto();
     // In future story (5.2), this will trigger OCR processing
   };
@@ -62,7 +62,7 @@ export function ImagePreview() {
         <Button
           variant="contained"
           color="primary"
-          onClick={handleUsePhoto}
+          onClick={useHandlePhoto}
           fullWidth
           sx={{
             py: 1.5,

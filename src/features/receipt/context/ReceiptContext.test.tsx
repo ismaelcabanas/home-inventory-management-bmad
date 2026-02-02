@@ -1,6 +1,3 @@
-// TODO (Tech Debt #4): Add explanation for why react-refresh/only-export-components is disabled
-// See: docs/technical-debt.md - Issue #4
-/* eslint-disable react-refresh/only-export-components */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { ReceiptProvider, useReceiptContext } from './ReceiptContext';
