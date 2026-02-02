@@ -129,21 +129,6 @@ export function CameraCapture() {
             objectFit: 'cover',
           }}
         />
-
-        {/* Overlay guide for receipt positioning */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '90%',
-            height: '75%',
-            border: '2px dashed rgba(255, 255, 255, 0.8)',
-            borderRadius: 2,
-            pointerEvents: 'none',
-          }}
-        />
       </Box>
 
       {/* Feedback message and capture button */}
