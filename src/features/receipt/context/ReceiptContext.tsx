@@ -196,9 +196,20 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
 
       // Clear captured image
       dispatch({ type: 'SET_CAPTURED_IMAGE', payload: null });
+
+      // Restart camera to ensure stream is in good state
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
+      });
+
+      dispatch({ type: 'SET_VIDEO_STREAM', payload: stream });
       dispatch({ type: 'SET_CAMERA_STATE', payload: 'capturing' as CameraState });
 
-      logger.info('Retaking photo');
+      logger.info('Camera restarted for retake');
     } catch (error) {
       const appError = handleError(error);
       logger.error('Failed to retake photo', appError.details);

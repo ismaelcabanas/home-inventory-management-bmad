@@ -202,7 +202,7 @@ describe('ReceiptContext', () => {
       });
 
       expect(result.current.state.cameraState).toBe('capturing');
-      expect(logger.logger.info).toHaveBeenCalledWith('Retaking photo');
+      expect(logger.logger.info).toHaveBeenCalledWith('Camera restarted for retake');
     });
   });
 
