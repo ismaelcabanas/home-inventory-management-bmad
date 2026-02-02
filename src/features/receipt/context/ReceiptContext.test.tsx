@@ -225,12 +225,45 @@ describe('ReceiptContext', () => {
       });
 
       act(() => {
+        // First set a captured image (simulating successful capture)
+        result.current.state.capturedImage = 'data:image/jpeg;base64,test';
         result.current.usePhoto();
       });
 
       expect(mockTrack.stop).toHaveBeenCalled();
       expect(result.current.state.videoStream).toBeNull();
       expect(logger.logger.info).toHaveBeenCalledWith('Photo accepted, proceeding to OCR');
+    });
+
+    it('should throw error when no captured image exists', async () => {
+      const mockTrack = { stop: vi.fn() };
+      const mockStream = {
+        getTracks: () => [mockTrack],
+      } as unknown as MediaStream;
+
+      mockGetUserMedia.mockResolvedValue(mockStream);
+
+      vi.mocked(errorHandler.handleError).mockReturnValue({
+        message: 'Failed to accept photo. Please try again.',
+        details: { originalError: new Error('No captured image to use') },
+      });
+
+      const { result } = renderHook(() => useReceiptContext(), { wrapper });
+
+      await act(async () => {
+        await result.current.startCamera();
+      });
+
+      // Try to use photo without capturing first - should log error
+      act(() => {
+        result.current.usePhoto();
+      });
+
+      // Should have error logged and state updated
+      expect(logger.logger.error).toHaveBeenCalledWith(
+        'Failed to accept photo',
+        expect.any(Object)
+      );
     });
   });
 

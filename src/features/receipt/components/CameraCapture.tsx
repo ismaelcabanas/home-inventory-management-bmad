@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Box, Stack, Fab, CircularProgress, Alert, AlertTitle, Typography } from '@mui/material';
 import { Camera as CameraIcon } from '@mui/icons-material';
 import { useReceiptContext } from '@/features/receipt/context/ReceiptContext';
+import { logger } from '@/utils/logger';
 
 /**
  * CameraCapture Component
@@ -15,8 +16,7 @@ import { useReceiptContext } from '@/features/receipt/context/ReceiptContext';
  * - Error display with retry option
  */
 export function CameraCapture() {
-  const { state, capturePhoto, clearError } = useReceiptContext();
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const { state, capturePhoto, clearError, videoRef } = useReceiptContext();
 
   // Attach stream to video element when available
   useEffect(() => {
@@ -24,7 +24,7 @@ export function CameraCapture() {
     if (video && state.videoStream) {
       video.srcObject = state.videoStream;
     }
-  }, [state.videoStream]);
+  }, [state.videoStream, videoRef]);
 
   // Handle capture button press
   const handleCapture = async () => {
@@ -32,7 +32,7 @@ export function CameraCapture() {
       await capturePhoto();
     } catch (error) {
       // Error is handled by context
-      console.error('Capture failed:', error);
+      logger.error('Capture failed', error);
     }
   };
 
@@ -121,6 +121,7 @@ export function CameraCapture() {
           autoPlay
           playsInline
           muted
+          aria-label="Camera viewfinder for receipt scanning"
           style={{
             width: '100%',
             height: '100%',
@@ -196,6 +197,7 @@ export function CameraCapture() {
         <Fab
           color="primary"
           onClick={handleCapture}
+          aria-label="Capture photo"
           sx={{
             width: 72,
             height: 72,

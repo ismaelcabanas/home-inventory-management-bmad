@@ -1,6 +1,7 @@
 import { Box, Stack, Button, Typography } from '@mui/material';
 import { Receipt as ReceiptIcon } from '@mui/icons-material';
 import { useReceiptContext } from '@/features/receipt/context/ReceiptContext';
+import { logger } from '@/utils/logger';
 import { CameraCapture } from '@/features/receipt/components/CameraCapture';
 import { ImagePreview } from '@/features/receipt/components/ImagePreview';
 
@@ -25,7 +26,7 @@ export function ReceiptScanner() {
       await requestCameraPermission();
     } catch (error) {
       // Error is handled by context
-      console.error('Failed to start camera:', error);
+      logger.error('Failed to start camera', error);
     }
   };
 

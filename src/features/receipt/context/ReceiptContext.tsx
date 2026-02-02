@@ -128,6 +128,7 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
   // Start camera
   const startCamera = useCallback(async () => {
     try {
+      dispatch({ type: 'SET_CAMERA_STATE', payload: 'requesting_permission' as CameraState });
       logger.debug('Starting camera');
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -209,6 +210,11 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
   // Use photo (accept and proceed)
   const usePhoto = useCallback(() => {
     try {
+      // Validate that we have a captured image before proceeding
+      if (!state.capturedImage) {
+        throw new Error('No captured image to use');
+      }
+
       logger.debug('Photo accepted');
 
       // Stop camera but keep captured image
@@ -224,7 +230,7 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       logger.error('Failed to accept photo', appError.details);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to accept photo. Please try again.' });
     }
-  }, [state.videoStream]);
+  }, [state.capturedImage, state.videoStream]);
 
   // Stop camera and cleanup
   const stopCamera = useCallback(() => {
