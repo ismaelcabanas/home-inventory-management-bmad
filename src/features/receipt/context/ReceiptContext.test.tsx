@@ -13,6 +13,7 @@ vi.mock('@/utils/logger');
 vi.mock('@/services/ocr', () => ({
   ocrService: {
     processReceipt: vi.fn(),
+    setInventoryService: vi.fn(),
   },
 }));
 
@@ -72,6 +73,9 @@ describe('ReceiptContext', () => {
       expect(result.current.state.capturedImage).toBeNull();
       expect(result.current.state.error).toBeNull();
       expect(result.current.state.feedbackMessage).toBe('');
+      expect(result.current.state.rawOcrText).toBeNull();
+      expect(result.current.state.processingProgress).toBe(0);
+      expect(result.current.state.recognizedProducts).toEqual([]);
     });
   });
 
@@ -575,6 +579,7 @@ describe('ReceiptContext', () => {
         expect(result.current.state.ocrState).toBe('idle');
         expect(result.current.state.processingProgress).toBe(0);
         expect(result.current.state.recognizedProducts).toEqual([]);
+        expect(result.current.state.rawOcrText).toBeNull();
       });
 
       it('should provide processReceiptWithOCR method', () => {

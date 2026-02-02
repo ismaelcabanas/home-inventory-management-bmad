@@ -73,13 +73,28 @@ export class OCRService {
   extractProductNames(ocrText: string): string[] {
     const lines = ocrText.split('\n');
 
+    // Log all lines for debugging
+    logger.debug('OCR raw lines', {
+      totalLines: lines.length,
+      lines: lines.map((l, i) => `${i}: "${l}"`)
+    });
+
     // Filter to only product lines
     const productLines = lines.filter((line) => this.isProductLine(line));
+
+    logger.debug('Product lines after filtering', {
+      originalLines: lines.length,
+      productLines: productLines.length,
+      filteredOut: lines.length - productLines.length
+    });
 
     // Clean up product names
     const cleanedNames = productLines.map((line) => this.cleanProductName(line)).filter((name) => name.length > 0);
 
-    logger.debug('Product names extracted', { count: cleanedNames.length, names: cleanedNames });
+    logger.info('Products extracted from OCR', {
+      count: cleanedNames.length,
+      products: cleanedNames
+    });
     return cleanedNames;
   }
 

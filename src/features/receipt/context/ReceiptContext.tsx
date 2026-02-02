@@ -5,6 +5,7 @@ import { createContext, useContext, useReducer, ReactNode, useMemo, useCallback,
 import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
 import { ocrService } from '@/services/ocr';
+import { inventoryService } from '@/services/inventory';
 import type {
   ReceiptState,
   ReceiptAction,
@@ -24,6 +25,7 @@ const initialState: ReceiptState = {
   capturedImage: null,
   processingProgress: 0,
   recognizedProducts: [],
+  rawOcrText: null,
   error: null,
   feedbackMessage: '',
 };
@@ -69,6 +71,12 @@ function receiptReducer(state: ReceiptState, action: ReceiptAction): ReceiptStat
       return {
         ...state,
         recognizedProducts: action.payload,
+      };
+
+    case 'SET_RAW_OCR_TEXT':
+      return {
+        ...state,
+        rawOcrText: action.payload,
       };
 
     case 'SET_ERROR':
@@ -276,9 +284,13 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       dispatch({ type: 'SET_OCR_STATE', payload: 'processing' as OCRState });
       dispatch({ type: 'SET_PROCESSING_PROGRESS', payload: 0 });
       dispatch({ type: 'SET_RECOGNIZED_PRODUCTS', payload: [] });
+      dispatch({ type: 'SET_RAW_OCR_TEXT', payload: null });
 
       // Process with OCR service
       const result = await ocrService.processReceipt(imageDataUrl);
+
+      // Store raw OCR text for debugging
+      dispatch({ type: 'SET_RAW_OCR_TEXT', payload: result.rawText });
 
       // Update with results
       dispatch({ type: 'SET_RECOGNIZED_PRODUCTS', payload: result.products });
@@ -288,6 +300,7 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       logger.info('OCR processing complete', {
         productsFound: result.products.length,
         rawTextLength: result.rawText.length,
+        rawTextPreview: result.rawText.substring(0, 200),
       });
     } catch (error) {
       const appError = handleError(error);
@@ -327,6 +340,13 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       }
     };
   }, [state.videoStream]);
+
+  // Initialize OCR service with inventory service
+  useEffect(() => {
+    // Initialize the inventory service for product matching
+    ocrService.setInventoryService(inventoryService);
+    logger.info('OCR service initialized with inventory service');
+  }, []);
 
   const value: ReceiptContextValue = useMemo(
     () => ({

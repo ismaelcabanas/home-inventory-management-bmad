@@ -58,6 +58,7 @@ export interface ReceiptState {
   capturedImage: string | null; // data URL of captured photo
   processingProgress: number; // 0-100 for OCR progress indicator
   recognizedProducts: RecognizedProduct[];
+  rawOcrText: string | null; // Raw text extracted by Tesseract (for debugging)
   error: string | null;
   feedbackMessage: string;
 }
@@ -73,6 +74,7 @@ export type ReceiptAction =
   | { type: 'SET_CAPTURED_IMAGE'; payload: string | null }
   | { type: 'SET_PROCESSING_PROGRESS'; payload: number }
   | { type: 'SET_RECOGNIZED_PRODUCTS'; payload: RecognizedProduct[] }
+  | { type: 'SET_RAW_OCR_TEXT'; payload: string | null }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_FEEDBACK_MESSAGE'; payload: string }
   | { type: 'RESET' };

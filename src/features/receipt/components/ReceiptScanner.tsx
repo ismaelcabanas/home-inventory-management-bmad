@@ -79,7 +79,7 @@ export function ReceiptScanner() {
           </Stack>
 
           {/* Recognized products list */}
-          {state.recognizedProducts.length > 0 && (
+          {state.recognizedProducts.length > 0 ? (
             <Box sx={{ width: '100%' }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 Recognized Products:
@@ -109,6 +109,41 @@ export function ReceiptScanner() {
                   </ListItem>
                 ))}
               </List>
+            </Box>
+          ) : (
+            <Box sx={{ width: '100%', textAlign: 'center', p: 3, bgcolor: 'warning.lighter', borderRadius: 1 }}>
+              <Typography variant="body1" color="text.warning.dark" gutterBottom>
+                No products were recognized from this receipt
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                This could be due to poor image quality, unusual receipt format, or OCR limitations.
+                Check the raw OCR text below to see what was extracted.
+              </Typography>
+            </Box>
+          )}
+
+          {/* Debug info: Raw OCR text */}
+          {state.rawOcrText && (
+            <Box sx={{ width: '100%', mt: 2 }}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                OCR Raw Text (Debug):
+              </Typography>
+              <Box
+                sx={{
+                  bgcolor: 'background.paper',
+                  borderRadius: 1,
+                  p: 2,
+                  maxHeight: 200,
+                  overflow: 'auto',
+                  fontSize: '0.75rem',
+                  fontFamily: 'monospace',
+                  color: 'text.secondary',
+                }}
+              >
+                <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  {state.rawOcrText}
+                </pre>
+              </Box>
             </Box>
           )}
 
