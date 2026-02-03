@@ -117,33 +117,8 @@ export function ReceiptScanner() {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 This could be due to poor image quality, unusual receipt format, or OCR limitations.
-                Check the raw OCR text below to see what was extracted.
+                Try retaking the photo with better lighting or a clearer angle.
               </Typography>
-            </Box>
-          )}
-
-          {/* Debug info: Raw OCR text */}
-          {state.rawOcrText && (
-            <Box sx={{ width: '100%', mt: 2 }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                OCR Raw Text (Debug):
-              </Typography>
-              <Box
-                sx={{
-                  bgcolor: 'background.paper',
-                  borderRadius: 1,
-                  p: 2,
-                  maxHeight: 200,
-                  overflow: 'auto',
-                  fontSize: '0.75rem',
-                  fontFamily: 'monospace',
-                  color: 'text.secondary',
-                }}
-              >
-                <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                  {state.rawOcrText}
-                </pre>
-              </Box>
             </Box>
           )}
 
