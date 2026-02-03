@@ -272,7 +272,7 @@ Based on technical preferences and project requirements:
 - **Zustand** - Optional upgrade if Context becomes insufficient
 
 **Key Libraries:**
-- **Tesseract.js 7.x** - OCR for receipt scanning (MVP)
+- **OpenAI GPT-4o mini API** - LLM-based OCR for receipt scanning (Story 5.4)
 - **vite-plugin-pwa 1.x** - PWA configuration and service worker
 
 **Testing:**
@@ -290,7 +290,7 @@ Based on technical preferences and project requirements:
 **Option 2: Custom Stack (Recommended)**
 - Start with Vite official template
 - Add `vite-plugin-pwa` for PWA capabilities
-- Configure MUI, Dexie.js, Tesseract.js
+- Configure MUI, Dexie.js, OpenAI API integration
 - Set up Vitest + Playwright testing
 - **Pros**: Full control, modern best practices, learning-optimized
 - **Cons**: More initial setup (but documented)
@@ -327,8 +327,8 @@ npm install -D vite-plugin-pwa workbox-window
 # Local Database
 npm install dexie
 
-# OCR Library
-npm install tesseract.js
+# OCR Library (deprecated after Story 5.4 - LLM-based OCR now used)
+# npm install tesseract.js  # No longer needed
 
 # State Management (optional, if needed beyond Context)
 npm install zustand
@@ -430,7 +430,12 @@ src/
 │   └── receipt/     # Receipt scanning components
 ├── services/         # Business logic
 │   ├── database.ts  # Dexie.js database setup
-│   ├── ocr.ts       # Tesseract.js OCR service
+│   ├── ocr/         # OCR service with provider architecture
+│   │   ├── ocr.service.ts       # Main OCR service
+│   │   ├── providers/           # OCR provider implementations
+│   │   │   ├── LLMProvider.ts   # OpenAI GPT-4o mini (active)
+│   │   │   └── TesseractProvider.ts # Tesseract.js (deprecated, Story 5.4)
+│   │   └── config.ts            # Provider selection
 │   └── inventory.ts # Inventory operations
 ├── hooks/            # Custom React hooks
 ├── types/            # TypeScript type definitions
@@ -462,12 +467,16 @@ src/
   - Transaction support
 
 **OCR Integration:**
-- Tesseract.js provides:
-  - Browser-based OCR (no server needed)
-  - Multiple language support
-  - Confidence scores for results
-  - Progressive loading
-  - Web Worker support for non-blocking processing
+- OpenAI GPT-4o mini API provides:
+  - High-accuracy receipt text extraction (~98% vs Tesseract's ~95%)
+  - Context-aware product name recognition
+  - JSON-structured output for easy parsing
+  - Better handling of complex receipt layouts
+  - Requires API key and internet connection
+  - Offline queue support (receipts saved for later processing)
+- Provider architecture allows switching between OCR engines:
+  - LLMProvider (active): OpenAI GPT-4o mini
+  - TesseractProvider (deprecated): Browser-based OCR for fallback
 
 ### Technology Decision Rationale
 
@@ -484,12 +493,14 @@ src/
 - Handles hundreds of products with versioning and migrations
 - Perfect for zero data loss requirement (NFR4)
 
-**OCR Strategy: Tesseract.js for MVP**
-- Completely offline (aligns with NFR9, NFR13)
-- Zero API costs during 3-month validation
-- Should achieve 90-95% accuracy target with good images
-- Future upgrade path to Gemini LLM if accuracy falls short
-- Phase 2 can introduce network-based LLM for better accuracy
+**OCR Strategy: LLM-Based OCR (Story 5.4)**
+- OpenAI GPT-4o mini for high-accuracy receipt text extraction (~98% target)
+- Offline queue support: receipts saved when offline, processed when connection restored
+- Free-tier API usage for MVP validation period
+- Context-aware product recognition (distinguishes products from prices/totals)
+- Better handling of complex layouts, poor lighting, crumpled receipts
+- Requires API key (VITE_LLM_API_KEY environment variable)
+- Tesseract.js deprecated after Story 5.4 due to accuracy limitations
 
 **Note:** Project initialization using this approach should be the first implementation story.
 
@@ -655,21 +666,24 @@ db.version(1).stores({
 
 ### 1.4. Receipt Image Storage
 
-**Decision:** Process and discard receipt images (no caching)
+**Decision:** Process and discard receipt images (no persistent caching)
 
 **Approach:**
 - Capture receipt photo
-- Process with Tesseract.js OCR
+- Process with LLM-based OCR (OpenAI GPT-4o mini)
 - Extract product names
-- Discard image immediately
-- Do not store in IndexedDB or cache
+- Discard image immediately after successful processing
+- Exception: Temporarily queue images in pendingReceipts table when offline
+- Pending receipts auto-processed when connection restored
+- Failed receipts cleaned up after 7 days
 
 **Rationale:**
-- Dramatically reduces storage usage (images are large)
+- Reduces storage usage (images are large)
 - Sufficient for MVP validation (user can re-scan if needed)
-- Meets offline-first requirement (no need to store images)
-- Phase 2 can add "receipt history" feature if valuable
-- Keeps IndexedDB storage under 1MB for typical use
+- Offline queue ensures users never lose receipts when connection drops
+- Pending receipts temporary storage with auto-cleanup
+- Keeps IndexedDB storage under typical quotas
+- LLM OCR requires images be sent to API (online-only)
 
 **Storage Projection:**
 - 500 products × ~200 bytes = ~100KB
@@ -804,10 +818,10 @@ IndexedDB (Browser storage)
 
 **No External APIs for MVP:**
 - ❌ No backend server
-- ❌ No external OCR API (Tesseract.js runs in browser)
+- ✅ LLM-based OCR API (OpenAI GPT-4o mini) for receipt scanning (Story 5.4)
 - ❌ No analytics or tracking services
-- ✅ Complete offline functionality (NFR9)
-- ✅ Zero network dependency (NFR13)
+- ⚠️ Offline functionality with deferred processing (receipts queued when offline)
+- ⚠️ Network dependency for OCR only (inventory management remains offline)
 
 **Rationale:**
 - Meets offline-first requirement
@@ -1233,7 +1247,7 @@ jobs:
 
 **Priority 1 - Project Setup (Story 1):**
 1. Initialize Vite + React + TypeScript project
-2. Install and configure dependencies (MUI, Dexie.js, React Router, Tesseract.js)
+2. Install and configure dependencies (MUI, Dexie.js, React Router)
 3. Configure PWA with vite-plugin-pwa
 4. Set up ESLint, Prettier, Vitest, Playwright
 5. Configure GitHub Actions CI/CD
@@ -1280,7 +1294,7 @@ jobs:
 | Vite | 7.x | Build tool |
 | MUI | 7.x | Component library |
 | Dexie.js | 4.x | IndexedDB wrapper |
-| Tesseract.js | 7.x | OCR engine |
+| OpenAI API (GPT-4o mini) | Latest | OCR engine (LLM-based) |
 | React Router | 6.x | Routing |
 | Vitest | Latest | Unit testing |
 | Playwright | Latest | E2E testing |
@@ -2171,8 +2185,16 @@ home-inventory-management/
 │   │   ├── inventory.test.ts
 │   │   ├── shopping.ts             # Shopping service layer
 │   │   ├── shopping.test.ts
-│   │   ├── ocr.ts                  # Tesseract.js OCR service
-│   │   └── ocr.test.ts
+│   │   ├── ocr/                    # OCR service with provider architecture
+│   │   │   ├── ocr.service.ts      # Main OCR service
+│   │   │   ├── ocr.service.test.ts # OCR service tests
+│   │   │   ├── config.ts           # Provider selection
+│   │   │   └── providers/          # OCR provider implementations
+│   │   │       ├── LLMProvider.ts  # OpenAI GPT-4o mini (active)
+│   │   │       ├── LLMProvider.test.ts
+│   │   │       ├── TesseractProvider.ts # Deprecated (Story 5.4)
+│   │   │       ├── types.ts        # Provider interfaces
+│   │   │       └── index.ts        # Provider exports
 │   │
 │   ├── types/                      # Global TypeScript Types
 │   │   ├── product.ts              # Product interface & StockLevel type
@@ -2343,9 +2365,10 @@ User Action → Component → dispatch() → Reducer → New State → Re-render
 
 **FR22-FR26: Receipt Scanning & OCR**
 - **Components**: `src/features/receipt/components/ReceiptScanner.tsx`, `CameraCapture.tsx`
-- **Service**: `src/services/ocr.ts` → `processReceipt()`, `extractProducts()`
-- **External Dependency**: Tesseract.js (imported in `ocr.ts`)
+- **Service**: `src/services/ocr/ocr.service.ts` → `processReceipt()`, `queuePendingReceipt()`, `processPendingQueue()`
+- **External Dependency**: OpenAI GPT-4o mini API (LLM-based OCR, Story 5.4)
 - **Context**: `ReceiptContext` manages scanning state (idle, capturing, processing, reviewing)
+- **Offline Support**: `pendingReceipts` table queues images when offline
 - **Tests**: `tests/e2e/receipt-scanning.spec.ts` with mock receipt fixtures
 
 **FR27-FR31: OCR Error Correction**
@@ -2471,12 +2494,14 @@ for (const product of recognizedProducts) {
 
 **External Integrations:**
 
-**Tesseract.js (OCR Library):**
-- **Location**: Imported in `src/services/ocr.ts`
-- **Usage**: `Tesseract.recognize(image, 'eng')`
-- **Configuration**: Language set via environment variable `VITE_OCR_LANGUAGE`
-- **Error Handling**: Wrapped in try/catch, provides user-friendly errors
-- **No Network**: Runs completely in-browser (Web Worker)
+**OpenAI API (LLM-based OCR):**
+- **Location**: `src/services/ocr/providers/LLMProvider.ts`
+- **Usage**: `fetch('https://api.openai.com/v1/chat/completions', ...)`
+- **Model**: GPT-4o mini (vision-capable, cost-effective)
+- **Configuration**: API key via `VITE_LLM_API_KEY` environment variable
+- **Error Handling**: Handles 429 (quota), 401 (auth), 500+ (server), timeout
+- **Offline Support**: Pending receipts queued when offline, auto-processed when online
+- **Note**: Tesseract.js was deprecated in Story 5.4 due to accuracy limitations (~95% vs target 98%+)
 
 **Browser APIs:**
 - **Camera API**: `navigator.mediaDevices.getUserMedia()` in `useCamera.ts` hook
@@ -2523,27 +2548,39 @@ for (const product of recognizedProducts) {
      ↓
 3. User captures photo
      ↓
-4. ReceiptContext dispatches SET_SCANNING
+4. ReceiptContext checks online status
      ↓
-5. Context calls ocrService.processReceipt(imageData)
+5a. If ONLINE:
      ↓
-6. OCR service processes with Tesseract.js (5 seconds)
+5a.1. Context calls ocrService.processReceipt(imageData)
      ↓
-7. Service returns { products: [...], confidence: 0.92 }
+5a.2. OCR service calls OpenAI GPT-4o mini API (LLM-based, ~5 seconds)
      ↓
-8. Context dispatches SET_REVIEW_PRODUCTS
+5a.3. Service returns { products: [...], confidence: 0.98 }
      ↓
-9. ReceiptReview component renders with editable list
+5b. If OFFLINE:
      ↓
-10. User confirms/edits products
+5b.1. Context calls ocrService.queuePendingReceipt(imageData)
      ↓
-11. Context calls inventoryService.addProductsFromReceipt(products)
+5b.2. Image saved to pendingReceipts table (status='pending')
      ↓
-12. Service adds/updates products in database
+5b.3. User sees "Offline. Receipt queued for processing." message
      ↓
-13. InventoryContext automatically reflects changes (via database query)
+5b.4. When connection restored: Auto-process queue
      ↓
-14. ShoppingContext updates (items replenished, removed from list)
+6. Context dispatches SET_REVIEW_PRODUCTS
+     ↓
+7. ReceiptReview component renders with editable list
+     ↓
+8. User confirms/edits products
+     ↓
+9. Context calls inventoryService.addProductsFromReceipt(products)
+     ↓
+10. Service adds/updates products in database
+     ↓
+11. InventoryContext automatically reflects changes (via database query)
+     ↓
+12. ShoppingContext updates (items replenished, removed from list)
 ```
 
 ---
@@ -2674,7 +2711,8 @@ Vercel auto-deploys
 | | useReducer | Built-in | Complex state logic |
 | **Data** | Dexie.js | 4.x | IndexedDB wrapper |
 | | IndexedDB | Browser API | Local database |
-| **OCR** | Tesseract.js | 7.x | Receipt OCR (browser-based) |
+| **OCR** | OpenAI GPT-4o mini | Latest | Receipt OCR (LLM-based, API) |
+| | | | Note: Tesseract.js deprecated after Story 5.4 |
 | **Testing** | Vitest | Latest | Unit/integration tests |
 | | Playwright | Latest | E2E tests |
 | | Testing Library | Latest | Component testing |

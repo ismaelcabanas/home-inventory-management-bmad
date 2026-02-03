@@ -112,7 +112,10 @@ export class LLMProvider implements IOCRProvider {
         rawText,
         provider: this.name,
         processingTimeMs: Math.round(processingTimeMs),
-        confidence: 0.98, // LLM typically has high confidence
+        // Note: OpenAI's GPT-4o mini API does not return confidence scores.
+        // This value is an estimate based on typical LLM OCR accuracy (~98%).
+        // Actual confidence should be validated through user corrections in production.
+        confidence: 0.98,
       };
     } catch (error) {
       const appError = handleError(error);

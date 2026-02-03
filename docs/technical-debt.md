@@ -1002,7 +1002,435 @@ Event bus adds slight architectural complexity but is standard pattern used by R
 
 ---
 
-*Last Updated: 2026-01-28*
-*Identified During: Story 1.3 Code Review (Issues #1-5), Story 1.10 Code Review (Issues #6-7), Story 2.2 Implementation (Issue #8), Story 2.2 CI Failure (Issue #9), Story 3.1 Code Review (Issue #10)*
-*Updated During: Story 3.1 Code Review (Issue #7 bundle size progression)*
+---
+
+## Story 5.4 Code Review - LLM-Based OCR Implementation
+
+### Issue #11: NFR14 Compliance - External API Disclosure and Consent
+**Priority:** High
+**Category:** Privacy / Legal / Compliance
+**Location:** `src/services/ocr/providers/LLMProvider.ts:66-79`, `.env:10`
+**Story:** 5.4
+
+**Description:**
+LLMProvider sends receipt image data to OpenAI's external API (`https://api.openai.com/v1/chat/completions`) without user disclosure or consent. This violates NFR14 requirement for "no external data transmission" in the MVP scope without proper user notification and opt-in consent.
+
+**Current Behavior:**
+```typescript
+// LLMProvider.ts:66-79
+const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${apiKey}`,
+  },
+  body: JSON.stringify({
+    model: 'gpt-4o-mini',
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'text', text: OCR_PROMPT },
+        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Data}` } }
+      ]
+    }],
+    response_format: { type: 'json_object' }
+  })
+});
+```
+
+**NFR14 Requirement:**
+> "MVP scope: No data transmission to external services beyond what is necessary for core functionality. Use local processing whenever possible."
+
+**Problems:**
+1. **No user disclosure** - Users aren't informed their receipt images are sent to OpenAI
+2. **No consent mechanism** - No opt-in/opt-out for external API usage
+3. **No alternative** - Tesseract.js was removed, leaving only external API option
+4. **Privacy concern** - Receipts may contain sensitive purchase information
+5. **Legal compliance** - GDPR/CCPA may require explicit consent for data processing
+
+**Impact:**
+- Users unknowingly sending potentially sensitive data to third-party service
+- Non-compliance with privacy best practices
+- Potential liability if receipt images contain personally identifiable information
+- Breach of trust if users discover external API usage
+
+**Proposed Solutions:**
+
+**Option A: Add One-Time Consent Prompt (Recommended)**
+```tsx
+// First-time LLM OCR usage
+<Dialog open={showLLMConsent}>
+  <DialogTitle>Use AI-Powered Receipt Scanning?</DialogTitle>
+  <DialogContent>
+    <Typography>
+      This feature uses OpenAI's GPT-4o mini model to process your receipt images.
+      Your receipt images will be sent to OpenAI's servers for text extraction.
+    </Typography>
+    <Alert severity="info" sx={{ mt: 2 }}>
+      • Images are not stored by OpenAI
+      • • Data is encrypted in transit
+      • • You can disable this feature anytime in settings
+    </Alert>
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={declineConsent}>Use Offline OCR Only</Button>
+    <Button onClick={acceptConsent)} variant="contained">Enable AI Scanning</Button>
+  </DialogActions>
+</Dialog>
+```
+
+**Option B: Restore Tesseract.js as Fallback**
+- Reinstall tesseract.js: `npm install tesseract.js`
+- Update TesseractProvider to work again
+- Offer user choice: AI (online, accurate) vs Tesseract (offline, less accurate)
+- Default to Tesseract unless user opts into AI
+
+**Option C: Settings Toggle for External API**
+```tsx
+// Settings page
+<FormControlLabel
+  control={
+    <Switch
+      checked={settings.useExternalAI}
+      onChange={(e) => updateSetting('useExternalAI', e.target.checked)}
+    />
+  }
+  label="Use AI-powered scanning (requires internet, sends data to OpenAI)"
+/>
+```
+
+**Acceptance Criteria for Fix:**
+- [ ] User sees consent dialog before first LLM OCR usage
+- [ ] Consent option clearly explains external API usage
+- [ ] User can decline consent and still use app (even if with degraded OCR)
+- [ ] User consent preference is persisted (localStorage/IndexedDB)
+- [ ] Settings page shows current external API status
+- [ ] User can revoke consent in settings
+- [ ] Documentation updated with privacy notice
+
+**Estimated Effort:** 4-6 hours
+- Design consent UI: 1 hour
+- Implement consent storage: 1 hour
+- Add consent check in LLMProvider: 1 hour
+- Update settings page: 1 hour
+- Add tests: 1 hour
+- Documentation update: 30 minutes
+
+**Benefits:**
+- NFR14 compliance
+- Legal compliance (GDPR/CCPA)
+- User trust and transparency
+- Informed consent for data usage
+
+---
+
+### Issue #12: Documentation Inconsistency - Database Version Reference
+**Priority:** Medium
+**Category:** Documentation
+**Location:** `_bmad-output/implementation-artifacts/5-4-replace-tesseract-with-llm-based-ocr.md`
+**Story:** 5.4
+
+**Description:**
+Story documentation references "database v2" but the actual implementation uses database v3. This creates confusion for future developers trying to understand the evolution of the database schema.
+
+**Current State:**
+Story documentation states: "pendingReceipts table will be added to the IndexedDB database (currently at v2)"
+
+**Actual Implementation:**
+```typescript
+// src/services/database.ts:17
+export const DB_VERSION = 3;
+```
+
+**Proposed Fix:**
+Update story documentation to correctly reference database v3:
+```markdown
+pendingReceipts table will be added to the IndexedDB database (currently at v3)
+```
+
+**Estimated Effort:** 5 minutes
+
+---
+
+### Issue #13: Missing Queue Size Limit for Pending Receipts
+**Priority:** Medium
+**Category:** Performance / Resource Management
+**Location:** `src/services/ocr/ocr.service.ts:112-143`
+**Story:** 5.4
+
+**Description:**
+The `queuePendingReceipt()` method has no maximum limit on the number of pending receipts that can be stored. This could lead to unbounded IndexedDB growth and potential quota exhaustion.
+
+**Current Behavior:**
+```typescript
+async queuePendingReceipt(imageDataUrl: string): Promise<number> {
+  const id = await db.pendingReceipts.add({
+    imageData: imageDataUrl,
+    createdAt: new Date(),
+    status: 'pending'
+  });
+  return id;
+}
+```
+
+**Problems:**
+1. **Unbounded growth** - User could queue unlimited receipts
+2. **Storage quota** - IndexedDB has limits (typically 50-80% of disk space)
+3. **Performance degradation** - Large queues slow down processing
+4. **No user feedback** - No indication when queue is "full"
+
+**Proposed Solution:**
+```typescript
+const MAX_PENDING_RECEIPTS = 50;
+
+async queuePendingReceipt(imageDataUrl: string): Promise<number> {
+  const count = await this.getPendingCount();
+  if (count >= MAX_PENDING_RECEIPTS) {
+    throw new Error(
+      `Maximum pending receipts limit reached (${MAX_PENDING_RECEIPTS}). ` +
+      'Process existing receipts or wait for network connection.'
+    );
+  }
+
+  const id = await db.pendingReceipts.add({
+    imageData: imageDataUrl,
+    createdAt: new Date(),
+    status: 'pending'
+  });
+  return id;
+}
+```
+
+**Benefits:**
+- Prevents unbounded storage growth
+- Provides clear error message to users
+- Predictable behavior
+- Better resource management
+
+**Estimated Effort:** 30 minutes
+
+---
+
+### Issue #14: Auto-Cleanup Policy Lacks User Notification
+**Priority:** Medium
+**Category:** User Experience / Data Retention
+**Location:** `src/services/ocr/ocr.service.ts:187-201`
+**Story:** 5.4
+
+**Description:**
+The pending receipts auto-cleanup removes failed receipts after 7 days without any user notification. Users may lose receipt data unexpectedly.
+
+**Current Behavior:**
+```typescript
+private async cleanupOldPendingReceipts(): Promise<void> {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const oldReceipts = await db.pendingReceipts
+    .where('createdAt')
+    .below(sevenDaysAgo)
+    .toArray();
+
+  for (const receipt of oldReceipts) {
+    await db.pendingReceipts.delete(receipt.id!);
+    logger.info(`Cleaned up old pending receipt ${receipt.id}`);
+  }
+}
+```
+
+**Problems:**
+1. **No warning** - Users not notified before cleanup
+2. **Data loss** - Failed receipts deleted without user awareness
+3. **No opt-out** - Cannot disable auto-cleanup
+4. **Unclear policy** - 7-day policy not documented in UI
+
+**Proposed Solutions:**
+
+**Option A: Add Expiration Warning (Recommended)**
+```typescript
+// Notify user before cleanup
+private async cleanupOldPendingReceipts(): Promise<void> {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const oldReceipts = await db.pendingReceipts
+    .where('createdAt')
+    .below(sevenDaysAgo)
+    .toArray();
+
+  if (oldReceipts.length > 0) {
+    // Show notification before cleanup
+    showNotification({
+      message: `${oldReceipts.length} expired pending receipt(s) will be removed`,
+      severity: 'warning',
+      action: 'View Pending Receipts'
+    });
+  }
+
+  // ... cleanup logic
+}
+```
+
+**Option B: Mark for Deletion, Require Confirmation**
+```typescript
+// Change status to 'expired' instead of deleting
+await db.pendingReceipts.update(receipt.id!, { status: 'expired' });
+
+// Show in UI with expiration notice
+<PendingReceiptsList>
+  {expiredReceipts.map(r => (
+    <Alert severity="warning">
+      Receipt from {r.createdAt} expired. Will be deleted in 24 hours.
+      <Button onClick={() => keepReceipt(r.id)}>Keep</Button>
+      <Button onClick={() => deleteReceipt(r.id)}>Delete Now</Button>
+    </Alert>
+  ))}
+</PendingReceiptsList>
+```
+
+**Option C: Document in Settings**
+Add clear documentation in settings about the 7-day cleanup policy with option to extend.
+
+**Acceptance Criteria for Fix:**
+- [ ] User notified before auto-cleanup runs
+- [ ] Clear indication of which receipts will be removed
+- [ ] User can optionally extend retention period
+- [ ] Cleanup policy documented in app settings
+- [ ] Failed receipts clearly marked in UI
+
+**Estimated Effort:** 2-3 hours
+
+---
+
+### Issue #15: Missing Test Coverage - Quota Exceeded Error Handling
+**Priority:** Medium
+**Category:** Testing / Error Handling
+**Location:** `src/features/receipt/context/ReceiptContext.tsx:177-194`
+**Story:** 5.4
+
+**Description:**
+ReceiptContext handles `QUOTA_EXCEEDED` errors when adding pending receipts, but there's no test verifying this behavior. This is a critical error path that could leave users unable to use OCR functionality.
+
+**Current Code:**
+```typescript
+// ReceiptContext.tsx:177-194
+catch (error) {
+  if (isAppError(error) && error.code === 'QUOTA_EXCEEDED') {
+    dispatch({
+      type: 'SET_ERROR',
+      payload: 'Storage quota exceeded. Please process or clear pending receipts.'
+    });
+    throw error;
+  }
+  // ... other error handling
+}
+```
+
+**Missing Test:**
+```typescript
+it('should handle quota exceeded error when queueing pending receipt', async () => {
+  // Mock Dexie to throw QuotaExceededError
+  const mockError = new Dexie.QuotaExceededError('Quota exceeded');
+  vi.mocked(db.pendingReceipts.add).mockRejectedValue(mockError);
+
+  await act(async () => {
+    await result.current.processReceiptOffline(mockImageData);
+  });
+
+  expect(result.current.error).toBe('Storage quota exceeded. Please process or clear pending receipts.');
+  // Verify error is thrown for caller to handle
+});
+```
+
+**Estimated Effort:** 1 hour
+
+---
+
+### Issue #16: Redundant Logging in Error Handler
+**Priority:** Low
+**Category:** Code Quality
+**Location:** `src/services/ocr/ocr.service.ts:187-201`
+**Story:** 5.4
+
+**Description:**
+The `cleanupOldPendingReceipts()` method logs each individual receipt deletion during cleanup, which creates excessive log output when multiple receipts are cleaned up.
+
+**Current Code:**
+```typescript
+for (const receipt of oldReceipts) {
+  await db.pendingReceipts.delete(receipt.id!);
+  logger.info(`Cleaned up old pending receipt ${receipt.id}`);  // Redundant
+}
+```
+
+**Proposed Fix:**
+```typescript
+// Log summary instead of individual deletions
+const deletedCount = oldReceipts.length;
+const ids = oldReceipts.map(r => r.id);
+
+await db.pendingReceipts.bulkDelete(ids);
+logger.info(`Cleaned up ${deletedCount} old pending receipts: ${ids.join(', ')}`);
+```
+
+**Benefits:**
+- Single log entry instead of many
+- Better for log aggregation/analysis
+- Still provides audit trail
+
+**Estimated Effort:** 15 minutes
+
+---
+
+## Summary (Updated)
+
+| Issue | Priority | Estimated Effort | Impact | Story |
+|-------|----------|------------------|--------|-------|
+| #1: Loading state refactoring | Medium | 1-2 hours | Maintainability | 1.3 |
+| #2: Defensive validation | Medium | 1-2 hours | User Experience | 1.3 |
+| #3: Concurrent operations | Medium | 2-6 hours | Correctness | 1.3 |
+| #4: ESLint comment | Low | 5 minutes | Documentation | 1.3 |
+| #5: readonly modifiers | Low | 1-2 hours | Type Safety | 1.3 |
+| #6: Desktop PWA verification | Medium | 1-2 hours | Quality Assurance | 1.10 |
+| #7: Bundle size optimization | Medium | 4-6 hours | Performance | 1.10 |
+| #8: Stock level UI space | High | 2-4 hours | Mobile UX | 2.2 |
+| #9: Timing test anti-pattern | Medium | 2-9 hours | Test Reliability | 2.2 |
+| #10: Event-driven sync | Medium | 3-4 hours | Performance/Architecture | 3.1 |
+| **#11: NFR14 external API disclosure** | **High** | **4-6 hours** | **Privacy/Legal** | **5.4** |
+| **#12: Database version docs** | **Medium** | **5 minutes** | **Documentation** | **5.4** |
+| **#13: Queue size limit** | **Medium** | **30 minutes** | **Resource Management** | **5.4** |
+| **#14: Auto-cleanup notification** | **Medium** | **2-3 hours** | **User Experience** | **5.4** |
+| **#15: Missing quota test** | **Medium** | **1 hour** | **Test Coverage** | **5.4** |
+| **#16: Redundant logging** | **Low** | **15 minutes** | **Code Quality** | **5.4** |
+
+**Total Estimated Effort:** 21-43 hours depending on approach
+
+## Prioritization Guidance (Updated)
+
+**Address Now (Before Production):**
+- **Issue #11 (NFR14 external API disclosure)** - High priority legal/compliance requirement
+- **Issue #3 (Concurrent operations)** - At least add tests documenting behavior
+- **Issue #6 (Desktop PWA verification)** - Required for full AC3 compliance
+
+**Address Before Next Story:**
+- Issue #8 (Stock level UI space) - Critical for mobile UX, affects primary user flow
+
+**Address After Epic 5 Completes:**
+- Issue #10 (Event-driven sync) - Replace polling before adding more features
+
+**Address Before Scale:**
+- Issue #7 (Bundle optimization) - Important for performance and UX
+- Issue #2 (Defensive validation) - Better UX as app grows
+- Issue #1 (Loading refactoring) - Easier maintenance
+
+**Address When Convenient:**
+- Issue #4 (ESLint comment) - Quick win
+- Issue #5 (readonly modifiers) - Nice to have
+- Issue #12 (Database version docs) - Quick documentation fix
+- Issue #13 (Queue size limit) - Unlikely to be hit in normal usage
+- Issue #14 (Auto-cleanup notification) - Nice UX improvement
+- Issue #15 (Missing quota test) - Low risk edge case
+- Issue #16 (Redundant logging) - Minor code quality improvement
+
+---
+
+*Last Updated: 2026-02-03*
+*Identified During: Story 1.3 Code Review (Issues #1-5), Story 1.10 Code Review (Issues #6-7), Story 2.2 Implementation (Issue #8), Story 2.2 CI Failure (Issue #9), Story 3.1 Code Review (Issue #10), Story 5.4 Code Review (Issues #11-16)*
+*Updated During: Story 3.1 Code Review (Issue #7 bundle size progression), Story 5.4 Code Review (Issues #11-16)*
 *Referenced During: Story 1.9 Code Review (TODO comment tracking)*
