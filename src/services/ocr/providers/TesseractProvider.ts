@@ -11,13 +11,15 @@
  */
 
 import { logger } from '@/utils/logger';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Reserved for future use if provider is reactivated
 import { handleError } from '@/utils/errorHandler';
 import type { IOCRProvider, OCRProviderOptions, OCRProviderResult } from './types';
 
 /**
- * Default options for Tesseract provider
+ * Default options for Tesseract provider (reserved for future use)
  */
-const DEFAULT_OPTIONS: Required<Pick<OCRProviderOptions, 'language' | 'timeout'>> = {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _DEFAULT_OPTIONS: Required<Pick<OCRProviderOptions, 'language' | 'timeout'>> = {
   language: 'eng',
   timeout: 5000,
 };
@@ -35,7 +37,11 @@ export class TesseractProvider implements IOCRProvider {
    * Process receipt image with Tesseract.js
    * NOTE: This will fail unless tesseract.js is reinstalled
    */
-  async process(_imageDataUrl: string, options: OCRProviderOptions = {}): Promise<OCRProviderResult> {
+  async process(
+    _imageDataUrl: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _options: OCRProviderOptions = {}
+  ): Promise<OCRProviderResult> {
     throw new Error(
       'TesseractProvider is deprecated after Story 5.4. The activeOCRProvider has been changed to llmProvider. To restore Tesseract support: 1) Run `npm install tesseract.js`, 2) Update config.ts to use tesseractProvider.'
     );

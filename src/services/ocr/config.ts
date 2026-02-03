@@ -9,6 +9,7 @@
  */
 
 import type { IOCRProvider } from './providers/types';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for reference if switching providers
 import { tesseractProvider } from './providers/TesseractProvider';
 import { llmProvider } from './providers/LLMProvider';
 

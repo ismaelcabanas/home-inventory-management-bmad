@@ -8,7 +8,6 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { LLMProvider } from './LLMProvider';
-import type { LLMProviderOptions } from './LLMProvider';
 
 // Mock global fetch for API calls
 const mockFetch = vi.fn();
@@ -50,8 +49,9 @@ const EMPTY_PRODUCTS_RESPONSE = {
   ],
 };
 
-// Store original env
-const originalEnv = import.meta.env;
+// Store original env (reserved for future use)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _originalEnv = import.meta.env;
 
 describe('LLMProvider', () => {
   let provider: LLMProvider;
