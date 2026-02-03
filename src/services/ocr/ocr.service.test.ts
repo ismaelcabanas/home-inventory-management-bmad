@@ -20,13 +20,6 @@ const mockOCRProvider: IOCRProvider = {
   isAvailable: vi.fn().mockResolvedValue(true),
 };
 
-// Mock Tesseract.js
-vi.mock('tesseract.js', () => ({
-  default: {
-    recognize: vi.fn(),
-  },
-}));
-
 // Mock inventory service
 const mockProducts: Product[] = [
   {
@@ -60,13 +53,11 @@ const mockProducts: Product[] = [
 
 describe('OCRService', () => {
   let ocrService: OCRService;
-  let Tesseract: { default: { recognize: ReturnType<typeof vi.fn> } };
 
-  beforeEach(async () => {
+  beforeEach(() => {
     ocrService = new OCRService();
     // Set the mock provider before processing
     ocrService.setOCRProvider(mockOCRProvider);
-    Tesseract = await import('tesseract.js') as typeof Tesseract;
     vi.clearAllMocks();
   });
 
