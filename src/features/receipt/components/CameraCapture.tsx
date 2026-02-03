@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { Box, Stack, Fab, CircularProgress, Alert, AlertTitle, Typography } from '@mui/material';
-import { Camera as CameraIcon } from '@mui/icons-material';
+import { Box, Stack, Fab, CircularProgress, Alert, AlertTitle, Typography, Chip, Badge } from '@mui/material';
+import { Camera as CameraIcon, WifiOff, CloudQueue } from '@mui/icons-material';
 import { useReceiptContext } from '@/features/receipt/context/ReceiptContext';
 import { logger } from '@/utils/logger';
 
@@ -130,6 +130,64 @@ export function CameraCapture() {
           }}
         />
       </Box>
+
+      {/* Story 5.4: Offline status indicator (top right) */}
+      {!state.isOnline && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            zIndex: 10,
+          }}
+        >
+          <Chip
+            icon={<WifiOff />}
+            label="Offline"
+            color="warning"
+            size="small"
+            sx={{
+              bgcolor: 'rgba(255, 152, 0, 0.9)',
+              color: 'white',
+              fontWeight: 'bold',
+            }}
+          />
+        </Box>
+      )}
+
+      {/* Story 5.4: Pending receipts indicator (top left) */}
+      {state.pendingReceiptsCount > 0 && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 16,
+            left: 16,
+            zIndex: 10,
+          }}
+        >
+          <Badge
+            badgeContent={state.pendingReceiptsCount}
+            color="secondary"
+            sx={{
+              '& .MuiBadge-badge': {
+                bgcolor: 'rgba(156, 39, 176, 0.9)',
+              },
+            }}
+          >
+            <Chip
+              icon={<CloudQueue />}
+              label="Queued"
+              color="info"
+              size="small"
+              sx={{
+                bgcolor: 'rgba(33, 150, 243, 0.9)',
+                color: 'white',
+                fontWeight: 'bold',
+              }}
+            />
+          </Badge>
+        </Box>
+      )}
 
       {/* Feedback message and capture button */}
       <Stack
