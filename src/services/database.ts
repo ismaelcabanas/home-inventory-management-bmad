@@ -1,8 +1,23 @@
 import Dexie, { Table } from 'dexie';
 import type { Product } from '@/types/product';
 
+/**
+ * Pending Receipt for offline OCR queue (Story 5.4)
+ *
+ * When the user is offline or API quota is exceeded, receipt images
+ * are stored here and processed when connectivity is restored.
+ */
+export interface PendingReceipt {
+  id?: string; // Auto-incremented primary key
+  imageData: string; // Base64 data URL of receipt image
+  createdAt: Date; // Timestamp when receipt was captured
+  status: 'pending' | 'processing' | 'completed' | 'failed'; // Processing status
+  error?: string; // Error message if status is 'failed'
+}
+
 class InventoryDatabase extends Dexie {
   products!: Table<Product>;
+  pendingReceipts!: Table<PendingReceipt>;
 
   constructor() {
     super('HomeInventoryDB');
@@ -21,6 +36,17 @@ class InventoryDatabase extends Dexie {
       await db.products.toCollection().modify(product => {
         product.isChecked = false;
       });
+    });
+
+    // Story 5.4: Version 3 - Add pendingReceipts table for offline OCR queue
+    this.version(3).stores({
+      products: 'id, name, stockLevel, isOnShoppingList, isChecked, updatedAt',
+      // Use '++id' for auto-incrementing primary key
+      pendingReceipts: '++id, createdAt, status'
+    }).upgrade(async () => {
+      // Migration: No data migration needed for new table
+      // The pendingReceipts table starts empty
+      // Future receipts will be added when user is offline
     });
   }
 }
