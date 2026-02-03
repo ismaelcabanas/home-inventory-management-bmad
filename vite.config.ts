@@ -51,5 +51,12 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src')
     }
+  },
+  server: {
+    // Allow ngrok and other tunneling services to access the dev server
+    // Required for testing camera features on mobile devices
+    allowedHosts: 'all',
+    strictPort: false,
+    host: true
   }
 })
