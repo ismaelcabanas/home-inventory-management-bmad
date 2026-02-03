@@ -73,7 +73,7 @@ development_status:
 
   epic-5: in-progress
   5-1-capture-receipt-photo-with-camera: done
-  5-2-process-receipt-with-ocr: in-progress
+  5-2-process-receipt-with-ocr: review
   5-3-review-and-correct-ocr-results: backlog
   epic-5-retrospective: optional
 
