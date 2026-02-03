@@ -5,7 +5,7 @@ inputDocuments:
   - "_bmad-output/planning-artifacts/architecture.md"
   - "_bmad-output/planning-artifacts/ux-design-specification.md"
 totalEpics: 6
-totalStories: 28
+totalStories: 29
 requirementsCoverage: "43/43 FRs (100%)"
 ---
 
@@ -123,13 +123,14 @@ This document provides the complete epic and story breakdown for home-inventory-
 - Install and configure MUI v7 component library with Emotion styling
 - Configure PWA capabilities with vite-plugin-pwa 1.x
 - Set up Dexie.js 4.x for IndexedDB local database
-- Integrate Tesseract.js 7.x for browser-based OCR
+- Integrate LLM API client (e.g., OpenAI SDK or Groq SDK) for AI-based OCR
 - Configure React Router v6 for navigation
 - Set up Vitest for unit/integration tests
 - Set up Playwright for E2E tests
 - Configure GitHub Actions CI/CD pipeline (lint, test, e2e, build)
 - Deploy initial skeleton to Vercel with HTTPS enabled
 - Configure absolute imports with @/ alias for src/ directory
+- Set up environment variable for LLM API key (VITE_LLM_API_KEY)
 
 **Database Schema (Foundation):**
 - Implement Dexie.js database with Product entity containing: id (UUID), name (string), stockLevel ('high'|'medium'|'low'|'empty'), createdAt (Date), updatedAt (Date), isOnShoppingList (boolean)
@@ -269,10 +270,10 @@ This document provides the complete epic and story breakdown for home-inventory-
 
 **Epic 5: Receipt Scanning & OCR Processing**
 - FR22: Users can capture receipt photo using device camera
-- FR23: System processes receipt image to extract product names via OCR
+- FR23: System processes receipt image to extract product names via LLM API
 - FR24: System attempts to match recognized products to existing inventory items
 - FR25: System displays OCR results for user review before finalizing
-- FR26: System achieves 95%+ product recognition accuracy on target supermarket receipts
+- FR26: System achieves 98%+ product recognition accuracy on target supermarket receipts (improved with LLM)
 - FR27: Users can review all products recognized from receipt
 - FR28: Users can manually correct misrecognized product names
 - FR29: Users can manually add products that OCR failed to recognize
@@ -280,6 +281,8 @@ This document provides the complete epic and story breakdown for home-inventory-
 - FR31: Users confirm/save corrected OCR results to update inventory
 - FR42: System indicates when OCR processing is in progress
 - FR43: System shows success confirmation after receipt processing completes
+- **New:** Offline receipt photo capture with deferred processing queue
+- **New:** LLM API quota handling with user-friendly messaging
 
 **Epic 6: Inventory Updates from Receipt & Complete Automation Loop**
 - FR32: System updates stock levels to "High" for all confirmed products from receipt
@@ -390,7 +393,7 @@ All NFRs (NFR1-NFR14) apply as implementation constraints across all epics:
 
 **Goal:** Users scan receipts after shopping, and the system automatically extracts product names, completing the automation promise.
 
-**User Outcome:** Users capture receipt photo with camera, system processes with OCR (<5 seconds), displays recognized products with confidence indicators, allows quick tap-to-edit corrections, and prepares for inventory update. First successful scan validates the entire value proposition.
+**User Outcome:** Users capture receipt photo with camera, system processes with LLM-based OCR (<5 seconds), displays recognized products with confidence indicators, allows quick tap-to-edit corrections, and prepares for inventory update. First successful scan validates the entire value proposition. Offline capture with deferred processing ensures users never lose a receipt.
 
 **FRs Covered:** FR22, FR23, FR24, FR25, FR26, FR27, FR28, FR29, FR30, FR31, FR42, FR43
 
@@ -398,7 +401,9 @@ All NFRs (NFR1-NFR14) apply as implementation constraints across all epics:
 - CameraCapture component (browser camera API wrapper)
 - Guided camera frame with positioning overlay (UX pattern from banking apps)
 - Real-time feedback ("Move closer", "Good lighting")
-- Tesseract.js 7.x OCR integration (<5 second processing, NFR2)
+- **LLM API OCR integration** using free-tier provider (GPT-4o mini, Groq, or similar) - **replaces Tesseract.js**
+- **Offline receipt capture with deferred processing queue** (save photo, process when online)
+- **API quota handling** with user-friendly messaging when free tier exhausted
 - ReceiptReview component with confidence indicators ("12 of 14 recognized")
 - Tap-to-edit error correction interface (single review screen)
 - Add missing products button
@@ -407,8 +412,9 @@ All NFRs (NFR1-NFR14) apply as implementation constraints across all epics:
 - ReceiptContext manages scanning state (capturing → processing → reviewing)
 - CircularProgress indicator during OCR processing
 - Success confirmation dialog
+- Network detection (navigator.onLine) for online/offline states
 
-**Why This Epic:** The critical automation moment. Receipt scanning eliminates manual inventory updates. 95%+ accuracy requirement (NFR6) validates the innovation. First successful scan = trust building begins.
+**Why This Epic:** The critical automation moment. Receipt scanning eliminates manual inventory updates. 98%+ accuracy requirement (NFR6, improved with LLM) validates the innovation. First successful scan = trust building begins. Offline capture capability ensures users can scan receipts anywhere, anytime.
 
 ---
 
@@ -1050,6 +1056,59 @@ So that my inventory updates accurately.
 - All reviewed and corrected products are ready for inventory update (Epic 6)
 - I proceed to the next step
 **And** The entire review and correction flow can be tested with real receipt photos
+
+---
+
+### Story 5.4: Replace Tesseract with LLM-Based OCR
+
+As a **user**,
+I want the app to use an AI model to recognize products from my receipt photos,
+So that I get accurate product recognition even with complex receipts.
+
+**Acceptance Criteria:**
+
+**Given** I have captured a receipt photo and tapped "Use This Photo"
+**When** OCR processing begins
+**Then** The system uses a free-tier LLM provider with vision capabilities (e.g., OpenAI GPT-4o mini, Groq, or similar) to extract product names (FR23)
+**And** The API request includes the receipt image and a prompt optimized for product extraction
+**And** The processing completes within 5 seconds for standard grocery receipts (NFR2)
+**And** The system achieves improved accuracy over Tesseract (target: 98%+ vs previous 95%)
+**And** Tesseract.js dependency is removed from the codebase
+**And** The OCRService is updated to call the LLM API instead of Tesseract
+
+**Given** I don't have an internet connection when I try to scan a receipt
+**When** I tap "Scan Receipt" or after capturing a photo
+**Then** The app detects the offline status using `navigator.onLine`
+**And** I see a clear message: "Receipt scanning requires internet connection. Your photo will be saved and processed when you're back online."
+**And** When I capture a receipt photo while offline:
+- The photo is saved to a pending queue in IndexedDB (new `pendingReceipts` table)
+- A "Pending receipts" counter/badge appears on the scanner screen
+- I can continue using the app normally
+**And** When internet connection is restored (detected via `window.addEventListener('online')`):
+- The app automatically processes all pending receipts in the queue
+- I receive notifications for each processed receipt
+- The pending counter updates accordingly
+
+**Given** The LLM API free tier quota is exhausted
+**When** I attempt to scan a new receipt
+**Then** I see a friendly error message: "We've reached our monthly AI recognition limit. Receipt scanning will be available again next month."
+**And** Pending receipts are queued until the quota resets
+**And** The error is logged for monitoring
+
+**Given** The LLM API returns an error (timeout, invalid response, rate limit 429)
+**When** Processing fails
+**Then** A clear error message is displayed using MUI `Alert` (FR41)
+**And** A "Try Again" button allows reprocessing the same receipt
+**And** The receipt photo is preserved (not lost)
+**And** The error details are logged to console with `logger.error()`
+
+**Technical Implementation Notes:**
+- **Environment Variable:** `VITE_LLM_API_KEY` for the free-tier API key
+- **Service Update:** `OCRService.processReceipt()` now calls LLM API instead of Tesseract
+- **Queue Storage:** New `pendingReceipts` table in IndexedDB with fields: `id`, `imageData`, `createdAt`, `status` ('pending', 'processing', 'completed', 'failed')
+- **Network Detection:** Use `navigator.onLine` and window `online`/`offline` events
+- **API Quota Handling:** Check HTTP 429 responses and free-tier limits from provider
+- **Prompt Engineering:** LLM prompt optimized for grocery receipt product extraction
 
 ---
 
