@@ -1,9 +1,15 @@
 /**
- * Tesseract.js OCR Provider
- * Browser-based OCR processing using Tesseract.js library
+ * Tesseract.js OCR Provider (DEPRECATED after Story 5.4)
+ *
+ * This provider has been replaced by LLMProvider for improved OCR accuracy.
+ * Tesseract.js dependency was removed in Story 5.4.
+ *
+ * To restore Tesseract support:
+ * 1. Run: npm install tesseract.js
+ * 2. Uncomment the provider export in config.ts
+ * 3. Update activeOCRProvider to use tesseractProvider
  */
 
-import Tesseract from 'tesseract.js';
 import { logger } from '@/utils/logger';
 import { handleError } from '@/utils/errorHandler';
 import type { IOCRProvider, OCRProviderOptions, OCRProviderResult } from './types';
@@ -17,64 +23,32 @@ const DEFAULT_OPTIONS: Required<Pick<OCRProviderOptions, 'language' | 'timeout'>
 };
 
 /**
- * Tesseract.js OCR Provider
- * Processes images locally in the browser using Tesseract.js
+ * Tesseract.js OCR Provider (DEPRECATED - replaced by LLMProvider in Story 5.4)
+ *
+ * This provider is kept for potential fallback use but requires tesseract.js
+ * to be reinstalled: npm install tesseract.js
  */
 export class TesseractProvider implements IOCRProvider {
-  readonly name = 'tesseract.js';
+  readonly name = 'tesseract.js (deprecated)';
 
   /**
    * Process receipt image with Tesseract.js
+   * NOTE: This will fail unless tesseract.js is reinstalled
    */
-  async process(imageDataUrl: string, options: OCRProviderOptions = {}): Promise<OCRProviderResult> {
-    const startTime = performance.now();
-    const opts = { ...DEFAULT_OPTIONS, ...options };
-
-    logger.debug('TesseractProvider: Starting OCR', { language: opts.language });
-
-    try {
-      const result = await Tesseract.recognize(
-        imageDataUrl,
-        opts.language,
-        {
-          logger: (m: { status: string; progress: number }) => {
-            logger.debug('Tesseract progress', { status: m.status, progress: m.progress });
-          },
-        }
-      );
-
-      const processingTimeMs = performance.now() - startTime;
-
-      logger.info('TesseractProvider: OCR complete', {
-        textLength: result.data.text.length,
-        processingTimeMs: Math.round(processingTimeMs),
-      });
-
-      return {
-        rawText: result.data.text,
-        provider: this.name,
-        processingTimeMs: Math.round(processingTimeMs),
-        confidence: result.data.confidence,
-      };
-    } catch (error) {
-      const appError = handleError(error);
-      logger.error('TesseractProvider: OCR failed', appError.details);
-      throw appError;
-    }
+  async process(_imageDataUrl: string, options: OCRProviderOptions = {}): Promise<OCRProviderResult> {
+    throw new Error(
+      'TesseractProvider is deprecated after Story 5.4. The activeOCRProvider has been changed to llmProvider. To restore Tesseract support: 1) Run `npm install tesseract.js`, 2) Update config.ts to use tesseractProvider.'
+    );
   }
 
   /**
-   * Check if Tesseract is available (always true for browser-based)
+   * Check if Tesseract is available (always false after Story 5.4)
    */
   async isAvailable(): Promise<boolean> {
-    try {
-      // Tesseract.js is loaded via import, so it's always available in browser
-      return typeof window !== 'undefined' && typeof Tesseract !== 'undefined';
-    } catch {
-      return false;
-    }
+    logger.warn('TesseractProvider: Deprecated after Story 5.4 - returning false');
+    return false;
   }
 }
 
-/** Export singleton instance */
+/** Export singleton instance (deprecated) */
 export const tesseractProvider = new TesseractProvider();
