@@ -3,6 +3,9 @@
  * Handles receipt OCR processing using pluggable OCR providers
  * Extracts product names and matches to existing inventory
  *
+ * Story 5.4: Offline queue support - receipts can be queued when offline
+ * and processed automatically when connectivity is restored.
+ *
  * NOTE: OCR providers must be explicitly set before using processReceipt()
  */
 
@@ -11,6 +14,8 @@ import { logger } from '@/utils/logger';
 import { handleError } from '@/utils/errorHandler';
 import type { RecognizedProduct, OCRResult } from '@/features/receipt/types/receipt.types';
 import type { IOCRProvider } from './providers/types';
+import { db, type PendingReceipt } from '@/services/database';
+import { isOnline } from '@/utils/network';
 
 /**
  * Receipt format types for different supermarket layouts
@@ -504,6 +509,161 @@ export class OCRService {
     });
 
     return recognizedProducts;
+  }
+
+  /**
+   * Queue a receipt for offline processing (Story 5.4)
+   *
+   * Use this when offline or API quota is exceeded.
+   * The receipt will be stored and processed when connectivity is restored.
+   *
+   * @param imageDataUrl - Base64 data URL of receipt image
+   * @returns The ID of the queued pending receipt
+   */
+  async queuePendingReceipt(imageDataUrl: string): Promise<number> {
+    try {
+      const pendingReceipt: PendingReceipt = {
+        imageData: imageDataUrl,
+        createdAt: new Date(),
+        status: 'pending',
+      };
+
+      const id = await db.pendingReceipts.add(pendingReceipt);
+
+      logger.info('Receipt queued for offline processing', { id });
+      return id;
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to queue pending receipt', appError.details);
+      throw appError;
+    }
+  }
+
+  /**
+   * Process all pending receipts in the queue (Story 5.4)
+   *
+   * Called when connectivity is restored or API quota resets.
+   * Processes all receipts with status='pending' and updates their status.
+   *
+   * @returns Count of processed receipts
+   */
+  async processPendingQueue(): Promise<{ processed: number; completed: number; failed: number }> {
+    const results = { processed: 0, completed: 0, failed: 0 };
+
+    try {
+      // Check if we're online
+      if (!isOnline()) {
+        logger.warn('Cannot process pending queue - currently offline');
+        return results;
+      }
+
+      // Get all pending receipts
+      const pendingReceipts = await db.pendingReceipts.where('status').equals('pending').toArray();
+
+      if (pendingReceipts.length === 0) {
+        logger.info('No pending receipts to process');
+        return results;
+      }
+
+      logger.info(`Processing ${pendingReceipts.length} pending receipts`);
+
+      // Process each pending receipt
+      for (const receipt of pendingReceipts) {
+        results.processed++;
+
+        try {
+          // Update status to processing
+          await db.pendingReceipts.update(receipt.id!, { status: 'processing' });
+
+          // Process with OCR (this will use the configured LLM provider)
+          const ocrResult = await this.processReceipt(receipt.imageData);
+
+          // Update status to completed
+          await db.pendingReceipts.update(receipt.id!, {
+            status: 'completed',
+          });
+
+          results.completed++;
+
+          logger.info('Pending receipt processed successfully', {
+            id: receipt.id,
+            productsFound: ocrResult.products.length,
+          });
+
+          // Note: The caller (ReceiptContext) should handle adding products to inventory
+          // This service only handles the OCR processing part
+        } catch (error) {
+          const appError = handleError(error);
+
+          // Update status to failed with error message
+          await db.pendingReceipts.update(receipt.id!, {
+            status: 'failed',
+            error: appError.message,
+          });
+
+          results.failed++;
+
+          logger.error('Failed to process pending receipt', {
+            id: receipt.id,
+            ...appError.details,
+          });
+        }
+      }
+
+      logger.info('Pending queue processing complete', results);
+
+      // Clean up completed/failed receipts older than 7 days
+      await this.cleanupOldPendingReceipts();
+
+      return results;
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to process pending queue', appError.details);
+      throw appError;
+    }
+  }
+
+  /**
+   * Clean up old processed receipts (Story 5.4)
+   *
+   * Removes completed and failed receipts older than 7 days
+   * to prevent the database from growing indefinitely.
+   */
+  private async cleanupOldPendingReceipts(): Promise<void> {
+    try {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      // Get old completed/failed receipts
+      const oldReceipts = await db.pendingReceipts
+        .where('status')
+        .anyOf(['completed', 'failed'])
+        .and((receipt) => receipt.createdAt! < sevenDaysAgo)
+        .toArray();
+
+      if (oldReceipts.length > 0) {
+        const ids = oldReceipts.map((r) => r.id!);
+        await db.pendingReceipts.bulkDelete(ids);
+        logger.info('Cleaned up old pending receipts', { count: ids.length });
+      }
+    } catch (error) {
+      // Don't throw - cleanup failures shouldn't break the main flow
+      logger.error('Failed to cleanup old pending receipts', handleError(error).details);
+    }
+  }
+
+  /**
+   * Get count of pending receipts (Story 5.4)
+   *
+   * @returns Number of receipts waiting to be processed
+   */
+  async getPendingCount(): Promise<number> {
+    try {
+      return await db.pendingReceipts.where('status').equals('pending').count();
+    } catch (error) {
+      logger.error('Failed to get pending count', handleError(error).details);
+      return 0;
+    }
   }
 }
 

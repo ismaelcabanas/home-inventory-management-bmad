@@ -9,6 +9,12 @@ import { ocrService } from '@/services/ocr';
 vi.mock('@/utils/errorHandler');
 vi.mock('@/utils/logger');
 
+// Mock network utility (Story 5.4)
+vi.mock('@/utils/network', () => ({
+  isOnline: vi.fn(() => true),
+  onNetworkStatusChange: vi.fn(() => vi.fn()),
+}));
+
 // Mock OCR providers module - define mock provider inline to avoid hoisting issues
 vi.mock('@/services/ocr/providers/TesseractProvider', () => ({
   tesseractProvider: {
@@ -28,12 +34,12 @@ vi.mock('@/services/ocr', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/services/ocr')>();
   // Define the same mock provider for activeOCRProvider
   const mockProvider = {
-    name: 'tesseract.js',
+    name: 'llm-api (gpt-4o-mini)', // Updated to reflect Story 5.4 changes
     process: vi.fn().mockResolvedValue({
       rawText: 'MOCK OCR TEXT',
-      provider: 'tesseract.js',
+      provider: 'llm-api (gpt-4o-mini)',
       processingTimeMs: 100,
-      confidence: 0.9,
+      confidence: 0.98,
     }),
     isAvailable: vi.fn().mockResolvedValue(true),
   };
@@ -46,6 +52,10 @@ vi.mock('@/services/ocr', async (importOriginal) => {
       setInventoryService: vi.fn(),
       setOCRProvider: vi.fn(),
       getOCRProvider: vi.fn(() => ({ name: 'mock-provider' })),
+      // Story 5.4: Add new offline queue methods
+      queuePendingReceipt: vi.fn().mockResolvedValue(1),
+      processPendingQueue: vi.fn().mockResolvedValue({ processed: 0, completed: 0, failed: 0 }),
+      getPendingCount: vi.fn().mockResolvedValue(0),
     },
   };
 });
