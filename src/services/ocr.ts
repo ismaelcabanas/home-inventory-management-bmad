@@ -1,14 +1,15 @@
 /**
  * OCR Service
- * Handles receipt OCR processing using Tesseract.js
+ * Handles receipt OCR processing using pluggable OCR providers
  * Extracts product names and matches to existing inventory
  */
 
-import Tesseract from 'tesseract.js';
 import type { Product } from '@/types/product';
 import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
 import type { RecognizedProduct, OCRResult } from '@/features/receipt/types/receipt.types';
+import type { IOCRProvider } from './ocr/providers/types';
+import { tesseractProvider } from './ocr/providers/TesseractProvider';
 
 /**
  * Receipt format types for different supermarket layouts
@@ -17,12 +18,14 @@ type ReceiptFormat = 'spanish-supermarket' | 'generic' | 'auto';
 
 /**
  * Service for OCR processing of receipt images
- * Uses Tesseract.js for browser-based text recognition
+ * Uses pluggable providers for text recognition (Tesseract.js, LLM, etc.)
  */
 export class OCRService {
   private inventoryService?: {
     getProducts: () => Promise<Product[]>;
   };
+
+  private provider: IOCRProvider = tesseractProvider; // Default provider
 
   /**
    * Set the inventory service dependency
@@ -30,6 +33,22 @@ export class OCRService {
    */
   setInventoryService(service: { getProducts: () => Promise<Product[]> }): void {
     this.inventoryService = service;
+  }
+
+  /**
+   * Set the OCR provider
+   * Allows swapping between Tesseract, LLM, or other OCR engines
+   */
+  setOCRProvider(provider: IOCRProvider): void {
+    this.provider = provider;
+    logger.info('OCR provider changed', { provider: provider.name });
+  }
+
+  /**
+   * Get the current OCR provider
+   */
+  getOCRProvider(): IOCRProvider {
+    return this.provider;
   }
 
   /**
@@ -61,17 +80,21 @@ export class OCRService {
    */
   async processReceipt(imageDataUrl: string): Promise<OCRResult> {
     try {
-      logger.debug('Starting OCR processing', { imageDataUrl: imageDataUrl.substring(0, 50) + '...' });
-
-      // Process with Tesseract.js
-      const result = await Tesseract.recognize(imageDataUrl, 'eng', {
-        logger: (m: { status: string; progress: number }) => {
-          logger.debug('OCR progress', { status: m.status, progress: m.progress });
-        },
+      logger.debug('Starting OCR processing', {
+        imageDataUrl: imageDataUrl.substring(0, 50) + '...',
+        provider: this.provider.name
       });
 
-      const rawText = result.data.text;
-      logger.info('OCR text extraction complete', { textLength: rawText.length });
+      // Process with configured provider
+      const providerResult = await this.provider.process(imageDataUrl);
+      const rawText = providerResult.rawText;
+
+      logger.info('OCR text extraction complete', {
+        provider: this.provider.name,
+        textLength: rawText.length,
+        processingTimeMs: providerResult.processingTimeMs,
+        confidence: providerResult.confidence,
+      });
 
       // Detect receipt format
       const format = this.detectReceiptFormat(rawText);
