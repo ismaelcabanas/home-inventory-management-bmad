@@ -1,7 +1,47 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ReceiptProvider, useReceiptContext } from '@/features/receipt/context/ReceiptContext';
 import { OCRProcessing } from '@/features/receipt/components/OCRProcessing';
+
+// Mock the OCR providers module
+vi.mock('@/services/ocr/providers/TesseractProvider', () => ({
+  tesseractProvider: {
+    name: 'tesseract.js',
+    process: vi.fn().mockResolvedValue({
+      rawText: 'MOCK OCR TEXT',
+      provider: 'tesseract.js',
+      processingTimeMs: 100,
+      confidence: 0.9,
+    }),
+    isAvailable: vi.fn().mockResolvedValue(true),
+  },
+}));
+
+// Mock OCR service module
+vi.mock('@/services/ocr', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/ocr')>();
+  const mockProvider = {
+    name: 'tesseract.js',
+    process: vi.fn().mockResolvedValue({
+      rawText: 'MOCK OCR TEXT',
+      provider: 'tesseract.js',
+      processingTimeMs: 100,
+      confidence: 0.9,
+    }),
+    isAvailable: vi.fn().mockResolvedValue(true),
+  };
+  return {
+    ...actual,
+    activeOCRProvider: mockProvider,
+    ocrService: {
+      ...actual.ocrService,
+      processReceipt: vi.fn(),
+      setInventoryService: vi.fn(),
+      setOCRProvider: vi.fn(),
+      getOCRProvider: vi.fn(() => ({ name: 'mock-provider' })),
+    },
+  };
+});
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <ReceiptProvider>{children}</ReceiptProvider>

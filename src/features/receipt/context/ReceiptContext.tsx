@@ -4,7 +4,7 @@
 import { createContext, useContext, useReducer, ReactNode, useMemo, useCallback, useRef, useEffect } from 'react';
 import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
-import { ocrService } from '@/services/ocr';
+import { ocrService, activeOCRProvider } from '@/services/ocr';
 import { inventoryService } from '@/services/inventory';
 import type {
   ReceiptState,
@@ -341,11 +341,18 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
     };
   }, [state.videoStream]);
 
-  // Initialize OCR service with inventory service
+  // Initialize OCR service with inventory service and OCR provider
   useEffect(() => {
     // Initialize the inventory service for product matching
     ocrService.setInventoryService(inventoryService);
-    logger.info('OCR service initialized with inventory service');
+
+    // Set the active OCR provider from config
+    ocrService.setOCRProvider(activeOCRProvider);
+
+    logger.info('OCR service initialized', {
+      provider: activeOCRProvider.name,
+      inventoryService: 'configured'
+    });
   }, []);
 
   const value: ReceiptContextValue = useMemo(

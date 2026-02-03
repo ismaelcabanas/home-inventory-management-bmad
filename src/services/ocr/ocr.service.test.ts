@@ -4,13 +4,21 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { OCRService } from './ocr';
+import { OCRService } from './ocr.service';
 import type { Product } from '@/types/product';
+import type { IOCRProvider } from './providers/types';
 
 // Mock inventory service interface
 interface MockInventoryService {
   getProducts: () => Promise<Product[]>;
 }
+
+// Create a mock OCR provider for testing
+const mockOCRProvider: IOCRProvider = {
+  name: 'mock-provider',
+  process: vi.fn(),
+  isAvailable: vi.fn().mockResolvedValue(true),
+};
 
 // Mock Tesseract.js
 vi.mock('tesseract.js', () => ({
@@ -56,6 +64,8 @@ describe('OCRService', () => {
 
   beforeEach(async () => {
     ocrService = new OCRService();
+    // Set the mock provider before processing
+    ocrService.setOCRProvider(mockOCRProvider);
     Tesseract = await import('tesseract.js') as typeof Tesseract;
     vi.clearAllMocks();
   });
@@ -65,17 +75,17 @@ describe('OCRService', () => {
       const mockImageDataUrl = 'data:image/jpeg;base64,/9j/4AAQSkZJRg...';
       const mockOCRText = 'WHOLE MILK $4.99\nBREAD $2.50\nTOTAL $7.49';
 
-      Tesseract.default.recognize.mockResolvedValue({
-        data: { text: mockOCRText },
+      // Mock the provider's process method
+      vi.mocked(mockOCRProvider.process).mockResolvedValue({
+        rawText: mockOCRText,
+        provider: 'mock-provider',
+        processingTimeMs: 100,
+        confidence: 0.9,
       });
 
       const result = await ocrService.processReceipt(mockImageDataUrl);
 
-      expect(Tesseract.default.recognize).toHaveBeenCalledWith(
-        mockImageDataUrl,
-        'eng',
-        expect.any(Object) // logger function
-      );
+      expect(mockOCRProvider.process).toHaveBeenCalledWith(mockImageDataUrl);
       expect(result.rawText).toBe(mockOCRText);
       expect(result.products).toBeDefined();
     });
@@ -84,8 +94,12 @@ describe('OCRService', () => {
       const mockImageDataUrl = 'data:image/jpeg;base64,/9j/4AAQSkZJRg...';
       const mockOCRText = 'WHOLE MILK $4.99\nBREAD $2.50\nTOTAL $7.49';
 
-      Tesseract.default.recognize.mockResolvedValue({
-        data: { text: mockOCRText },
+      // Mock the provider's process method
+      vi.mocked(mockOCRProvider.process).mockResolvedValue({
+        rawText: mockOCRText,
+        provider: 'mock-provider',
+        processingTimeMs: 100,
+        confidence: 0.9,
       });
 
       const result = await ocrService.processReceipt(mockImageDataUrl);
@@ -101,7 +115,7 @@ describe('OCRService', () => {
       const mockImageDataUrl = 'data:image/jpeg;base64,invalid';
       const mockError = new Error('OCR processing failed');
 
-      Tesseract.default.recognize.mockRejectedValue(mockError);
+      vi.mocked(mockOCRProvider.process).mockRejectedValue(mockError);
 
       await expect(ocrService.processReceipt(mockImageDataUrl)).rejects.toThrow();
     });

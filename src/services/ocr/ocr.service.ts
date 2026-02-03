@@ -2,14 +2,15 @@
  * OCR Service
  * Handles receipt OCR processing using pluggable OCR providers
  * Extracts product names and matches to existing inventory
+ *
+ * NOTE: OCR providers must be explicitly set before using processReceipt()
  */
 
 import type { Product } from '@/types/product';
-import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
+import { handleError } from '@/utils/errorHandler';
 import type { RecognizedProduct, OCRResult } from '@/features/receipt/types/receipt.types';
-import type { IOCRProvider } from './ocr/providers/types';
-import { tesseractProvider } from './ocr/providers/TesseractProvider';
+import type { IOCRProvider } from './providers/types';
 
 /**
  * Receipt format types for different supermarket layouts
@@ -25,7 +26,7 @@ export class OCRService {
     getProducts: () => Promise<Product[]>;
   };
 
-  private provider: IOCRProvider = tesseractProvider; // Default provider
+  private provider: IOCRProvider | null = null;
 
   /**
    * Set the inventory service dependency
@@ -36,18 +37,18 @@ export class OCRService {
   }
 
   /**
-   * Set the OCR provider
-   * Allows swapping between Tesseract, LLM, or other OCR engines
+   * Set the OCR provider (REQUIRED before calling processReceipt)
+   * @param provider - Any provider implementing IOCRProvider interface
    */
   setOCRProvider(provider: IOCRProvider): void {
     this.provider = provider;
-    logger.info('OCR provider changed', { provider: provider.name });
+    logger.info('OCR provider set', { provider: provider.name });
   }
 
   /**
    * Get the current OCR provider
    */
-  getOCRProvider(): IOCRProvider {
+  getOCRProvider(): IOCRProvider | null {
     return this.provider;
   }
 
@@ -79,6 +80,10 @@ export class OCRService {
    * @returns OCRResult with recognized products and raw text
    */
   async processReceipt(imageDataUrl: string): Promise<OCRResult> {
+    if (!this.provider) {
+      throw new Error('OCR provider not set. Call ocrService.setOCRProvider() before processing.');
+    }
+
     try {
       logger.debug('Starting OCR processing', {
         imageDataUrl: imageDataUrl.substring(0, 50) + '...',
