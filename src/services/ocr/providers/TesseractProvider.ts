@@ -11,18 +11,11 @@
  */
 
 import { logger } from '@/utils/logger';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Reserved for future use if provider is reactivated
-import { handleError } from '@/utils/errorHandler';
 import type { IOCRProvider, OCRProviderOptions, OCRProviderResult } from './types';
 
-/**
- * Default options for Tesseract provider (reserved for future use)
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _DEFAULT_OPTIONS: Required<Pick<OCRProviderOptions, 'language' | 'timeout'>> = {
-  language: 'eng',
-  timeout: 5000,
-};
+// Note: handleError import removed (unused in deprecated stub)
+// Note: DEFAULT_OPTIONS removed (unused in deprecated stub)
+// These would be needed if TesseractProvider is reactivated in the future
 
 /**
  * Tesseract.js OCR Provider (DEPRECATED - replaced by LLMProvider in Story 5.4)

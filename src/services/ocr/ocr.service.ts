@@ -605,7 +605,9 @@ export class OCRService {
 
           logger.error('Failed to process pending receipt', {
             id: receipt.id,
-            ...appError.details,
+            error: appError.message,
+            code: appError.code,
+            details: appError.details,
           });
         }
       }

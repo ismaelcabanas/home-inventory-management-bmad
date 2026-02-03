@@ -9,9 +9,11 @@
  */
 
 import type { IOCRProvider } from './providers/types';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for reference if switching providers
-import { tesseractProvider } from './providers/TesseractProvider';
 import { llmProvider } from './providers/LLMProvider';
+
+// TesseractProvider is deprecated after Story 5.4.
+// To switch providers, uncomment the import and modify activeOCRProvider below:
+// import { tesseractProvider } from './providers/TesseractProvider';
 
 /**
  * Active OCR Provider
