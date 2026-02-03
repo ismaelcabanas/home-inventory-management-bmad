@@ -183,6 +183,86 @@ ORGANIC EGGS`;
     });
   });
 
+  describe('Spanish Supermarket Format', () => {
+    it('should detect Spanish supermarket format', () => {
+      const spanishReceipt = `MERCADONA, S.A.
+C/ EMILIA PARDO BAZÁN, 5
+AGUACATE BANDEJA 1 3,28
+SETA LAMINADA 1 2,10
+TOTAL 60,95
+TARJETA BANCARIA`;
+
+      const products = ocrService.extractProductNames(spanishReceipt);
+
+      // Should extract Spanish products
+      expect(products.length).toBeGreaterThan(0);
+      expect(products).toContain('AGUACATE BANDEJA');
+      expect(products).toContain('SETA LAMINADA');
+    });
+
+    it('should handle Mercadona format', () => {
+      const mercadonaText = `MERCADONA, S.A.
+AGUACATE BANDEJA         1       3,28
+SETA LAMINADA            1       2,10
+PIÑA GRANEL       1,874 kg  2,00/kg   3,75
+TOTAL 9,73`;
+
+      const products = ocrService.extractProductNames(mercadonaText, 'spanish-supermarket');
+
+      expect(products).toContain('AGUACATE BANDEJA');
+      expect(products).toContain('SETA LAMINADA');
+      expect(products).toContain('PIÑA GRANEL');
+    });
+
+    it('should handle Ahorramas format with category codes', () => {
+      const ahorramasText = `AHORRAMAS
+PECHUGA DE PAVO COCIDA LA S      0,305 kg  20,39 €/kg  A  6,22 €
+CHORIZO CULAR IB.NIETO M.65      0,350 kg  20,99 €/kg  A  7,35 €
+MANDARINA O CLEMENTINA FONT      1,210 kg  4,59 €/kg  C  5,55 €
+TOTAL 107,79 €`;
+
+      const products = ocrService.extractProductNames(ahorramasText, 'spanish-supermarket');
+
+      expect(products).toContain('PECHUGA DE PAVO COCIDA LA S');
+      expect(products).toContain('CHORIZO CULAR IB.NIETO M.65');
+      expect(products).toContain('MANDARINA O CLEMENTINA FONT');
+    });
+
+    it('should remove category codes from Spanish products', () => {
+      const text = `LECHE ALIPENDE 1L DESNATADA      6 Un  0,84 €/Un  C  5,04 €`;
+
+      const products = ocrService.extractProductNames(text, 'spanish-supermarket');
+
+      expect(products[0]).toBe('LECHE ALIPENDE 1L DESNATADA');
+    });
+
+    it('should handle weight-based Spanish products', () => {
+      const text = `PIÑA GRANEL       1,874 kg  2,00/kg   3,75
+PLATANO          0,866 kg  2,10/kg   1,82`;
+
+      const products = ocrService.extractProductNames(text, 'spanish-supermarket');
+
+      expect(products).toContain('PIÑA GRANEL');
+      expect(products).toContain('PLATANO');
+    });
+
+    it('should filter out Spanish receipt metadata', () => {
+      const text = `MERCADONA, S.A.
+C/ EMILIA PARDO BAZÁN, 5
+26/01/2026 17:37
+OP: 1987128
+TOTAL 60,95
+TARJETA BANCARIA`;
+
+      const products = ocrService.extractProductNames(text, 'spanish-supermarket');
+
+      // Should not include metadata as products
+      expect(products).not.toContain('MERCADONA');
+      expect(products).not.toContain('TOTAL');
+      expect(products).not.toContain('TARJETA');
+    });
+  });
+
   describe('matchExistingProducts', () => {
     it('should match exact product names with high confidence', async () => {
       const names = ['Whole Milk', 'Bread', 'Almond Milk'];

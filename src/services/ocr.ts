@@ -11,6 +11,11 @@ import { logger } from '@/utils/logger';
 import type { RecognizedProduct, OCRResult } from '@/features/receipt/types/receipt.types';
 
 /**
+ * Receipt format types for different supermarket layouts
+ */
+type ReceiptFormat = 'spanish-supermarket' | 'generic' | 'auto';
+
+/**
  * Service for OCR processing of receipt images
  * Uses Tesseract.js for browser-based text recognition
  */
@@ -25,6 +30,28 @@ export class OCRService {
    */
   setInventoryService(service: { getProducts: () => Promise<Product[]> }): void {
     this.inventoryService = service;
+  }
+
+  /**
+   * Detect receipt format from raw OCR text
+   */
+  private detectReceiptFormat(ocrText: string): ReceiptFormat {
+    const text = ocrText.toUpperCase();
+
+    // Spanish supermarket indicators
+    const spanishIndicators = [
+      'MERCADONA', 'AHORRAMAS', 'CARREFOUR', 'DIA', 'LIDL', 'ALDI',
+      '€', 'IVA', 'TOTAL', 'TARJETA', 'EFECTIVO', 'UNIDADES',
+      'PESO', 'IMPORTE', 'CATEGORIA'
+    ];
+
+    const spanishCount = spanishIndicators.filter(ind => text.includes(ind)).length;
+
+    if (spanishCount >= 3) {
+      return 'spanish-supermarket';
+    }
+
+    return 'generic';
   }
 
   /**
@@ -46,8 +73,12 @@ export class OCRService {
       const rawText = result.data.text;
       logger.info('OCR text extraction complete', { textLength: rawText.length });
 
-      // Extract product names from raw OCR text
-      const productNames = this.extractProductNames(rawText);
+      // Detect receipt format
+      const format = this.detectReceiptFormat(rawText);
+      logger.info('Receipt format detected', { format });
+
+      // Extract product names using format-specific parser
+      const productNames = this.extractProductNames(rawText, format);
       logger.info('Products extracted from OCR', { count: productNames.length, products: productNames });
 
       // Match to existing inventory if service is available
@@ -65,16 +96,228 @@ export class OCRService {
   }
 
   /**
-   * Extract product names from raw OCR text
-   * Filters out non-product lines (dates, prices, totals, etc.)
+   * Extract product names from raw OCR text using format-specific parser
    * @param ocrText - Raw text from Tesseract
+   * @param format - Receipt format type
    * @returns Array of candidate product names
    */
-  extractProductNames(ocrText: string): string[] {
+  extractProductNames(ocrText: string, format: ReceiptFormat = 'auto'): string[] {
+    if (format === 'auto') {
+      format = this.detectReceiptFormat(ocrText);
+    }
+
+    logger.debug('Extracting products', { format, textLength: ocrText.length });
+
+    let products: string[] = [];
+
+    switch (format) {
+      case 'spanish-supermarket':
+        products = this.extractSpanishSupermarketProducts(ocrText);
+        break;
+      default:
+        products = this.extractGenericProducts(ocrText);
+        break;
+    }
+
+    logger.info('Products extracted from OCR', {
+      format,
+      count: products.length,
+      products: products
+    });
+
+    return products;
+  }
+
+  /**
+   * Extract products from Spanish supermarket receipts
+   * Handles Mercadona, Ahorramas, Carrefour, etc.
+   */
+  private extractSpanishSupermarketProducts(ocrText: string): string[] {
     const lines = ocrText.split('\n');
 
     // Log all lines for debugging
     logger.debug('OCR raw lines', {
+      totalLines: lines.length,
+      lines: lines.map((l, i) => `${i}: "${l}"`)
+    });
+
+    const products: string[] = [];
+    const excludePatterns = [
+      // Store headers
+      /^MERCADONA|^AHORRAMAS|^CARREFOUR|^DIA|^LIDL/i,
+      // Receipt metadata
+      /^C\/|^CALLE|^TEL\./i,
+      /^\d{2}\/\d{2}\/\d{4}/, // Dates
+      /^\d{2}:\d{2}/, // Times
+      /^OP:|^CAJA:|^TIQUE:/i,
+      // Totals and summaries
+      /^TOTAL|^SUBTOTAL|^SUMA|^IMPORTE|^IVA|^CAMBIO/i,
+      /^EFECTIVO|^TARJETA|^PAGO|^ENTREGADO/i,
+      // Tax categories (but not product lines with categories)
+      /^\s*[ABC]\s*$/i, // Single letter category codes alone
+      // Barcode/UPC numbers
+      /^\d{8,14}$/,
+      // Single prices
+      /^\d+,\d{2}\s*€?$/,
+    ];
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      // Skip empty lines
+      if (!trimmed) continue;
+
+      // Skip excluded patterns
+      if (excludePatterns.some(pattern => pattern.test(trimmed))) {
+        continue;
+      }
+
+      // Skip very short lines
+      if (trimmed.length < 3) continue;
+
+      // Must contain at least one letter
+      if (!/[a-zA-ZáéíóúñÁÉÍÓÚÑ]/.test(trimmed)) continue;
+
+      // Spanish product detection patterns
+      // 1. Main product description (all caps, longer text)
+      // 2. Often followed by quantity/price on same or next line
+      const isProduct = this.isSpanishProductLine(trimmed);
+
+      if (isProduct) {
+        const cleaned = this.cleanSpanishProductName(trimmed);
+        if (cleaned.length >= 3) {
+          products.push(cleaned);
+        }
+      }
+    }
+
+    logger.debug('Spanish products extracted', {
+      totalLines: lines.length,
+      productsFound: products.length,
+      filteredOut: lines.length - products.length
+    });
+
+    return products;
+  }
+
+  /**
+   * Check if a line is a Spanish supermarket product line
+   */
+  private isSpanishProductLine(line: string): boolean {
+    const trimmed = line.trim();
+
+    // Must contain letters (including Spanish characters)
+    if (!/[a-zA-ZáéíóúñÁÉÍÓÚÑ]/.test(trimmed)) return false;
+
+    // Skip if it's just a price or quantity
+    if (/^\d+,\d{2}\s*(€|€\/kg|€\/u)?$/.test(trimmed)) return false;
+    if (/^\d+,\d{3}\s*kg/.test(trimmed)) return false;
+    if (/^\d+\s*(Un|unidades|kg|g|ml|l)$/i.test(trimmed)) return false;
+
+    // Skip single letter category codes (A, B, C from Ahorramas)
+    if (/^[ABC]\s*$/.test(trimmed)) return false;
+
+    // Skip lines that are mostly numbers/prices
+    const numberRatio = (trimmed.match(/\d/g) || []).length / trimmed.length;
+    if (numberRatio > 0.6) return false;
+
+    // Product lines typically:
+    // - Have more than 2 letters
+    // - Are mostly text (not numbers)
+    // - Contain product names (all caps in Spanish receipts)
+    // - May contain brand names, weights, quantities
+
+    // Spanish product patterns
+    const hasProductIndicators = /[A-ZÁÉÍÓÚÑ]{2,}/.test(trimmed); // Multiple uppercase letters
+
+    // Likely a product if it has uppercase letters and isn't just metadata
+    if (hasProductIndicators && !this.isSpanishMetadataLine(trimmed)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if line is Spanish receipt metadata
+   */
+  private isSpanishMetadataLine(line: string): boolean {
+    const metadataPatterns = [
+      /^IVA|^IMPORTE|^TOTAL|^SUMA|^SUBTOTAL|^CAMBIO/i,
+      /^EFECTIVO|^TARJETA|^BANCARIA|^PAGO|^ENTREGADO/i,
+      /^OP\s[:\d]/i,
+      /^CAJA\s[:\d]/i,
+      /^TIQUE\s[:\d]/i,
+      /^FACTURA|^RECIBO|^COMPROBANTE/i,
+      /^C\/|^CALLE|^TEL\.|^NIF|^CIF/i,
+      /SUPERMERCADO|^S\.A\.|^SL\./i,
+    ];
+
+    return metadataPatterns.some(pattern => pattern.test(line));
+  }
+
+  /**
+   * Clean Spanish product name
+   * Removes quantities, prices, and category codes from Spanish receipt lines
+   */
+  private cleanSpanishProductName(name: string): string {
+    let cleaned = name.trim();
+
+    // First, split by spaces and filter out quantity/price tokens
+    const tokens = cleaned.split(/\s+/);
+    const filteredTokens: string[] = [];
+
+    for (const token of tokens) {
+      // Skip category codes (A, B, C)
+      if (/^[ABC]\s*$/.test(token)) continue;
+
+      // Skip single digits (quantities like "1", "2")
+      if (/^\d$/.test(token)) continue;
+
+      // Skip price patterns (3,28, 6,22€, 3,28€, etc.)
+      if (/^\d+[,.]\d{2}\s*€?$/.test(token)) continue;
+
+      // Skip weight/quantity patterns with decimals (0,305kg, 1,874kg, etc.)
+      if (/^\d+[,.]\d+\s*(kg|g|ml|l)$/i.test(token)) continue;
+
+      // Skip quantity with unit patterns (6 Un, 2 U, etc.)
+      if (/^\d+\s+(Un|U)$/i.test(token)) continue;
+
+      // Skip standalone unit indicators (Un, U, kg, g, ml, l) - these are never part of product names
+      if (/^(Un|U|kg|g|ml|l)$/i.test(token)) continue;
+
+      // Skip price per unit patterns (20,39€/kg, 0,84€/Un, 2,00/kg, etc.)
+      if (/^\d+[,.]\d+\s*(€)?\/(kg|u|un|l|ml)$/i.test(token)) continue;
+
+      // Skip standalone price/unit patterns (€/Un, €/kg, /Un, /kg)
+      if (/^(€)?\/(kg|u|un|l|ml)$/i.test(token)) continue;
+      if (/^EUR\/(kg|u|un|l|ml)$/i.test(token)) continue;
+
+      // Skip standalone € symbol
+      if (/^€$/.test(token)) continue;
+
+      // Skip standalone numbers with decimal
+      if (/^\d+[,.]\d+$/.test(token)) continue;
+
+      filteredTokens.push(token);
+    }
+
+    cleaned = filteredTokens.join(' ').trim();
+
+    // Final cleanup: remove any remaining filler words at the end
+    cleaned = cleaned.replace(/\s+(DE|LA|EL|LOS|LAS|CON|SIN)\s*$/i, '').trim();
+
+    return cleaned;
+  }
+
+  /**
+   * Extract products using generic/default parser
+   */
+  private extractGenericProducts(ocrText: string): string[] {
+    const lines = ocrText.split('\n');
+
+    // Log all lines for debugging
+    logger.debug('OCR raw lines (generic)', {
       totalLines: lines.length,
       lines: lines.map((l, i) => `${i}: "${l}"`)
     });
@@ -91,10 +334,11 @@ export class OCRService {
     // Clean up product names
     const cleanedNames = productLines.map((line) => this.cleanProductName(line)).filter((name) => name.length > 0);
 
-    logger.info('Products extracted from OCR', {
+    logger.info('Products extracted from OCR (generic)', {
       count: cleanedNames.length,
       products: cleanedNames
     });
+
     return cleanedNames;
   }
 
