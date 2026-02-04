@@ -31,6 +31,7 @@ const initialState: ReceiptState = {
   feedbackMessage: '',
   isOnline: true, // Story 5.4: Start assuming online
   pendingReceiptsCount: 0, // Story 5.4: No pending receipts initially
+  isOCRConfigured: false, // Story 5.4 bug fix: Track if LLM API key is configured
 };
 
 // Reducer function
@@ -106,6 +107,12 @@ function receiptReducer(state: ReceiptState, action: ReceiptAction): ReceiptStat
       return {
         ...state,
         pendingReceiptsCount: action.payload,
+      };
+
+    case 'SET_OCR_CONFIGURED':
+      return {
+        ...state,
+        isOCRConfigured: action.payload,
       };
 
     case 'RESET':
@@ -453,6 +460,30 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       provider: activeOCRProvider.name,
       inventoryService: 'configured'
     });
+
+    // Story 5.4 bug fix: Check if LLM API key is configured
+    const checkOCRConfiguration = async () => {
+      try {
+        const isAvailable = await activeOCRProvider.isAvailable();
+        dispatch({ type: 'SET_OCR_CONFIGURED', payload: isAvailable });
+
+        if (!isAvailable) {
+          logger.warn('OCR provider not available', {
+            provider: activeOCRProvider.name,
+            hasApiKey: Boolean(import.meta.env.VITE_LLM_API_KEY),
+          });
+          dispatch({
+            type: 'SET_ERROR',
+            payload: 'LLM API key not configured. For local development, set VITE_LLM_API_KEY in your .env file. For Vercel, add it in Project Settings > Environment Variables. Get your API key from: https://platform.openai.com/api-keys',
+          });
+        }
+      } catch (error) {
+        logger.error('Failed to check OCR configuration', handleError(error).details);
+        dispatch({ type: 'SET_OCR_CONFIGURED', payload: false });
+      }
+    };
+
+    checkOCRConfiguration();
   }, []);
 
   // Story 5.4: Monitor network status changes

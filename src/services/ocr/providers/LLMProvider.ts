@@ -72,9 +72,12 @@ export class LLMProvider implements IOCRProvider {
     // Get API key from options or environment variable
     const apiKey = options.apiKey || import.meta.env.VITE_LLM_API_KEY;
     if (!apiKey || apiKey === 'your-api-key-here') {
-      throw new Error(
-        'LLM API key not configured. Please set VITE_LLM_API_KEY in your .env file with an OpenAI API key from https://platform.openai.com/api-keys'
-      );
+      const errorMsg = 'LLM API key not configured. ' +
+        'For local development: Set VITE_LLM_API_KEY in your .env file. ' +
+        'For Vercel deployment: Add VITE_LLM_API_KEY in Project Settings > Environment Variables. ' +
+        'Get your API key from: https://platform.openai.com/api-keys';
+      logger.error('LLMProvider: API key not configured', { hasApiKey: Boolean(apiKey), isPlaceholder: apiKey === 'your-api-key-here' });
+      throw new Error(errorMsg);
     }
 
     const model = options.model || 'gpt-4o-mini';
