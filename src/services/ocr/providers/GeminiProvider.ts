@@ -6,7 +6,7 @@
  * (no SDK dependency) for better reliability and compatibility.
  *
  * Free tier: https://aistudio.google.com/app/apikey
- * Model: gemini-2.0-flash-exp (fast, capable vision model)
+ * Model: gemini-2.0-flash (stable, fast vision model)
  */
 
 import { logger } from '@/utils/logger';
@@ -54,7 +54,7 @@ interface GeminiResponse {
  * Processes images by sending them to the Gemini REST API with an optimized prompt.
  */
 export class GeminiProvider implements IOCRProvider {
-  readonly name = 'gemini-api (gemini-2.0-flash-exp)';
+  readonly name = 'gemini-api (gemini-2.0-flash)';
 
   /**
    * Process receipt image with Gemini-based OCR
@@ -70,7 +70,7 @@ export class GeminiProvider implements IOCRProvider {
       );
     }
 
-    const modelName = options.model || 'gemini-2.0-flash-exp';
+    const modelName = options.model || 'gemini-2.0-flash';
     const timeout = options.timeout || 5000;
 
     logger.debug('GeminiProvider: Starting OCR', { model: modelName, timeout });
