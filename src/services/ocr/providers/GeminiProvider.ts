@@ -1,12 +1,12 @@
 /**
  * Gemini-based OCR Provider
- * Uses Google Gemini 2.0 Flash with vision capabilities for receipt OCR
+ * Uses Google Gemini 1.5 Flash with vision capabilities for receipt OCR
  *
  * This provider uses Google's Generative AI SDK to extract product names from receipt images.
  * It requires an API key set via VITE_LLM_API_KEY environment variable.
  *
  * Free tier: https://aistudio.google.com/app/apikey
- * Model: gemini-2.0-flash-exp (fast, capable vision model)
+ * Model: gemini-1.5-flash (stable, fast vision model)
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -43,7 +43,7 @@ Return valid JSON only. No explanations, no additional text.`;
  * Processes images by sending them to the Gemini API with an optimized prompt.
  */
 export class GeminiProvider implements IOCRProvider {
-  readonly name = 'gemini-api (gemini-2.0-flash-exp)';
+  readonly name = 'gemini-api (gemini-1.5-flash)';
 
   private genAI: GoogleGenerativeAIType | null = null;
 
@@ -61,7 +61,7 @@ export class GeminiProvider implements IOCRProvider {
       );
     }
 
-    const modelName = options.model || 'gemini-2.0-flash-exp';
+    const modelName = options.model || 'gemini-1.5-flash';
     const timeout = options.timeout || 5000;
 
     logger.debug('GeminiProvider: Starting OCR', { model: modelName, timeout });
