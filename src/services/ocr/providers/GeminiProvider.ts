@@ -1,16 +1,14 @@
 /**
  * Gemini-based OCR Provider
- * Uses Google Gemini 1.5 Flash with vision capabilities for receipt OCR
+ * Uses Google Gemini 2.0 Flash with vision capabilities for receipt OCR
  *
- * This provider uses Google's Generative AI SDK to extract product names from receipt images.
- * It requires an API key set via VITE_LLM_API_KEY environment variable.
+ * This provider uses direct REST API calls to Google's Generative AI API
+ * (no SDK dependency) for better reliability and compatibility.
  *
  * Free tier: https://aistudio.google.com/app/apikey
- * Model: gemini-1.5-flash (stable, fast vision model)
+ * Model: gemini-2.0-flash-exp (fast, capable vision model)
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { GoogleGenerativeAI as GoogleGenerativeAIType } from '@google/generative-ai';
 import { logger } from '@/utils/logger';
 import { handleError } from '@/utils/errorHandler';
 import type { IOCRProvider, OCRProviderOptions, OCRProviderResult } from './types';
@@ -37,15 +35,26 @@ OUTPUT FORMAT (JSON only):
 Return valid JSON only. No explanations, no additional text.`;
 
 /**
- * Gemini OCR Provider using Google Gemini 2.0 Flash
+ * Gemini API response structure
+ */
+interface GeminiResponse {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{
+        text?: string;
+      }>;
+    };
+  }>;
+}
+
+/**
+ * Gemini OCR Provider using direct REST API
  *
  * Uses Google's vision model for high-accuracy receipt text extraction.
- * Processes images by sending them to the Gemini API with an optimized prompt.
+ * Processes images by sending them to the Gemini REST API with an optimized prompt.
  */
 export class GeminiProvider implements IOCRProvider {
-  readonly name = 'gemini-api (models/gemini-1.5-flash)';
-
-  private genAI: GoogleGenerativeAIType | null = null;
+  readonly name = 'gemini-api (gemini-2.0-flash-exp)';
 
   /**
    * Process receipt image with Gemini-based OCR
@@ -61,49 +70,70 @@ export class GeminiProvider implements IOCRProvider {
       );
     }
 
-    const modelName = options.model || 'models/gemini-1.5-flash';
+    const modelName = options.model || 'gemini-2.0-flash-exp';
     const timeout = options.timeout || 5000;
 
     logger.debug('GeminiProvider: Starting OCR', { model: modelName, timeout });
 
     try {
-      // Initialize Generative AI client
-      if (!this.genAI) {
-        this.genAI = new GoogleGenerativeAI(apiKey);
-      }
-
-      // Get the vision model (note: model name must include 'models/' prefix)
-      const generativeModel = this.genAI.getGenerativeModel({
-        model: modelName as string,
-      });
-
-      // Create a timeout promise
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error(`OCR processing timeout after ${timeout}ms`)), timeout);
-      });
+      // Create API URL
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
       // Prepare image for Gemini API
-      // Gemini accepts base64 data directly
       const base64Data = imageDataUrl.includes(',')
         ? (imageDataUrl.split(',')[1] ?? imageDataUrl)
         : imageDataUrl;
 
-      // Create the API call promise
-      const apiPromise = generativeModel.generateContent([
-        OCR_PROMPT,
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType: 'image/jpeg',
-          },
+      // Build request body
+      const requestBody = {
+        contents: [
+          {
+            parts: [
+              {
+                text: OCR_PROMPT
+              },
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: base64Data
+                }
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 2048
+        }
+      };
+
+      // Create timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error(`OCR processing timeout after ${timeout}ms`)), timeout);
+      });
+
+      // Create API call promise
+      const apiPromise = fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      ]);
+        body: JSON.stringify(requestBody)
+      }).then(async (response) => {
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            `Gemini API error: ${response.status} - ${errorData.error?.message || response.statusText}`
+          );
+        }
+        return response.json();
+      });
 
       // Race between API call and timeout
-      const response = await Promise.race([apiPromise, timeoutPromise]);
+      const result = await Promise.race([apiPromise, timeoutPromise]);
 
       // Extract products from JSON response
-      const products = this.parseGeminiResponse(response);
+      const products = this.parseGeminiResponse(result);
 
       // Convert products array to raw text format (for compatibility with existing OCRService)
       const rawText = products.length > 0 ? products.join('\n') : '';
@@ -120,8 +150,6 @@ export class GeminiProvider implements IOCRProvider {
         rawText,
         provider: this.name,
         processingTimeMs: Math.round(processingTimeMs),
-        // Note: Gemini API does not return confidence scores.
-        // This value is an estimate based on typical LLM OCR accuracy (~98%).
         confidence: 0.98,
       };
     } catch (error) {
@@ -166,10 +194,11 @@ export class GeminiProvider implements IOCRProvider {
   /**
    * Parse Gemini JSON response and extract products array
    */
-  private parseGeminiResponse(response: any): string[] {
+  private parseGeminiResponse(response: GeminiResponse): string[] {
     try {
-      // Gemini response structure: response.response.text() gets the text content
-      const responseText = response.response?.text?.();
+      // Extract text from Gemini response structure
+      const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text;
+
       if (!responseText) {
         logger.error('GeminiProvider: No text in response', { response });
         return [];
