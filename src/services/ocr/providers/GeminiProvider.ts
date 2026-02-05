@@ -10,7 +10,7 @@
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { GoogleGenerativeAI as GoogleGenerativeAIType, ModelParams } from '@google/generative-ai';
+import type { GoogleGenerativeAI as GoogleGenerativeAIType } from '@google/generative-ai';
 import { logger } from '@/utils/logger';
 import { handleError } from '@/utils/errorHandler';
 import type { IOCRProvider, OCRProviderOptions, OCRProviderResult } from './types';
@@ -43,7 +43,7 @@ Return valid JSON only. No explanations, no additional text.`;
  * Processes images by sending them to the Gemini API with an optimized prompt.
  */
 export class GeminiProvider implements IOCRProvider {
-  readonly name = 'gemini-api (gemini-1.5-flash)';
+  readonly name = 'gemini-api (models/gemini-1.5-flash)';
 
   private genAI: GoogleGenerativeAIType | null = null;
 
@@ -61,7 +61,7 @@ export class GeminiProvider implements IOCRProvider {
       );
     }
 
-    const modelName = options.model || 'gemini-1.5-flash';
+    const modelName = options.model || 'models/gemini-1.5-flash';
     const timeout = options.timeout || 5000;
 
     logger.debug('GeminiProvider: Starting OCR', { model: modelName, timeout });
@@ -72,10 +72,10 @@ export class GeminiProvider implements IOCRProvider {
         this.genAI = new GoogleGenerativeAI(apiKey);
       }
 
-      // Get the vision model
+      // Get the vision model (note: model name must include 'models/' prefix)
       const generativeModel = this.genAI.getGenerativeModel({
-        model: modelName,
-      } as ModelParams);
+        model: modelName as string,
+      });
 
       // Create a timeout promise
       const timeoutPromise = new Promise<never>((_, reject) => {
