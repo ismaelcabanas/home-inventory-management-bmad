@@ -46,6 +46,7 @@ CRITICAL RULES:
 5. Clean up OCR artifacts (fix obvious misrecognitions)
 6. Remove quantities (e.g., "2x Milk" → "Milk")
 7. Remove weights/sizes (e.g., "Milk 1L" → "Milk")
+8. **PRESERVE ORIGINAL LANGUAGE**: Do NOT translate. Extract product names exactly as they appear on the receipt (e.g., "Leche" not "Milk", "Pan" not "Bread")
 
 OUTPUT FORMAT (JSON only):
 {
