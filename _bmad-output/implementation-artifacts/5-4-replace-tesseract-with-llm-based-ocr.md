@@ -1,6 +1,6 @@
 # Story 5.4: Replace Tesseract with LLM-Based OCR
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

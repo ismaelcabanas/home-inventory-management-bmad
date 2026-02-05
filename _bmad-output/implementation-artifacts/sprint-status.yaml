@@ -75,7 +75,7 @@ development_status:
   5-1-capture-receipt-photo-with-camera: done
   5-2-process-receipt-with-ocr: done
   5-3-review-and-correct-ocr-results: backlog
-  5-4-replace-tesseract-with-llm-based-ocr: in-progress
+  5-4-replace-tesseract-with-llm-based-ocr: review
   epic-5-retrospective: optional
 
   epic-6: backlog

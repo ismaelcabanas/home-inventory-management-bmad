@@ -17,6 +17,31 @@ import { mockOCRProvider } from './providers/MockOCRProvider';
 // import { tesseractProvider } from './providers/TesseractProvider';
 
 /**
+ * Debug logging for OCR configuration
+ */
+const logOCRConfig = () => {
+  const provider = import.meta.env.VITE_LLM_PROVIDER || 'openai';
+  const apiKey = import.meta.env.VITE_LLM_API_KEY;
+  const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const useMock = import.meta.env.VITE_USE_MOCK_OCR;
+
+  console.group('🔍 OCR Configuration Debug');
+  console.log('Provider:', provider);
+  console.log('Use Mock OCR:', useMock);
+  console.log('Has OpenAI API Key:', Boolean(apiKey));
+  console.log('OpenAI API Key Format:', apiKey ? `${apiKey.slice(0, 3)}...${apiKey.slice(-4)}` : 'none');
+  console.log('Has Gemini API Key:', Boolean(geminiKey));
+  console.log('Gemini API Key Format:', geminiKey ? `${geminiKey.slice(0, 3)}...${geminiKey.slice(-4)}` : 'none');
+  console.log('Environment:', import.meta.env.MODE);
+  console.groupEnd();
+
+  return { provider, hasApiKey: Boolean(apiKey), hasGeminiKey: Boolean(geminiKey), useMock };
+};
+
+// Log on module load
+logOCRConfig();
+
+/**
  * Get the active LLM provider based on environment variable
  *
  * Environment variables:
@@ -26,6 +51,8 @@ import { mockOCRProvider } from './providers/MockOCRProvider';
  */
 function getActiveLLMProvider(): IOCRProvider {
   const provider = import.meta.env.VITE_LLM_PROVIDER || 'openai';
+
+  console.log(`🔧 Selecting OCR provider: ${provider}`);
 
   switch (provider.toLowerCase()) {
     case 'gemini':

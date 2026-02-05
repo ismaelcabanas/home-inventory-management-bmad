@@ -71,6 +71,15 @@ export class LLMProvider implements IOCRProvider {
 
     // Get API key from options or environment variable
     const apiKey = options.apiKey || import.meta.env.VITE_LLM_API_KEY;
+
+    // Debug logging for API key status
+    console.group('🔑 LLMProvider API Key Debug');
+    console.log('API Key exists:', Boolean(apiKey));
+    console.log('API Key is placeholder:', apiKey === 'your-api-key-here');
+    console.log('API Key format:', apiKey ? `${apiKey.slice(0, 3)}...${apiKey.slice(-4)}` : 'none');
+    console.log('Environment:', import.meta.env.MODE);
+    console.groupEnd();
+
     if (!apiKey || apiKey === 'your-api-key-here') {
       const errorMsg = 'LLM API key not configured. ' +
         'For local development: Set VITE_LLM_API_KEY in your .env file. ' +
@@ -84,6 +93,7 @@ export class LLMProvider implements IOCRProvider {
     const timeout = options.timeout || 5000;
 
     logger.debug('LLMProvider: Starting OCR', { model, timeout });
+    console.log('🚀 Starting OCR processing with model:', model);
 
     try {
       // Create a timeout promise
@@ -194,6 +204,11 @@ export class LLMProvider implements IOCRProvider {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
+      console.group('❌ LLM API Error Details');
+      console.log('Status:', response.status);
+      console.log('Status Text:', response.statusText);
+      console.log('Response:', errorText);
+      console.groupEnd();
       throw new Error(`API Error ${response.status}: ${errorText}`);
     }
 
