@@ -29,7 +29,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run dev',
+    command: 'VITE_USE_MOCK_OCR=true npm run dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
   },

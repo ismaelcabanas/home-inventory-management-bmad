@@ -1,5 +1,5 @@
-import { Box, Stack, Alert, Button, Typography } from '@mui/material';
-import { RestartAlt, CameraAlt } from '@mui/icons-material';
+import { Box, Stack, Alert, Button, Typography, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import { RestartAlt, CameraAlt, ExpandMore } from '@mui/icons-material';
 import { useReceiptContext } from '@/features/receipt/context/ReceiptContext';
 
 /**
@@ -9,11 +9,20 @@ import { useReceiptContext } from '@/features/receipt/context/ReceiptContext';
  * - Error alert with user-friendly message
  * - "Try Again" button to retry OCR
  * - "Cancel" button to return to camera
+ * - Debug info section (development only)
  *
  * Rendered when ocrState === 'error'
  */
 export function ReceiptError() {
   const { state, clearError, processReceiptWithOCR } = useReceiptContext();
+
+  // Debug information
+  const isDev = import.meta.env.DEV;
+  const provider = import.meta.env.VITE_LLM_PROVIDER || 'openai';
+  const hasApiKey = Boolean(import.meta.env.VITE_LLM_API_KEY);
+  const apiKeyFormat = hasApiKey
+    ? `${import.meta.env.VITE_LLM_API_KEY!.slice(0, 3)}...${import.meta.env.VITE_LLM_API_KEY!.slice(-4)}`
+    : 'none';
 
   const handleTryAgain = async () => {
     if (!state.capturedImage) {
@@ -65,6 +74,41 @@ export function ReceiptError() {
             </Typography>
           </Stack>
         </Alert>
+
+        {/* Debug Info Section (Development Only) */}
+        {isDev && (
+          <Accordion sx={{ width: '100%' }}>
+            <AccordionSummary expandIcon={<ExpandMore />}>
+              <Typography variant="caption" color="text.secondary">
+                🔍 Debug Information
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Stack spacing={1}>
+                <Typography variant="caption" component="div">
+                  <strong>Provider:</strong> {provider}
+                </Typography>
+                <Typography variant="caption" component="div">
+                  <strong>API Key:</strong> {hasApiKey ? apiKeyFormat : '❌ Missing'}
+                </Typography>
+                <Typography variant="caption" component="div">
+                  <strong>Environment:</strong> {import.meta.env.MODE}
+                </Typography>
+                <Typography variant="caption" component="div">
+                  <strong>Error:</strong> {state.error || 'Unknown'}
+                </Typography>
+                <Typography variant="caption" color="error">
+                  {!hasApiKey && (
+                    <>
+                      <strong>Action Required:</strong>{' '}
+                      Set <code>VITE_LLM_API_KEY</code> environment variable in Vercel or local .env file.
+                    </>
+                  )}
+                </Typography>
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
+        )}
 
         {/* Action buttons */}
         <Stack direction="column" spacing={2} sx={{ width: '100%' }}>

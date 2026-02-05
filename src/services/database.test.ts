@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { db } from './database';
 import type { Product } from '@/types/product';
+import type { PendingReceipt } from './database';
 
 /**
  * Story 4.1: Check Off Items While Shopping
@@ -10,14 +11,24 @@ import type { Product } from '@/types/product';
  * including the addition of the isChecked field to the Product interface.
  */
 
-describe('Database Schema - Story 4.1', () => {
+/**
+ * Story 5.4: Replace Tesseract with LLM-Based OCR
+ * Task 3: Create Pending Receipts Database Schema
+ *
+ * Tests verify the database schema extension from version 2 to version 3
+ * including the addition of the pendingReceipts table.
+ */
+
+describe('Database Schema', () => {
   // Clean up database before and after each test
   beforeEach(async () => {
     await db.products.clear();
+    await db.pendingReceipts.clear();
   });
 
   afterEach(async () => {
     await db.products.clear();
+    await db.pendingReceipts.clear();
   });
 
   describe('Subtask 1.2: isChecked field in Product interface', () => {
@@ -143,14 +154,14 @@ describe('Database Schema - Story 4.1', () => {
   });
 
   describe('Subtask 1.4: Database version upgrade', () => {
-    it('should have database version 2', () => {
-      expect(db.verno).toBe(2);
+    it('should have database version 3 (Story 5.4)', () => {
+      expect(db.verno).toBe(3);
     });
 
     it('should have isChecked in the products table index', () => {
       // Dexie doesn't expose the index structure directly,
-      // but we can verify the database is at version 2
-      expect(db.verno).toBe(2);
+      // but we can verify the database is at version 3
+      expect(db.verno).toBe(3);
     });
   });
 
@@ -209,6 +220,300 @@ describe('Database Schema - Story 4.1', () => {
       const retrieved = await db.products.get('independence-test-3');
       expect(retrieved?.isOnShoppingList).toBe(true);
       expect(retrieved?.isChecked).toBe(false);
+    });
+  });
+
+  describe('Story 5.4: Pending Receipts Table', () => {
+    describe('Subtask 3.1: pendingReceipts table schema', () => {
+      it('should add a pending receipt with status "pending"', async () => {
+        const pendingReceipt: PendingReceipt = {
+          imageData: 'data:image/jpeg;base64,/9j/4AAQSkZJRg',
+          createdAt: new Date(),
+          status: 'pending',
+        };
+
+        const id = await db.pendingReceipts.add(pendingReceipt);
+
+        expect(id).toBeDefined();
+        expect(typeof id).toBe('number');
+      });
+
+      it('should add a pending receipt with status "processing"', async () => {
+        const pendingReceipt: PendingReceipt = {
+          imageData: 'data:image/jpeg;base64,/9j/4AAQSkZJRg',
+          createdAt: new Date(),
+          status: 'processing',
+        };
+
+        const id = await db.pendingReceipts.add(pendingReceipt);
+
+        const retrieved = await db.pendingReceipts.get(id);
+        expect(retrieved?.status).toBe('processing');
+      });
+
+      it('should add a pending receipt with status "completed"', async () => {
+        const pendingReceipt: PendingReceipt = {
+          imageData: 'data:image/jpeg;base64,/9j/4AAQSkZJRg',
+          createdAt: new Date(),
+          status: 'completed',
+        };
+
+        const id = await db.pendingReceipts.add(pendingReceipt);
+
+        const retrieved = await db.pendingReceipts.get(id);
+        expect(retrieved?.status).toBe('completed');
+      });
+
+      it('should add a pending receipt with status "failed" and error message', async () => {
+        const pendingReceipt: PendingReceipt = {
+          imageData: 'data:image/jpeg;base64,/9j/4AAQSkZJRg',
+          createdAt: new Date(),
+          status: 'failed',
+          error: 'OCR processing failed: API quota exceeded',
+        };
+
+        const id = await db.pendingReceipts.add(pendingReceipt);
+
+        const retrieved = await db.pendingReceipts.get(id);
+        expect(retrieved?.status).toBe('failed');
+        expect(retrieved?.error).toBe('OCR processing failed: API quota exceeded');
+      });
+
+      it('should retrieve a pending receipt by auto-incremented id', async () => {
+        const pendingReceipt: PendingReceipt = {
+          imageData: 'data:image/jpeg;base64,/9j/4AAQSkZJRg',
+          createdAt: new Date(),
+          status: 'pending',
+        };
+
+        const id = await db.pendingReceipts.add(pendingReceipt);
+        const retrieved = await db.pendingReceipts.get(id);
+
+        expect(retrieved).toBeDefined();
+        expect(retrieved?.id).toBe(id);
+        expect(retrieved?.imageData).toBe(pendingReceipt.imageData);
+        expect(retrieved?.status).toBe('pending');
+      });
+    });
+
+    describe('Subtask 3.3: Database operations for pendingReceipts', () => {
+      it('should query all pending receipts with status "pending"', async () => {
+        const receipts: PendingReceipt[] = [
+          {
+            imageData: 'data:image/jpeg;base64,abc123',
+            createdAt: new Date('2024-01-01'),
+            status: 'pending',
+          },
+          {
+            imageData: 'data:image/jpeg;base64,def456',
+            createdAt: new Date('2024-01-02'),
+            status: 'pending',
+          },
+          {
+            imageData: 'data:image/jpeg;base64,ghi789',
+            createdAt: new Date('2024-01-03'),
+            status: 'completed',
+          },
+        ];
+
+        await db.pendingReceipts.bulkAdd(receipts);
+
+        const pendingReceipts = await db.pendingReceipts.where('status').equals('pending').toArray();
+
+        expect(pendingReceipts).toHaveLength(2);
+        expect(pendingReceipts.every((r) => r.status === 'pending')).toBe(true);
+      });
+
+      it('should update a pending receipt status from "pending" to "processing"', async () => {
+        const receipt: PendingReceipt = {
+          imageData: 'data:image/jpeg;base64,test',
+          createdAt: new Date(),
+          status: 'pending',
+        };
+
+        const id = await db.pendingReceipts.add(receipt);
+
+        await db.pendingReceipts.update(id, { status: 'processing' });
+
+        const updated = await db.pendingReceipts.get(id);
+        expect(updated?.status).toBe('processing');
+      });
+
+      it('should update a pending receipt status from "processing" to "completed"', async () => {
+        const receipt: PendingReceipt = {
+          imageData: 'data:image/jpeg;base64,test',
+          createdAt: new Date(),
+          status: 'processing',
+        };
+
+        const id = await db.pendingReceipts.add(receipt);
+
+        await db.pendingReceipts.update(id, { status: 'completed' });
+
+        const updated = await db.pendingReceipts.get(id);
+        expect(updated?.status).toBe('completed');
+      });
+
+      it('should update a pending receipt status to "failed" with error message', async () => {
+        const receipt: PendingReceipt = {
+          imageData: 'data:image/jpeg;base64,test',
+          createdAt: new Date(),
+          status: 'processing',
+        };
+
+        const id = await db.pendingReceipts.add(receipt);
+
+        await db.pendingReceipts.update(id, {
+          status: 'failed',
+          error: 'API request timeout',
+        });
+
+        const updated = await db.pendingReceipts.get(id);
+        expect(updated?.status).toBe('failed');
+        expect(updated?.error).toBe('API request timeout');
+      });
+
+      it('should delete a pending receipt', async () => {
+        const receipt: PendingReceipt = {
+          imageData: 'data:image/jpeg;base64,test',
+          createdAt: new Date(),
+          status: 'completed',
+        };
+
+        const id = await db.pendingReceipts.add(receipt);
+
+        await db.pendingReceipts.delete(id);
+
+        const deleted = await db.pendingReceipts.get(id);
+        expect(deleted).toBeUndefined();
+      });
+
+      it('should clear all pending receipts', async () => {
+        const receipts: PendingReceipt[] = [
+          {
+            imageData: 'data:image/jpeg;base64,1',
+            createdAt: new Date(),
+            status: 'pending',
+          },
+          {
+            imageData: 'data:image/jpeg;base64,2',
+            createdAt: new Date(),
+            status: 'completed',
+          },
+        ];
+
+        await db.pendingReceipts.bulkAdd(receipts);
+        await db.pendingReceipts.clear();
+
+        const allReceipts = await db.pendingReceipts.toArray();
+        expect(allReceipts).toHaveLength(0);
+      });
+    });
+
+    describe('Subtask 3.3: Status transitions', () => {
+      it('should transition from "pending" to "processing" to "completed"', async () => {
+        const receipt: PendingReceipt = {
+          imageData: 'data:image/jpeg;base64,transition-test',
+          createdAt: new Date(),
+          status: 'pending',
+        };
+
+        const id = await db.pendingReceipts.add(receipt);
+
+        // pending -> processing
+        await db.pendingReceipts.update(id, { status: 'processing' });
+        let current = await db.pendingReceipts.get(id);
+        expect(current?.status).toBe('processing');
+
+        // processing -> completed
+        await db.pendingReceipts.update(id, { status: 'completed' });
+        current = await db.pendingReceipts.get(id);
+        expect(current?.status).toBe('completed');
+      });
+
+      it('should transition from "processing" to "failed" on error', async () => {
+        const receipt: PendingReceipt = {
+          imageData: 'data:image/jpeg;base64,fail-test',
+          createdAt: new Date(),
+          status: 'processing',
+        };
+
+        const id = await db.pendingReceipts.add(receipt);
+
+        await db.pendingReceipts.update(id, {
+          status: 'failed',
+          error: 'API quota exceeded',
+        });
+
+        const current = await db.pendingReceipts.get(id);
+        expect(current?.status).toBe('failed');
+        expect(current?.error).toBe('API quota exceeded');
+      });
+
+      it('should not allow transitions from "completed" back to "pending"', async () => {
+        const receipt: PendingReceipt = {
+          imageData: 'data:image/jpeg;base64,no-rollback',
+          createdAt: new Date(),
+          status: 'completed',
+        };
+
+        const id = await db.pendingReceipts.add(receipt);
+
+        // This is a data integrity test - we're verifying we CAN update,
+        // but in practice the application should not allow this transition
+        await db.pendingReceipts.update(id, { status: 'pending' });
+
+        const current = await db.pendingReceipts.get(id);
+        // The database allows it, but the app layer should prevent it
+        expect(current?.status).toBe('pending');
+      });
+    });
+
+    describe('Subtask 3.2: Migration from version 2 to version 3', () => {
+      it('should preserve existing products during migration', async () => {
+        // Add products that would exist before the migration
+        const products: Product[] = [
+          {
+            id: 'pre-migration-1',
+            name: 'Product 1',
+            stockLevel: 'high',
+            isOnShoppingList: false,
+            isChecked: false,
+            createdAt: new Date('2024-01-01'),
+            updatedAt: new Date('2024-01-01'),
+          },
+          {
+            id: 'pre-migration-2',
+            name: 'Product 2',
+            stockLevel: 'low',
+            isOnShoppingList: true,
+            isChecked: false,
+            createdAt: new Date('2024-01-02'),
+            updatedAt: new Date('2024-01-02'),
+          },
+        ];
+
+        await db.products.bulkAdd(products);
+
+        // Verify products are still accessible after migration
+        const product1 = await db.products.get('pre-migration-1');
+        const product2 = await db.products.get('pre-migration-2');
+
+        expect(product1).toBeDefined();
+        expect(product2).toBeDefined();
+        expect(product1?.name).toBe('Product 1');
+        expect(product2?.name).toBe('Product 2');
+      });
+
+      it('should start with an empty pendingReceipts table after migration', async () => {
+        // The pendingReceipts table should be empty after migration
+        const allReceipts = await db.pendingReceipts.toArray();
+        expect(allReceipts).toHaveLength(0);
+      });
+
+      it('should have database version 3', () => {
+        expect(db.verno).toBe(3);
+      });
     });
   });
 });

@@ -1,6 +1,8 @@
 /**
  * Receipt feature types
  * Contains state definitions and action types for receipt scanning and camera functionality
+ *
+ * Story 5.4: Added offline queue support with isOnline state
  */
 
 import type { Product } from '@/types/product';
@@ -50,6 +52,9 @@ export interface OCRResult {
 /**
  * Receipt feature state interface
  * Manages all receipt scanning state including camera, images, OCR, and errors
+ *
+ * Story 5.4: Added isOnline and pendingReceiptsCount for offline queue support
+ * Story 5.4 bug fix: Added isOCRConfigured to track LLM API key availability
  */
 export interface ReceiptState {
   cameraState: CameraState;
@@ -58,14 +63,20 @@ export interface ReceiptState {
   capturedImage: string | null; // data URL of captured photo
   processingProgress: number; // 0-100 for OCR progress indicator
   recognizedProducts: RecognizedProduct[];
-  rawOcrText: string | null; // Raw text extracted by Tesseract (for debugging)
+  rawOcrText: string | null; // Raw text extracted by OCR (for debugging)
   error: string | null;
   feedbackMessage: string;
+  isOnline: boolean; // Story 5.4: Network connectivity status
+  pendingReceiptsCount: number; // Story 5.4: Number of receipts waiting to be processed
+  isOCRConfigured: boolean; // Story 5.4 bug fix: Whether LLM API key is configured
 }
 
 /**
  * ReceiptAction discriminated union
  * All possible actions for ReceiptContext state management
+ *
+ * Story 5.4: Added SET_ONLINE_STATUS and SET_PENDING_COUNT actions
+ * Story 5.4 bug fix: Added SET_OCR_CONFIGURED action
  */
 export type ReceiptAction =
   | { type: 'SET_CAMERA_STATE'; payload: CameraState }
@@ -77,11 +88,16 @@ export type ReceiptAction =
   | { type: 'SET_RAW_OCR_TEXT'; payload: string | null }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_FEEDBACK_MESSAGE'; payload: string }
+  | { type: 'SET_ONLINE_STATUS'; payload: boolean } // Story 5.4: Network status
+  | { type: 'SET_PENDING_COUNT'; payload: number } // Story 5.4: Pending receipts count
+  | { type: 'SET_OCR_CONFIGURED'; payload: boolean } // Story 5.4 bug fix: LLM API key status
   | { type: 'RESET' };
 
 /**
  * ReceiptContext value interface
  * Exposes state and methods for receipt scanning functionality
+ *
+ * Story 5.4: Added processPendingQueue method for offline queue processing
  */
 export interface ReceiptContextValue {
   state: ReceiptState;
@@ -91,6 +107,7 @@ export interface ReceiptContextValue {
   retakePhoto: () => Promise<void>;
   usePhoto: () => void;
   processReceiptWithOCR: (imageDataUrl: string) => Promise<void>;
+  processPendingQueue: () => Promise<{ processed: number; completed: number; failed: number }>; // Story 5.4
   stopCamera: () => void;
   clearError: () => void;
   videoRef: React.RefObject<HTMLVideoElement | null>;

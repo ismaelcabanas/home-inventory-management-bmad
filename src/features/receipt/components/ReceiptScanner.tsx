@@ -1,4 +1,4 @@
-import { Box, Stack, Button, Typography, List, ListItem, ListItemText, Chip } from '@mui/material';
+import { Box, Stack, Button, Typography, List, ListItem, ListItemText, Chip, Alert } from '@mui/material';
 import { Receipt as ReceiptIcon, CheckCircle, ArrowForward } from '@mui/icons-material';
 import { useReceiptContext } from '@/features/receipt/context/ReceiptContext';
 import { logger } from '@/utils/logger';
@@ -189,12 +189,34 @@ export function ReceiptScanner() {
               </Typography>
             </Stack>
 
+            {/* API Key Configuration Warning */}
+            {!state.isOCRConfigured && (
+              <Alert
+                severity="warning"
+                sx={{ width: '100%' }}
+                role="alert"
+                aria-live="polite"
+              >
+                <Typography variant="body2" fontWeight="medium">
+                  LLM API key not configured
+                </Typography>
+                <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                  For local development: Set <code>VITE_LLM_API_KEY</code> in your .env file.
+                  For Vercel: Add it in Project Settings → Environment Variables.
+                </Typography>
+                <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                  Get your API key from: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">platform.openai.com/api-keys</a>
+                </Typography>
+              </Alert>
+            )}
+
             {/* "Scan Receipt" button */}
             <Button
               variant="contained"
               size="large"
               onClick={handleStartScanning}
               fullWidth
+              disabled={!state.isOCRConfigured}
               sx={{
                 py: 1.5,
                 fontSize: '1.1rem',

@@ -6,6 +6,7 @@ import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
 import { ocrService, activeOCRProvider } from '@/services/ocr';
 import { inventoryService } from '@/services/inventory';
+import { isOnline, onNetworkStatusChange } from '@/utils/network';
 import type {
   ReceiptState,
   ReceiptAction,
@@ -28,6 +29,9 @@ const initialState: ReceiptState = {
   rawOcrText: null,
   error: null,
   feedbackMessage: '',
+  isOnline: true, // Story 5.4: Start assuming online
+  pendingReceiptsCount: 0, // Story 5.4: No pending receipts initially
+  isOCRConfigured: false, // Story 5.4 bug fix: Track if LLM API key is configured
 };
 
 // Reducer function
@@ -91,6 +95,24 @@ function receiptReducer(state: ReceiptState, action: ReceiptAction): ReceiptStat
       return {
         ...state,
         feedbackMessage: action.payload,
+      };
+
+    case 'SET_ONLINE_STATUS':
+      return {
+        ...state,
+        isOnline: action.payload,
+      };
+
+    case 'SET_PENDING_COUNT':
+      return {
+        ...state,
+        pendingReceiptsCount: action.payload,
+      };
+
+    case 'SET_OCR_CONFIGURED':
+      return {
+        ...state,
+        isOCRConfigured: action.payload,
       };
 
     case 'RESET':
@@ -275,7 +297,7 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
     }
   }, [state.capturedImage, state.videoStream]);
 
-  // Process receipt with OCR
+  // Process receipt with OCR (Story 5.4: Offline queue support)
   const processReceiptWithOCR = useCallback(async (imageDataUrl: string) => {
     try {
       logger.debug('Starting OCR processing');
@@ -285,6 +307,27 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       dispatch({ type: 'SET_PROCESSING_PROGRESS', payload: 0 });
       dispatch({ type: 'SET_RECOGNIZED_PRODUCTS', payload: [] });
       dispatch({ type: 'SET_RAW_OCR_TEXT', payload: null });
+
+      // Check if we're offline (Story 5.4)
+      const online = isOnline();
+      if (!online) {
+        // Queue receipt for offline processing
+        const pendingId = await ocrService.queuePendingReceipt(imageDataUrl);
+        logger.info('Receipt queued for offline processing', { pendingId });
+
+        // Update pending count
+        const count = await ocrService.getPendingCount();
+        dispatch({ type: 'SET_PENDING_COUNT', payload: count });
+
+        // Set error to inform user about offline mode
+        dispatch({ type: 'SET_OCR_STATE', payload: 'error' as OCRState });
+        dispatch({
+          type: 'SET_ERROR',
+          payload: 'You are currently offline. Receipt has been queued and will be processed automatically when you reconnect.',
+        });
+
+        return;
+      }
 
       // Process with OCR service
       const result = await ocrService.processReceipt(imageDataUrl);
@@ -306,10 +349,74 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       const appError = handleError(error);
       logger.error('OCR processing failed', appError.details);
 
+      // Check if this is a quota/network error that should trigger queuing (Story 5.4)
+      const shouldQueue =
+        appError.message.includes('QUOTA_EXCEEDED') ||
+        appError.message.includes('temporarily unavailable') ||
+        appError.message.includes('network');
+
+      if (shouldQueue && isOnline()) {
+        // Queue for retry when quota resets
+        try {
+          const pendingId = await ocrService.queuePendingReceipt(imageDataUrl);
+          logger.info('Receipt queued due to API error', { pendingId, error: appError.message });
+
+          const count = await ocrService.getPendingCount();
+          dispatch({ type: 'SET_PENDING_COUNT', payload: count });
+
+          dispatch({ type: 'SET_OCR_STATE', payload: 'error' as OCRState });
+          dispatch({
+            type: 'SET_ERROR',
+            payload: 'API quota exceeded or service unavailable. Receipt has been queued and will be processed automatically.',
+          });
+        } catch (queueError) {
+          logger.error('Failed to queue receipt', handleError(queueError).details);
+          dispatch({ type: 'SET_OCR_STATE', payload: 'error' as OCRState });
+          dispatch({ type: 'SET_ERROR', payload: appError.message });
+        }
+        return;
+      }
+
       // Set error state
       dispatch({ type: 'SET_OCR_STATE', payload: 'error' as OCRState });
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to process receipt. Please try again.' });
+      dispatch({ type: 'SET_ERROR', payload: appError.message || 'Failed to process receipt. Please try again.' });
 
+      throw error;
+    }
+  }, []);
+
+  // Process pending receipts queue (Story 5.4)
+  const processPendingQueue = useCallback(async () => {
+    try {
+      logger.info('Processing pending receipts queue');
+
+      const results = await ocrService.processPendingQueue();
+
+      // Update pending count
+      const count = await ocrService.getPendingCount();
+      dispatch({ type: 'SET_PENDING_COUNT', payload: count });
+
+      // Show feedback message
+      if (results.processed > 0) {
+        dispatch({
+          type: 'SET_FEEDBACK_MESSAGE',
+          payload: `Processed ${results.completed} receipt${results.completed !== 1 ? 's' : ''}` +
+            (results.failed > 0 ? ` (${results.failed} failed)` : ''),
+        });
+
+        // Clear feedback after 5 seconds
+        setTimeout(() => {
+          dispatch({ type: 'SET_FEEDBACK_MESSAGE', payload: '' });
+        }, 5000);
+      }
+
+      logger.info('Pending queue processing complete', results);
+
+      return results;
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to process pending queue', appError.details);
+      dispatch({ type: 'SET_ERROR', payload: appError.message || 'Failed to process pending receipts.' });
       throw error;
     }
   }, []);
@@ -353,6 +460,69 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       provider: activeOCRProvider.name,
       inventoryService: 'configured'
     });
+
+    // Story 5.4 bug fix: Check if LLM API key is configured
+    const checkOCRConfiguration = async () => {
+      try {
+        const isAvailable = await activeOCRProvider.isAvailable();
+        dispatch({ type: 'SET_OCR_CONFIGURED', payload: isAvailable });
+
+        if (!isAvailable) {
+          logger.warn('OCR provider not available', {
+            provider: activeOCRProvider.name,
+            hasApiKey: Boolean(import.meta.env.VITE_LLM_API_KEY),
+          });
+          dispatch({
+            type: 'SET_ERROR',
+            payload: 'LLM API key not configured. For local development, set VITE_LLM_API_KEY in your .env file. For Vercel, add it in Project Settings > Environment Variables. Get your API key from: https://platform.openai.com/api-keys',
+          });
+        }
+      } catch (error) {
+        logger.error('Failed to check OCR configuration', handleError(error).details);
+        dispatch({ type: 'SET_OCR_CONFIGURED', payload: false });
+      }
+    };
+
+    checkOCRConfiguration();
+  }, []);
+
+  // Story 5.4: Monitor network status changes
+  useEffect(() => {
+    // Set initial online status
+    dispatch({ type: 'SET_ONLINE_STATUS', payload: isOnline() });
+
+    // Listen for network status changes
+    const cleanup = onNetworkStatusChange(async (online) => {
+      dispatch({ type: 'SET_ONLINE_STATUS', payload: online });
+
+      // When coming back online, process pending receipts
+      if (online) {
+        logger.info('Network connection restored, processing pending queue');
+        try {
+          await processPendingQueue();
+        } catch (error) {
+          // Log but don't throw - network status change shouldn't break the app
+          logger.error('Failed to process pending queue on network restore', handleError(error).details);
+        }
+      }
+    });
+
+    return cleanup;
+  }, [processPendingQueue]);
+
+  // Story 5.4: Update pending receipts count on mount
+  useEffect(() => {
+    const updatePendingCount = async () => {
+      try {
+        const count = await ocrService.getPendingCount();
+        dispatch({ type: 'SET_PENDING_COUNT', payload: count });
+      } catch (error) {
+        // Don't let database errors break the app
+        logger.error('Failed to get pending receipts count', handleError(error).details);
+      }
+    };
+
+    updatePendingCount();
   }, []);
 
   const value: ReceiptContextValue = useMemo(
@@ -364,11 +534,12 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       retakePhoto,
       usePhoto,
       processReceiptWithOCR,
+      processPendingQueue, // Story 5.4
       stopCamera,
       clearError,
       videoRef,
     }),
-    [state, requestCameraPermission, startCamera, capturePhoto, retakePhoto, usePhoto, processReceiptWithOCR, stopCamera, clearError]
+    [state, requestCameraPermission, startCamera, capturePhoto, retakePhoto, usePhoto, processReceiptWithOCR, processPendingQueue, stopCamera, clearError]
   );
 
   return (
