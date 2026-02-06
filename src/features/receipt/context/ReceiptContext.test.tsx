@@ -119,6 +119,8 @@ describe('ReceiptContext', () => {
       expect(result.current.state.rawOcrText).toBeNull();
       expect(result.current.state.processingProgress).toBe(0);
       expect(result.current.state.recognizedProducts).toEqual([]);
+      expect(result.current.state.productsInReview).toEqual([]); // Story 5.3
+      expect(result.current.state.confirmedProducts).toEqual([]); // Story 5.3
     });
   });
 
@@ -480,11 +482,12 @@ describe('ReceiptContext', () => {
 
         // Verify state transitions
         expect(ocrService.processReceipt).toHaveBeenCalledWith('data:image/jpeg;base64,test');
-        expect(result.current.state.ocrState).toBe('completed');
+        expect(result.current.state.ocrState).toBe('review'); // Story 5.3: Now transitions to review
         expect(result.current.state.recognizedProducts).toEqual(mockProducts);
+        expect(result.current.state.productsInReview).toEqual(mockProducts); // Story 5.3: Products copied to review
         expect(result.current.state.processingProgress).toBe(100);
         expect(logger.logger.info).toHaveBeenCalledWith(
-          'OCR processing complete',
+          'OCR processing complete, entering review state', // Story 5.3: Updated log message
           expect.objectContaining({
             productsFound: 2,
           })
@@ -588,7 +591,7 @@ describe('ReceiptContext', () => {
           await result.current.processReceiptWithOCR('data:image/jpeg;base64,test');
         });
 
-        expect(result.current.state.ocrState).toBe('completed');
+        expect(result.current.state.ocrState).toBe('review'); // Story 5.3: Now transitions to review state
       });
 
       it('should handle worker initialization errors', async () => {
@@ -629,6 +632,176 @@ describe('ReceiptContext', () => {
         const { result } = renderHook(() => useReceiptContext(), { wrapper: freshWrapper });
 
         expect(result.current.processReceiptWithOCR).toBeInstanceOf(Function);
+      });
+    });
+  });
+
+  // Story 5.3: Review state management tests
+  describe('Review State Management - Story 5.3', () => {
+    const reviewWrapper = ({ children }: { children: React.ReactNode }) => (
+      <ReceiptProvider key="review-test-fresh">{children}</ReceiptProvider>
+    );
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    describe('editProductName', () => {
+      it('should edit product name in productsInReview', () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: reviewWrapper });
+
+        // Set up products in review by adding them
+        act(() => {
+          result.current.addProduct('Milk');
+          result.current.addProduct('Bread');
+        });
+
+        const milkId = result.current.state.productsInReview[0].id;
+
+        // Edit product name
+        act(() => {
+          result.current.editProductName(milkId, 'Organic Milk');
+        });
+
+        expect(result.current.state.productsInReview[0].name).toBe('Organic Milk');
+        expect(result.current.state.productsInReview[1].name).toBe('Bread'); // Unchanged
+      });
+
+      it('should handle edit for non-existent product gracefully', () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: reviewWrapper });
+
+        act(() => {
+          result.current.addProduct('Milk');
+        });
+
+        const originalName = result.current.state.productsInReview[0].name;
+
+        // Try to edit non-existent product
+        act(() => {
+          result.current.editProductName('999', 'New Name');
+        });
+
+        // Should not crash, products remain unchanged
+        expect(result.current.state.productsInReview[0].name).toBe(originalName);
+      });
+    });
+
+    describe('addProduct', () => {
+      it('should add product to productsInReview with valid name', () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: reviewWrapper });
+
+        const initialLength = result.current.state.productsInReview.length;
+
+        act(() => {
+          result.current.addProduct('Cheese');
+        });
+
+        expect(result.current.state.productsInReview.length).toBe(initialLength + 1);
+        expect(result.current.state.productsInReview[initialLength].name).toBe('Cheese');
+        expect(result.current.state.productsInReview[initialLength].confidence).toBe(1.0);
+        expect(result.current.state.productsInReview[initialLength].isCorrect).toBe(true);
+      });
+
+      it('should trim whitespace from product name', () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: reviewWrapper });
+
+        act(() => {
+          result.current.addProduct('  Cheese  ');
+        });
+
+        expect(result.current.state.productsInReview[0].name).toBe('Cheese');
+      });
+
+      it('should set error for invalid product name (too short)', () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: reviewWrapper });
+
+        act(() => {
+          result.current.addProduct('M'); // Only 1 character
+        });
+
+        expect(result.current.state.productsInReview.length).toBe(0);
+        expect(result.current.state.error).toBe('Product name must be at least 2 characters');
+      });
+
+      it('should set error for invalid product name (empty)', () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: reviewWrapper });
+
+        act(() => {
+          result.current.addProduct('   '); // Only whitespace
+        });
+
+        expect(result.current.state.productsInReview.length).toBe(0);
+        expect(result.current.state.error).toBe('Product name must be at least 2 characters');
+      });
+    });
+
+    describe('removeProduct', () => {
+      it('should remove product from productsInReview', () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: reviewWrapper });
+
+        // Add products
+        act(() => {
+          result.current.addProduct('Milk');
+          result.current.addProduct('Bread');
+          result.current.addProduct('Cheese');
+        });
+
+        const breadId = result.current.state.productsInReview[1].id;
+
+        // Remove middle product
+        act(() => {
+          result.current.removeProduct(breadId);
+        });
+
+        expect(result.current.state.productsInReview.length).toBe(2);
+        expect(result.current.state.productsInReview.map(p => p.name)).toEqual(['Milk', 'Cheese']);
+      });
+
+      it('should handle remove for non-existent product gracefully', () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: reviewWrapper });
+
+        act(() => {
+          result.current.addProduct('Milk');
+        });
+
+        const originalLength = result.current.state.productsInReview.length;
+
+        // Try to remove non-existent product
+        act(() => {
+          result.current.removeProduct('999');
+        });
+
+        // Should not crash, product list unchanged
+        expect(result.current.state.productsInReview.length).toBe(originalLength);
+      });
+    });
+
+    describe('confirmReview', () => {
+      it('should confirm review and transition to completed state', () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: reviewWrapper });
+
+        // Add products to review
+        act(() => {
+          result.current.addProduct('Milk');
+          result.current.addProduct('Bread');
+        });
+
+        const initialReviewCount = result.current.state.productsInReview.length;
+
+        act(() => {
+          result.current.confirmReview();
+        });
+
+        // Check confirmed products
+        expect(result.current.state.confirmedProducts.length).toBe(initialReviewCount);
+        expect(result.current.state.confirmedProducts[0].isCorrect).toBe(true);
+        expect(result.current.state.confirmedProducts[1].isCorrect).toBe(true);
+
+        // Check state cleared
+        expect(result.current.state.productsInReview).toEqual([]);
+
+        // Check OCR state transitioned to completed
+        expect(result.current.state.ocrState).toBe('completed');
       });
     });
   });

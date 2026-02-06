@@ -1,11 +1,12 @@
 import { Box, Stack, Button, Typography, List, ListItem, ListItemText, Chip, Alert } from '@mui/material';
-import { Receipt as ReceiptIcon, CheckCircle, ArrowForward } from '@mui/icons-material';
+import { Receipt as ReceiptIcon, CheckCircle } from '@mui/icons-material';
 import { useReceiptContext } from '@/features/receipt/context/ReceiptContext';
 import { logger } from '@/utils/logger';
 import { CameraCapture } from '@/features/receipt/components/CameraCapture';
 import { ImagePreview } from '@/features/receipt/components/ImagePreview';
 import { OCRProcessing } from '@/features/receipt/components/OCRProcessing';
 import { ReceiptError } from '@/features/receipt/components/ReceiptError';
+import { ReceiptReview } from '@/features/receipt/components/ReceiptReview'; // Story 5.3
 
 /**
  * ReceiptScanner Component
@@ -22,7 +23,7 @@ import { ReceiptError } from '@/features/receipt/components/ReceiptError';
  * - error: Shows error message with retry option
  */
 export function ReceiptScanner() {
-  const { state, requestCameraPermission } = useReceiptContext();
+  const { state, requestCameraPermission, editProductName, addProduct, removeProduct, confirmReview } = useReceiptContext();
 
   // Handle "Scan Receipt" button press
   const handleStartScanning = async () => {
@@ -44,26 +45,47 @@ export function ReceiptScanner() {
     return <ReceiptError />;
   }
 
+  // Story 5.3: Show review screen when OCR completes and enters review state
+  if (state.ocrState === 'review') {
+    return (
+      <ReceiptReview
+        products={state.productsInReview}
+        onEditProduct={(id, name) => {
+          // Use setTimeout to avoid state update during render
+          setTimeout(() => editProductName(id, name), 0);
+        }}
+        onAddProduct={(name) => {
+          setTimeout(() => addProduct(name), 0);
+        }}
+        onRemoveProduct={(id) => {
+          setTimeout(() => removeProduct(id), 0);
+        }}
+        onConfirm={() => {
+          setTimeout(() => confirmReview(), 0);
+        }}
+      />
+    );
+  }
+
   if (state.ocrState === 'completed') {
-    // AC5: Show completion screen with recognized products
-    // Navigation to Review screen will happen in Story 5.3
+    // Story 5.3: After user confirms review, show final completion screen
+    // This is the state after confirmReview() is called
     return (
       <Box
         sx={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
           minHeight: '100vh',
-          p: 3,
+          p: { xs: 2, sm: 3 },
           bgcolor: 'background.default',
         }}
       >
-        <Stack spacing={3} alignItems="center" sx={{ maxWidth: 500, width: '100%' }}>
+        <Stack spacing={3} alignItems="center" sx={{ maxWidth: 700, width: '100%', mt: { xs: 2, sm: 4 } }}>
           {/* Success icon */}
           <CheckCircle
             sx={{
-              fontSize: 80,
+              fontSize: { xs: 64, sm: 80 },
               color: 'success.main',
             }}
           />
@@ -71,21 +93,21 @@ export function ReceiptScanner() {
           {/* Success message */}
           <Stack spacing={1} alignItems="center" sx={{ textAlign: 'center' }}>
             <Typography variant="h5" component="h1">
-              Receipt Processed!
+              Review Complete!
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Found {state.recognizedProducts.length} product{state.recognizedProducts.length !== 1 ? 's' : ''}
+              {state.confirmedProducts.length} product{state.confirmedProducts.length !== 1 ? 's' : ''} ready to update inventory
             </Typography>
           </Stack>
 
-          {/* Recognized products list */}
-          {state.recognizedProducts.length > 0 ? (
+          {/* Confirmed products list */}
+          {state.confirmedProducts.length > 0 ? (
             <Box sx={{ width: '100%' }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Recognized Products:
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ px: 1 }}>
+                Confirmed Products:
               </Typography>
-              <List dense sx={{ bgcolor: 'background.paper', borderRadius: 1, maxHeight: 300, overflow: 'auto' }}>
-                {state.recognizedProducts.map((product) => (
+              <List dense sx={{ bgcolor: 'background.paper', borderRadius: 1, maxHeight: { xs: 400, sm: 500 }, overflow: 'auto' }}>
+                {state.confirmedProducts.map((product) => (
                   <ListItem key={product.id} divider>
                     <ListItemText
                       primary={product.name}
@@ -93,15 +115,11 @@ export function ReceiptScanner() {
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
                           <Chip
                             size="small"
-                            label={`${Math.round(product.confidence * 100)}% confidence`}
-                            color={
-                              product.confidence >= 0.9 ? 'success' :
-                              product.confidence >= 0.7 ? 'warning' :
-                              'default'
-                            }
+                            label="Confirmed"
+                            color="success"
                           />
                           {product.matchedProduct && (
-                            <Chip size="small" label="Matched" color="primary" variant="outlined" />
+                            <Chip size="small" label="In inventory" color="primary" variant="outlined" />
                           )}
                         </Stack>
                       }
@@ -113,36 +131,20 @@ export function ReceiptScanner() {
           ) : (
             <Box sx={{ width: '100%', textAlign: 'center', p: 3, bgcolor: 'warning.lighter', borderRadius: 1 }}>
               <Typography variant="body1" color="text.warning.dark" gutterBottom>
-                No products were recognized from this receipt
+                No products to update
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                This could be due to poor image quality, unusual receipt format, or OCR limitations.
-                Try retaking the photo with better lighting or a clearer angle.
+                All products were removed during review, or OCR found no products.
               </Typography>
             </Box>
           )}
 
           {/* Note about next step */}
-          <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'info.lighter', borderRadius: 1 }}>
+          <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'info.lighter', borderRadius: 1, width: '100%' }}>
             <Typography variant="body2" color="text.secondary">
-              Review and correction screen coming in Story 5.3
+              Inventory update will be available in Epic 6
             </Typography>
           </Box>
-
-          {/* Continue button (placeholder for Story 5.3) */}
-          <Button
-            variant="contained"
-            color="primary"
-            endIcon={<ArrowForward />}
-            fullWidth
-            sx={{
-              py: 1.5,
-              fontSize: '1.1rem',
-              minHeight: 48, // NFR8.1: minimum 44x44 pixels
-            }}
-          >
-            Continue to Review
-          </Button>
         </Stack>
       </Box>
     );

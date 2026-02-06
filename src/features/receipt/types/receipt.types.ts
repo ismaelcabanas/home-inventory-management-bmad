@@ -21,10 +21,13 @@ export type CameraState =
 /**
  * OCR state machine states
  * Represents the lifecycle of OCR processing
+ *
+ * Story 5.3: Added 'review' state for user to review and correct OCR results
  */
 export type OCRState =
   | 'idle'       // No OCR processing initiated
   | 'processing' // OCR actively processing receipt
+  | 'review'     // Story 5.3: User reviewing and correcting OCR results
   | 'completed'  // OCR completed, products recognized
   | 'error';      // OCR processing failed
 
@@ -55,6 +58,7 @@ export interface OCRResult {
  *
  * Story 5.4: Added isOnline and pendingReceiptsCount for offline queue support
  * Story 5.4 bug fix: Added isOCRConfigured to track LLM API key availability
+ * Story 5.3: Added productsInReview and confirmedProducts for review workflow
  */
 export interface ReceiptState {
   cameraState: CameraState;
@@ -69,6 +73,8 @@ export interface ReceiptState {
   isOnline: boolean; // Story 5.4: Network connectivity status
   pendingReceiptsCount: number; // Story 5.4: Number of receipts waiting to be processed
   isOCRConfigured: boolean; // Story 5.4 bug fix: Whether LLM API key is configured
+  productsInReview: RecognizedProduct[]; // Story 5.3: Products currently being reviewed by user
+  confirmedProducts: RecognizedProduct[]; // Story 5.3: User-confirmed products ready for inventory update
 }
 
 /**
@@ -77,6 +83,7 @@ export interface ReceiptState {
  *
  * Story 5.4: Added SET_ONLINE_STATUS and SET_PENDING_COUNT actions
  * Story 5.4 bug fix: Added SET_OCR_CONFIGURED action
+ * Story 5.3: Added EDIT_PRODUCT_NAME, ADD_PRODUCT, REMOVE_PRODUCT, CONFIRM_REVIEW, SET_PRODUCTS_IN_REVIEW actions
  */
 export type ReceiptAction =
   | { type: 'SET_CAMERA_STATE'; payload: CameraState }
@@ -91,6 +98,11 @@ export type ReceiptAction =
   | { type: 'SET_ONLINE_STATUS'; payload: boolean } // Story 5.4: Network status
   | { type: 'SET_PENDING_COUNT'; payload: number } // Story 5.4: Pending receipts count
   | { type: 'SET_OCR_CONFIGURED'; payload: boolean } // Story 5.4 bug fix: LLM API key status
+  | { type: 'SET_PRODUCTS_IN_REVIEW'; payload: RecognizedProduct[] } // Story 5.3: Set products for review
+  | { type: 'EDIT_PRODUCT_NAME'; payload: { productId: string; newName: string } } // Story 5.3: Edit product name
+  | { type: 'ADD_PRODUCT'; payload: RecognizedProduct } // Story 5.3: Add new product to review
+  | { type: 'REMOVE_PRODUCT'; payload: string } // Story 5.3: Remove product from review (productId)
+  | { type: 'CONFIRM_REVIEW'; payload: RecognizedProduct[] } // Story 5.3: Confirm review and set confirmed products
   | { type: 'RESET' };
 
 /**
@@ -98,6 +110,7 @@ export type ReceiptAction =
  * Exposes state and methods for receipt scanning functionality
  *
  * Story 5.4: Added processPendingQueue method for offline queue processing
+ * Story 5.3: Added review state management methods (editProductName, addProduct, removeProduct, confirmReview)
  */
 export interface ReceiptContextValue {
   state: ReceiptState;
@@ -108,6 +121,10 @@ export interface ReceiptContextValue {
   usePhoto: () => void;
   processReceiptWithOCR: (imageDataUrl: string) => Promise<void>;
   processPendingQueue: () => Promise<{ processed: number; completed: number; failed: number }>; // Story 5.4
+  editProductName: (productId: string, newName: string) => void; // Story 5.3: Edit product name during review
+  addProduct: (name: string) => void; // Story 5.3: Add new product during review
+  removeProduct: (productId: string) => void; // Story 5.3: Remove product during review
+  confirmReview: () => void; // Story 5.3: Confirm review and proceed to inventory update
   stopCamera: () => void;
   clearError: () => void;
   videoRef: React.RefObject<HTMLVideoElement | null>;
