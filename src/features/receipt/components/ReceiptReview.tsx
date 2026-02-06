@@ -145,7 +145,7 @@ export const ReceiptReview: React.FC<ReceiptReviewProps> = ({
       </Box>
 
       {/* Products List */}
-      <List sx={{ flexGrow: 1, overflow: 'auto', p: 0 }}>
+      <List sx={{ flexGrow: 1, overflow: 'auto', p: 0, pb: 12 }}>
         {products.length === 0 ? (
           <Box sx={{ p: 3, textAlign: 'center' }}>
             <Typography variant="body1" color="text.secondary">
