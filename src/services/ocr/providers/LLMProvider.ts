@@ -91,7 +91,7 @@ export class LLMProvider implements IOCRProvider {
     }
 
     const model = options.model || 'gpt-4o-mini';
-    const timeout = options.timeout || 5000;
+    const timeout = options.timeout || 30000; // 30 seconds for LLM processing
 
     logger.debug('LLMProvider: Starting OCR', { model, timeout });
     console.log('🚀 Starting OCR processing with model:', model);

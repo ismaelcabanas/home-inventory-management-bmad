@@ -72,7 +72,7 @@ export class GeminiProvider implements IOCRProvider {
     }
 
     const modelName = options.model || 'gemini-2.0-flash';
-    const timeout = options.timeout || 5000;
+    const timeout = options.timeout || 30000; // 30 seconds for LLM processing
 
     logger.debug('GeminiProvider: Starting OCR', { model: modelName, timeout });
 
