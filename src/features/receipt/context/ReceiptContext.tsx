@@ -32,6 +32,8 @@ const initialState: ReceiptState = {
   isOnline: true, // Story 5.4: Start assuming online
   pendingReceiptsCount: 0, // Story 5.4: No pending receipts initially
   isOCRConfigured: false, // Story 5.4 bug fix: Track if LLM API key is configured
+  productsInReview: [], // Story 5.3: Products currently being reviewed by user
+  confirmedProducts: [], // Story 5.3: User-confirmed products ready for inventory update
 };
 
 // Reducer function
@@ -113,6 +115,42 @@ function receiptReducer(state: ReceiptState, action: ReceiptAction): ReceiptStat
       return {
         ...state,
         isOCRConfigured: action.payload,
+      };
+
+    // Story 5.3: Review state management actions
+    case 'SET_PRODUCTS_IN_REVIEW':
+      return {
+        ...state,
+        productsInReview: action.payload,
+      };
+
+    case 'EDIT_PRODUCT_NAME':
+      return {
+        ...state,
+        productsInReview: state.productsInReview.map(p =>
+          p.id === action.payload.productId
+            ? { ...p, name: action.payload.newName }
+            : p
+        ),
+      };
+
+    case 'ADD_PRODUCT':
+      return {
+        ...state,
+        productsInReview: [...state.productsInReview, action.payload],
+      };
+
+    case 'REMOVE_PRODUCT':
+      return {
+        ...state,
+        productsInReview: state.productsInReview.filter(p => p.id !== action.payload),
+      };
+
+    case 'CONFIRM_REVIEW':
+      return {
+        ...state,
+        confirmedProducts: action.payload,
+        productsInReview: [],
       };
 
     case 'RESET':
@@ -337,10 +375,13 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
 
       // Update with results
       dispatch({ type: 'SET_RECOGNIZED_PRODUCTS', payload: result.products });
-      dispatch({ type: 'SET_OCR_STATE', payload: 'completed' as OCRState });
       dispatch({ type: 'SET_PROCESSING_PROGRESS', payload: 100 });
 
-      logger.info('OCR processing complete', {
+      // Story 5.3: Transition to review state instead of completed
+      dispatch({ type: 'SET_PRODUCTS_IN_REVIEW', payload: result.products });
+      dispatch({ type: 'SET_OCR_STATE', payload: 'review' as OCRState });
+
+      logger.info('OCR processing complete, entering review state', {
         productsFound: result.products.length,
         rawTextLength: result.rawText.length,
         rawTextPreview: result.rawText.substring(0, 200),
@@ -439,6 +480,69 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
     dispatch({ type: 'SET_ERROR', payload: null });
   }, []);
 
+  // Story 5.3: Review state management methods
+
+  // Edit product name during review
+  const editProductName = useCallback((productId: string, newName: string) => {
+    logger.debug('Editing product name', { productId, newName });
+    dispatch({
+      type: 'EDIT_PRODUCT_NAME',
+      payload: { productId, newName }
+    });
+  }, []);
+
+  // Add new product during review
+  const addProduct = useCallback((name: string) => {
+    if (name.trim().length < 2) {
+      const error = 'Product name must be at least 2 characters';
+      logger.warn('Invalid product name for add', { name, error });
+      dispatch({ type: 'SET_ERROR', payload: error });
+      return;
+    }
+
+    const newProduct = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      confidence: 1.0,
+      isCorrect: true,
+    };
+
+    logger.debug('Adding product to review', { product: newProduct });
+    dispatch({
+      type: 'ADD_PRODUCT',
+      payload: newProduct
+    });
+  }, []);
+
+  // Remove product during review
+  const removeProduct = useCallback((productId: string) => {
+    logger.debug('Removing product from review', { productId });
+    dispatch({
+      type: 'REMOVE_PRODUCT',
+      payload: productId
+    });
+  }, []);
+
+  // Confirm review and proceed to inventory update
+  const confirmReview = useCallback(() => {
+    const confirmedProducts = state.productsInReview.map(p => ({
+      ...p,
+      isCorrect: true,
+    }));
+
+    logger.info('Confirming review', {
+      productCount: confirmedProducts.length,
+      products: confirmedProducts.map(p => p.name)
+    });
+
+    dispatch({
+      type: 'CONFIRM_REVIEW',
+      payload: confirmedProducts
+    });
+
+    dispatch({ type: 'SET_OCR_STATE', payload: 'completed' as OCRState });
+  }, [state.productsInReview]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -535,11 +639,15 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       usePhoto,
       processReceiptWithOCR,
       processPendingQueue, // Story 5.4
+      editProductName, // Story 5.3
+      addProduct, // Story 5.3
+      removeProduct, // Story 5.3
+      confirmReview, // Story 5.3
       stopCamera,
       clearError,
       videoRef,
     }),
-    [state, requestCameraPermission, startCamera, capturePhoto, retakePhoto, usePhoto, processReceiptWithOCR, processPendingQueue, stopCamera, clearError]
+    [state, requestCameraPermission, startCamera, capturePhoto, retakePhoto, usePhoto, processReceiptWithOCR, processPendingQueue, editProductName, addProduct, removeProduct, confirmReview, stopCamera, clearError]
   );
 
   return (
