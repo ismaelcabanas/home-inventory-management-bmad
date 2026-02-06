@@ -15,7 +15,6 @@ import {
   Typography,
   LinearProgress,
   List,
-  Fab,
   Button,
   ListItem,
   ListItemText,
@@ -125,23 +124,41 @@ export const ReceiptReview: React.FC<ReceiptReviewProps> = ({
         bgcolor: 'background.paper',
       }}
     >
-      {/* Summary Header */}
+      {/* Summary Header with Add Button */}
       <Box
         sx={{
-          p: 2,
+          px: 2,
+          py: 1.5,
           bgcolor: 'background.paper',
           borderBottom: 1,
           borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
         }}
       >
-        <Typography variant="h6" gutterBottom>
-          {highConfidenceCount} of {totalCount} products recognized
-        </Typography>
-        <LinearProgress
-          variant="determinate"
-          value={totalCount > 0 ? (highConfidenceCount / totalCount) * 100 : 0}
-          sx={{ height: 8, borderRadius: 4 }}
-        />
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" gutterBottom={false}>
+            {highConfidenceCount} of {totalCount} products recognized
+          </Typography>
+          <LinearProgress
+            variant="determinate"
+            value={totalCount > 0 ? (highConfidenceCount / totalCount) * 100 : 0}
+            sx={{ height: 6, borderRadius: 3, mt: 0.5 }}
+          />
+        </Box>
+        <IconButton
+          onClick={() => {
+            setAddingProduct(true);
+            setAddValue('');
+            setAddError('');
+          }}
+          aria-label="Add product"
+          sx={{ ml: 2 }}
+          color="primary"
+        >
+          <AddIcon />
+        </IconButton>
       </Box>
 
       {/* Products List */}
@@ -216,25 +233,6 @@ export const ReceiptReview: React.FC<ReceiptReviewProps> = ({
           ))
         )}
       </List>
-
-      {/* Add Product FAB */}
-      <Fab
-        color="primary"
-        sx={{
-          position: 'fixed',
-          bottom: 80,
-          right: 16,
-          zIndex: 1000,
-        }}
-        onClick={() => {
-          setAddingProduct(true);
-          setAddValue('');
-          setAddError('');
-        }}
-        aria-label="Add product"
-      >
-        <AddIcon />
-      </Fab>
 
       {/* Confirm Button */}
       <Box
