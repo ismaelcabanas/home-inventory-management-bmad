@@ -152,6 +152,100 @@ export class InventoryService {
       throw appError;
     }
   }
+
+  // Story 6.1: Update Inventory from Confirmed Receipt Products
+  async replenishStock(productNames: string[]): Promise<void> {
+    try {
+      logger.debug('Replenishing stock for products', { productNames });
+
+      await db.transaction('rw', db.products, async () => {
+        for (const name of productNames) {
+          const existing = await this.findExistingProduct(name);
+
+          if (existing) {
+            // Update existing product to High
+            await db.products.update(existing.id!, {
+              stockLevel: 'high',
+              updatedAt: new Date(),
+              isOnShoppingList: false, // Remove from shopping list when replenished
+            });
+            logger.info(`Updated product to High: ${name}`);
+          } else {
+            // Add new product
+            await this.addProductFromReceipt(name);
+          }
+        }
+      });
+
+      logger.info('Stock replenishment completed', { count: productNames.length });
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to replenish stock', appError.details);
+      throw appError;
+    }
+  }
+
+  async findExistingProduct(name: string): Promise<Product | undefined> {
+    try {
+      const normalized = name.toLowerCase().trim();
+
+      // Handle empty search term
+      if (!normalized) {
+        return undefined;
+      }
+
+      // Try exact match first
+      let product = await db.products
+        .filter((p) => p.name.toLowerCase().trim() === normalized)
+        .first();
+
+      if (product) return product;
+
+      // Try partial match (one name contains the other)
+      const allProducts = await db.products.toArray();
+      return allProducts.find((p) => {
+        const pName = p.name.toLowerCase().trim();
+        return pName.includes(normalized) || normalized.includes(pName);
+      });
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to find existing product', appError.details);
+      throw appError;
+    }
+  }
+
+  async addProductFromReceipt(name: string): Promise<Product> {
+    try {
+      logger.debug('Adding product from receipt', { name });
+
+      // Validate product name
+      if (!name || name.trim().length === 0) {
+        throw new Error('Product name cannot be empty');
+      }
+
+      if (name.length > 255) {
+        throw new Error('Product name too long (max 255 characters)');
+      }
+
+      const product: Product = {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        stockLevel: 'high',
+        isOnShoppingList: false,
+        isChecked: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await db.products.add(product);
+      logger.info('Product added from receipt', { id: product.id, name: product.name });
+      return product;
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to add product from receipt', appError.details);
+      throw appError;
+    }
+  }
 }
 
 // Export singleton instance

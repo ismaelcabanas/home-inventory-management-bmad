@@ -4,6 +4,8 @@ import { ReceiptProvider, useReceiptContext } from './ReceiptContext';
 import * as errorHandler from '@/utils/errorHandler';
 import * as logger from '@/utils/logger';
 import { ocrService } from '@/services/ocr';
+import { inventoryService } from '@/services/inventory';
+import { shoppingService } from '@/services/shopping';
 
 // Mock the utilities
 vi.mock('@/utils/errorHandler');
@@ -13,6 +15,20 @@ vi.mock('@/utils/logger');
 vi.mock('@/utils/network', () => ({
   isOnline: vi.fn(() => true),
   onNetworkStatusChange: vi.fn(() => vi.fn()),
+}));
+
+// Mock inventory service for Story 6.1
+vi.mock('@/services/inventory', () => ({
+  inventoryService: {
+    replenishStock: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+// Mock shopping service for Story 6.1
+vi.mock('@/services/shopping', () => ({
+  shoppingService: {
+    removePurchasedItems: vi.fn().mockResolvedValue(0),
+  },
 }));
 
 // Mock OCR providers module - define mock provider inline to avoid hoisting issues
@@ -632,6 +648,89 @@ describe('ReceiptContext', () => {
         const { result } = renderHook(() => useReceiptContext(), { wrapper: freshWrapper });
 
         expect(result.current.processReceiptWithOCR).toBeInstanceOf(Function);
+      });
+    });
+  });
+
+  // Story 6.1: Inventory update state tests
+  describe('Inventory Update State - Story 6.1', () => {
+    const inventoryWrapper = ({ children }: { children: React.ReactNode }) => (
+      <ReceiptProvider key="inventory-test-fresh">{children}</ReceiptProvider>
+    );
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    describe('initial state for inventory update', () => {
+      it('should have inventory update state initialized', () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: inventoryWrapper });
+
+        expect(result.current.state.updatingInventory).toBe(false);
+        expect(result.current.state.updateError).toBeNull();
+        expect(result.current.state.productsUpdated).toBe(0);
+      });
+    });
+
+    describe('updateInventoryFromReceipt', () => {
+      it('should be available as a method', () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: inventoryWrapper });
+
+        expect(result.current.updateInventoryFromReceipt).toBeInstanceOf(Function);
+      });
+
+      it('should call inventory and shopping services on success', async () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: inventoryWrapper });
+
+        // Set confirmed products
+        act(() => {
+          result.current.addProduct('Milk');
+          result.current.addProduct('Bread');
+        });
+
+        // Confirm review first
+        act(() => {
+          result.current.confirmReview();
+        });
+
+        // Then update inventory - confirmedProducts should be set
+        await act(async () => {
+          await result.current.updateInventoryFromReceipt();
+        });
+
+        expect(inventoryService.replenishStock).toHaveBeenCalledWith(['Milk', 'Bread']);
+        expect(shoppingService.removePurchasedItems).toHaveBeenCalledWith(['Milk', 'Bread']);
+        expect(result.current.state.productsUpdated).toBe(0); // Mock returns 0
+        expect(result.current.state.updatingInventory).toBe(false);
+      });
+
+      it('should handle errors and set updateError', async () => {
+        const mockError = new Error('Database connection failed');
+        vi.mocked(inventoryService.replenishStock).mockRejectedValueOnce(mockError);
+
+        vi.mocked(errorHandler.handleError).mockReturnValue({
+          message: 'Failed to update inventory. Please try again.',
+          details: { originalError: mockError },
+        });
+
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: inventoryWrapper });
+
+        // Set confirmed products
+        act(() => {
+          result.current.addProduct('Milk');
+          result.current.confirmReview();
+        });
+
+        await act(async () => {
+          try {
+            await result.current.updateInventoryFromReceipt();
+          } catch {
+            // Expected to throw
+          }
+        });
+
+        expect(result.current.state.updateError).not.toBeNull();
+        expect(result.current.state.updatingInventory).toBe(false);
       });
     });
   });

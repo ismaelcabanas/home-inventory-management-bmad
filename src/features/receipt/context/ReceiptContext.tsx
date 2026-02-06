@@ -6,6 +6,7 @@ import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
 import { ocrService, activeOCRProvider } from '@/services/ocr';
 import { inventoryService } from '@/services/inventory';
+import { shoppingService } from '@/services/shopping';
 import { isOnline, onNetworkStatusChange } from '@/utils/network';
 import type {
   ReceiptState,
@@ -34,6 +35,9 @@ const initialState: ReceiptState = {
   isOCRConfigured: false, // Story 5.4 bug fix: Track if LLM API key is configured
   productsInReview: [], // Story 5.3: Products currently being reviewed by user
   confirmedProducts: [], // Story 5.3: User-confirmed products ready for inventory update
+  updatingInventory: false, // Story 6.1: Not updating inventory initially
+  updateError: null, // Story 6.1: No error initially
+  productsUpdated: 0, // Story 6.1: No products updated initially
 };
 
 // Reducer function
@@ -151,6 +155,28 @@ function receiptReducer(state: ReceiptState, action: ReceiptAction): ReceiptStat
         ...state,
         confirmedProducts: action.payload,
         productsInReview: [],
+      };
+
+    // Story 6.1: Inventory update state actions
+    case 'SET_UPDATING_INVENTORY':
+      return {
+        ...state,
+        updatingInventory: action.payload,
+      };
+
+    case 'INVENTORY_UPDATE_SUCCESS':
+      return {
+        ...state,
+        productsUpdated: action.payload,
+        updatingInventory: false,
+        updateError: null,
+      };
+
+    case 'INVENTORY_UPDATE_ERROR':
+      return {
+        ...state,
+        updateError: action.payload,
+        updatingInventory: false,
       };
 
     case 'RESET':
@@ -543,6 +569,44 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
     dispatch({ type: 'SET_OCR_STATE', payload: 'completed' as OCRState });
   }, [state.productsInReview]);
 
+  // Story 6.1: Update inventory from confirmed receipt products
+  const updateInventoryFromReceipt = useCallback(async () => {
+    try {
+      logger.debug('Starting inventory update from receipt', {
+        productCount: state.confirmedProducts.length
+      });
+
+      // Set updating state
+      dispatch({ type: 'SET_UPDATING_INVENTORY', payload: true });
+
+      // Extract product names from confirmed products
+      const productNames = state.confirmedProducts.map(p => p.name);
+
+      // Step 1: Replenish stock (update existing products to High, add new products)
+      await inventoryService.replenishStock(productNames);
+
+      // Step 2: Remove purchased items from shopping list
+      const removedCount = await shoppingService.removePurchasedItems(productNames);
+
+      logger.info('Inventory update completed', {
+        totalProducts: productNames.length,
+        removedFromList: removedCount
+      });
+
+      // Set success state with count
+      dispatch({ type: 'INVENTORY_UPDATE_SUCCESS', payload: removedCount });
+
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to update inventory from receipt', appError.details);
+
+      // Set error state
+      dispatch({ type: 'INVENTORY_UPDATE_ERROR', payload: appError });
+
+      throw error;
+    }
+  }, [state.confirmedProducts]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -643,11 +707,12 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       addProduct, // Story 5.3
       removeProduct, // Story 5.3
       confirmReview, // Story 5.3
+      updateInventoryFromReceipt, // Story 6.1
       stopCamera,
       clearError,
       videoRef,
     }),
-    [state, requestCameraPermission, startCamera, capturePhoto, retakePhoto, usePhoto, processReceiptWithOCR, processPendingQueue, editProductName, addProduct, removeProduct, confirmReview, stopCamera, clearError]
+    [state, requestCameraPermission, startCamera, capturePhoto, retakePhoto, usePhoto, processReceiptWithOCR, processPendingQueue, editProductName, addProduct, removeProduct, confirmReview, updateInventoryFromReceipt, stopCamera, clearError]
   );
 
   return (

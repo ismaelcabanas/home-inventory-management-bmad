@@ -1,5 +1,6 @@
-import { Box, Stack, Button, Typography, List, ListItem, ListItemText, Chip, Alert } from '@mui/material';
-import { Receipt as ReceiptIcon, CheckCircle } from '@mui/icons-material';
+import { Box, Stack, Button, Typography, List, ListItem, ListItemText, Chip, Alert, CircularProgress, LinearProgress } from '@mui/material';
+import { Receipt as ReceiptIcon, CheckCircle, Error as ErrorIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useReceiptContext } from '@/features/receipt/context/ReceiptContext';
 import { logger } from '@/utils/logger';
 import { CameraCapture } from '@/features/receipt/components/CameraCapture';
@@ -19,11 +20,13 @@ import { ReceiptReview } from '@/features/receipt/components/ReceiptReview'; // 
  * - capturing: Shows CameraCapture component
  * - preview: Shows ImagePreview component
  * - processing: Shows OCRProcessing component (OCR active)
- * - completed: Shows completion screen with recognized products (for Story 5.3)
+ * - review: Shows ReceiptReview component (Story 5.3)
+ * - completed: Shows inventory update processing/success (Story 6.1)
  * - error: Shows error message with retry option
  */
 export function ReceiptScanner() {
-  const { state, requestCameraPermission, editProductName, addProduct, removeProduct, confirmReview } = useReceiptContext();
+  const navigate = useNavigate();
+  const { state, requestCameraPermission, editProductName, addProduct, removeProduct, confirmReview, updateInventoryFromReceipt, clearError } = useReceiptContext();
 
   // Handle "Scan Receipt" button press
   const handleStartScanning = async () => {
@@ -60,16 +63,24 @@ export function ReceiptScanner() {
         onRemoveProduct={(id) => {
           setTimeout(() => removeProduct(id), 0);
         }}
-        onConfirm={() => {
-          setTimeout(() => confirmReview(), 0);
+        onConfirm={async () => {
+          // Story 6.1: Confirm review and trigger inventory update
+          confirmReview();
+          // Small delay to ensure state is updated before calling updateInventoryFromReceipt
+          setTimeout(async () => {
+            try {
+              await updateInventoryFromReceipt();
+            } catch (error) {
+              logger.error('Inventory update failed', error);
+            }
+          }, 100);
         }}
       />
     );
   }
 
   if (state.ocrState === 'completed') {
-    // Story 5.3: After user confirms review, show final completion screen
-    // This is the state after confirmReview() is called
+    // Story 6.1: Show inventory update processing, success, or error
     return (
       <Box
         sx={{
@@ -82,69 +93,130 @@ export function ReceiptScanner() {
         }}
       >
         <Stack spacing={3} alignItems="center" sx={{ maxWidth: 700, width: '100%', mt: { xs: 2, sm: 4 } }}>
-          {/* Success icon */}
-          <CheckCircle
-            sx={{
-              fontSize: { xs: 64, sm: 80 },
-              color: 'success.main',
-            }}
-          />
-
-          {/* Success message */}
-          <Stack spacing={1} alignItems="center" sx={{ textAlign: 'center' }}>
-            <Typography variant="h5" component="h1">
-              Review Complete!
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              {state.confirmedProducts.length} product{state.confirmedProducts.length !== 1 ? 's' : ''} ready to update inventory
-            </Typography>
-          </Stack>
-
-          {/* Confirmed products list */}
-          {state.confirmedProducts.length > 0 ? (
-            <Box sx={{ width: '100%' }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ px: 1 }}>
-                Confirmed Products:
-              </Typography>
-              <List dense sx={{ bgcolor: 'background.paper', borderRadius: 1, maxHeight: { xs: 400, sm: 500 }, overflow: 'auto' }}>
-                {state.confirmedProducts.map((product) => (
-                  <ListItem key={product.id} divider>
-                    <ListItemText
-                      primary={product.name}
-                      secondary={
-                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
-                          <Chip
-                            size="small"
-                            label="Confirmed"
-                            color="success"
-                          />
-                          {product.matchedProduct && (
-                            <Chip size="small" label="In inventory" color="primary" variant="outlined" />
-                          )}
-                        </Stack>
-                      }
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
-          ) : (
-            <Box sx={{ width: '100%', textAlign: 'center', p: 3, bgcolor: 'warning.lighter', borderRadius: 1 }}>
-              <Typography variant="body1" color="text.warning.dark" gutterBottom>
-                No products to update
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                All products were removed during review, or OCR found no products.
-              </Typography>
-            </Box>
+          {/* Story 6.1: Show processing state */}
+          {state.updatingInventory && (
+            <>
+              <CircularProgress size={64} />
+              <Stack spacing={1} alignItems="center" sx={{ textAlign: 'center' }}>
+                <Typography variant="h5" component="h1">
+                  Updating inventory...
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Please wait while we update your inventory
+                </Typography>
+              </Stack>
+              <LinearProgress sx={{ width: '100%', mt: 2 }} />
+            </>
           )}
 
-          {/* Note about next step */}
-          <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'info.lighter', borderRadius: 1, width: '100%' }}>
-            <Typography variant="body2" color="text.secondary">
-              Inventory update will be available in Epic 6
-            </Typography>
-          </Box>
+          {/* Story 6.1: Show error state */}
+          {state.updateError && !state.updatingInventory && (
+            <>
+              <ErrorIcon
+                sx={{
+                  fontSize: { xs: 64, sm: 80 },
+                  color: 'error.main',
+                }}
+              />
+              <Stack spacing={1} alignItems="center" sx={{ textAlign: 'center' }}>
+                <Typography variant="h5" component="h1">
+                  Update Failed
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  {state.updateError.message || 'Failed to update inventory. Please try again.'}
+                </Typography>
+              </Stack>
+              <Alert severity="error" sx={{ width: '100%' }}>
+                <Typography variant="body2">
+                  An error occurred while updating your inventory. Your data has not been modified.
+                </Typography>
+              </Alert>
+              <Stack direction="row" spacing={2} sx={{ width: '100%' }}>
+                <Button
+                  variant="contained"
+                  onClick={async () => {
+                    clearError();
+                    try {
+                      await updateInventoryFromReceipt();
+                    } catch (error) {
+                      logger.error('Retry inventory update failed', error);
+                    }
+                  }}
+                  fullWidth
+                >
+                  Try Again
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    clearError();
+                    navigate('/inventory');
+                  }}
+                  fullWidth
+                >
+                  Go to Inventory
+                </Button>
+              </Stack>
+            </>
+          )}
+
+          {/* Story 6.1: Show success state */}
+          {!state.updatingInventory && !state.updateError && state.productsUpdated >= 0 && (
+            <>
+              <CheckCircle
+                sx={{
+                  fontSize: { xs: 64, sm: 80 },
+                  color: 'success.main',
+                }}
+              />
+              <Stack spacing={1} alignItems="center" sx={{ textAlign: 'center' }}>
+                <Typography variant="h5" component="h1">
+                  Inventory Updated!
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  {state.productsUpdated} product{state.productsUpdated !== 1 ? 's' : ''} replenished
+                </Typography>
+              </Stack>
+              <Alert severity="success" sx={{ width: '100%' }}>
+                <Typography variant="body2">
+                  Your inventory has been updated with the products from your receipt. Purchased items have been removed from your shopping list.
+                </Typography>
+              </Alert>
+
+              {/* Confirmed products summary */}
+              {state.confirmedProducts.length > 0 && (
+                <Box sx={{ width: '100%' }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ px: 1 }}>
+                    Products Updated:
+                  </Typography>
+                  <List dense sx={{ bgcolor: 'background.paper', borderRadius: 1, maxHeight: { xs: 200, sm: 250 }, overflow: 'auto' }}>
+                    {state.confirmedProducts.map((product) => (
+                      <ListItem key={product.id} divider>
+                        <ListItemText
+                          primary={product.name}
+                          secondary={
+                            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
+                              <Chip size="small" label="Stock: High" color="success" variant="outlined" />
+                            </Stack>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+              )}
+
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => navigate('/inventory')}
+                fullWidth
+                sx={{ minHeight: 48 }}
+              >
+                View Inventory
+              </Button>
+            </>
+          )}
         </Stack>
       </Box>
     );
