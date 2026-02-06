@@ -247,6 +247,8 @@ export const ReceiptReview: React.FC<ReceiptReviewProps> = ({
           bgcolor: 'background.paper',
           borderTop: 1,
           borderColor: 'divider',
+          zIndex: 1100,
+          boxShadow: 3,
         }}
       >
         <Button
