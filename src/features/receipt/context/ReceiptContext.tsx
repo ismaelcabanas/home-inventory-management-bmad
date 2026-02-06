@@ -37,7 +37,7 @@ const initialState: ReceiptState = {
   confirmedProducts: [], // Story 5.3: User-confirmed products ready for inventory update
   updatingInventory: false, // Story 6.1: Not updating inventory initially
   updateError: null, // Story 6.1: No error initially
-  productsUpdated: 0, // Story 6.1: No products updated initially
+  productsUpdated: -1, // Story 6.1: -1 means not yet updated (0 means updated but no items)
 };
 
 // Reducer function
@@ -570,17 +570,28 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
   }, [state.productsInReview]);
 
   // Story 6.1: Update inventory from confirmed receipt products
-  const updateInventoryFromReceipt = useCallback(async () => {
+  const updateInventoryFromReceipt = useCallback(async (products?: RecognizedProduct[]) => {
     try {
+      // Use provided products or fall back to state
+      const productsToUpdate = products || state.confirmedProducts;
+
       logger.debug('Starting inventory update from receipt', {
-        productCount: state.confirmedProducts.length
+        productCount: productsToUpdate.length
       });
+
+      if (productsToUpdate.length === 0) {
+        logger.warn('No confirmed products to update');
+        dispatch({ type: 'INVENTORY_UPDATE_SUCCESS', payload: 0 });
+        return;
+      }
 
       // Set updating state
       dispatch({ type: 'SET_UPDATING_INVENTORY', payload: true });
 
       // Extract product names from confirmed products
-      const productNames = state.confirmedProducts.map(p => p.name);
+      const productNames = productsToUpdate.map(p => p.name);
+
+      logger.info('Updating inventory with products', { productNames });
 
       // Step 1: Replenish stock (update existing products to High, add new products)
       await inventoryService.replenishStock(productNames);

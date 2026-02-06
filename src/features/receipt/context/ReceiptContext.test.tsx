@@ -668,7 +668,7 @@ describe('ReceiptContext', () => {
 
         expect(result.current.state.updatingInventory).toBe(false);
         expect(result.current.state.updateError).toBeNull();
-        expect(result.current.state.productsUpdated).toBe(0);
+        expect(result.current.state.productsUpdated).toBe(-1); // -1 means not yet updated
       });
     });
 
@@ -688,19 +688,20 @@ describe('ReceiptContext', () => {
           result.current.addProduct('Bread');
         });
 
-        // Confirm review first
-        act(() => {
-          result.current.confirmReview();
-        });
+        // Capture products before confirming
+        const products = result.current.state.productsInReview.map(p => ({
+          ...p,
+          isCorrect: true,
+        }));
 
-        // Then update inventory - confirmedProducts should be set
         await act(async () => {
-          await result.current.updateInventoryFromReceipt();
+          // Pass products directly to avoid closure issues
+          await result.current.updateInventoryFromReceipt(products);
         });
 
         expect(inventoryService.replenishStock).toHaveBeenCalledWith(['Milk', 'Bread']);
         expect(shoppingService.removePurchasedItems).toHaveBeenCalledWith(['Milk', 'Bread']);
-        expect(result.current.state.productsUpdated).toBe(0); // Mock returns 0
+        expect(result.current.state.productsUpdated).toBe(0); // Mock returns 0, now >= 0 indicates update completed
         expect(result.current.state.updatingInventory).toBe(false);
       });
 
@@ -715,15 +716,21 @@ describe('ReceiptContext', () => {
 
         const { result } = renderHook(() => useReceiptContext(), { wrapper: inventoryWrapper });
 
-        // Set confirmed products
+        // Add product to review
         act(() => {
           result.current.addProduct('Milk');
-          result.current.confirmReview();
         });
+
+        // Capture products before confirming
+        const products = result.current.state.productsInReview.map(p => ({
+          ...p,
+          isCorrect: true,
+        }));
 
         await act(async () => {
           try {
-            await result.current.updateInventoryFromReceipt();
+            // Pass products directly to avoid closure issues
+            await result.current.updateInventoryFromReceipt(products);
           } catch {
             // Expected to throw
           }

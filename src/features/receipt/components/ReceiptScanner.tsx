@@ -64,16 +64,22 @@ export function ReceiptScanner() {
           setTimeout(() => removeProduct(id), 0);
         }}
         onConfirm={async () => {
-          // Story 6.1: Confirm review and trigger inventory update
+          // Story 6.1: Capture current products before confirming, then update inventory
+          const products = state.productsInReview.map(p => ({
+            ...p,
+            isCorrect: true,
+          }));
+
+          // Confirm review (updates state)
           confirmReview();
-          // Small delay to ensure state is updated before calling updateInventoryFromReceipt
-          setTimeout(async () => {
-            try {
-              await updateInventoryFromReceipt();
-            } catch (error) {
-              logger.error('Inventory update failed', error);
-            }
-          }, 100);
+
+          // Immediately trigger inventory update with the captured products
+          // This avoids stale closure issues
+          try {
+            await updateInventoryFromReceipt(products);
+          } catch (error) {
+            logger.error('Inventory update failed', error);
+          }
         }}
       />
     );
@@ -161,7 +167,7 @@ export function ReceiptScanner() {
           )}
 
           {/* Story 6.1: Show success state */}
-          {!state.updatingInventory && !state.updateError && state.productsUpdated >= 0 && (
+          {!state.updatingInventory && !state.updateError && state.productsUpdated >= 0 && state.ocrState === 'completed' && (
             <>
               <CheckCircle
                 sx={{

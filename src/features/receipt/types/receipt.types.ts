@@ -80,7 +80,7 @@ export interface ReceiptState {
   confirmedProducts: RecognizedProduct[]; // Story 5.3: User-confirmed products ready for inventory update
   updatingInventory: boolean; // Story 6.1: true during inventory update process
   updateError: AppError | null; // Story 6.1: error if update fails
-  productsUpdated: number; // Story 6.1: count of products successfully updated
+  productsUpdated: number; // Story 6.1: count of products successfully updated (-1 = not yet updated)
 }
 
 /**
