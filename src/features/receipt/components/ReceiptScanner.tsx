@@ -76,17 +76,16 @@ export function ReceiptScanner() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
           minHeight: '100vh',
-          p: 3,
+          p: { xs: 2, sm: 3 },
           bgcolor: 'background.default',
         }}
       >
-        <Stack spacing={3} alignItems="center" sx={{ maxWidth: 500, width: '100%' }}>
+        <Stack spacing={3} alignItems="center" sx={{ maxWidth: 700, width: '100%', mt: { xs: 2, sm: 4 } }}>
           {/* Success icon */}
           <CheckCircle
             sx={{
-              fontSize: 80,
+              fontSize: { xs: 64, sm: 80 },
               color: 'success.main',
             }}
           />
@@ -104,10 +103,10 @@ export function ReceiptScanner() {
           {/* Confirmed products list */}
           {state.confirmedProducts.length > 0 ? (
             <Box sx={{ width: '100%' }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ px: 1 }}>
                 Confirmed Products:
               </Typography>
-              <List dense sx={{ bgcolor: 'background.paper', borderRadius: 1, maxHeight: 300, overflow: 'auto' }}>
+              <List dense sx={{ bgcolor: 'background.paper', borderRadius: 1, maxHeight: { xs: 400, sm: 500 }, overflow: 'auto' }}>
                 {state.confirmedProducts.map((product) => (
                   <ListItem key={product.id} divider>
                     <ListItemText
@@ -141,7 +140,7 @@ export function ReceiptScanner() {
           )}
 
           {/* Note about next step */}
-          <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'info.lighter', borderRadius: 1 }}>
+          <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'info.lighter', borderRadius: 1, width: '100%' }}>
             <Typography variant="body2" color="text.secondary">
               Inventory update will be available in Epic 6
             </Typography>
