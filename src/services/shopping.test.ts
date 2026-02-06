@@ -27,7 +27,7 @@ describe('ShoppingService', () => {
     it('should return products where isOnShoppingList is true', async () => {
       // Add products and put some on shopping list
       const p1 = await inventoryService.addProduct('Milk');
-      const p2 = await inventoryService.addProduct('Bread');
+      await inventoryService.addProduct('Bread'); // Not on list
       const p3 = await inventoryService.addProduct('Eggs');
 
       await inventoryService.updateProduct(p1.id, { stockLevel: 'low' }); // Auto-adds to list
@@ -333,7 +333,7 @@ describe('ShoppingService', () => {
     it('should return correct count of removed items', async () => {
       // Add 3 products, put 2 on shopping list
       const p1 = await inventoryService.addProduct('Milk');
-      const p2 = await inventoryService.addProduct('Bread');
+      await inventoryService.addProduct('Bread'); // Not on list
       const p3 = await inventoryService.addProduct('Eggs');
 
       await shoppingService.addToList(p1.id);

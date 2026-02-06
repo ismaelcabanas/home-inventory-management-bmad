@@ -195,7 +195,7 @@ export class InventoryService {
       }
 
       // Try exact match first
-      let product = await db.products
+      const product = await db.products
         .filter((p) => p.name.toLowerCase().trim() === normalized)
         .first();
 
