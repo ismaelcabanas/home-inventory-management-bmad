@@ -2,6 +2,7 @@ import { db } from './database';
 import type { Product } from '@/types/product';
 import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
+import { inventoryService } from './inventory';
 
 export class ShoppingService {
   async getShoppingListItems(): Promise<Product[]> {
@@ -130,6 +131,36 @@ export class ShoppingService {
     } catch (error) {
       const appError = handleError(error);
       logger.error('Failed to set shopping mode state', appError.details);
+      throw appError;
+    }
+  }
+
+  // Story 6.1: Update Inventory from Confirmed Receipt Products
+  async removePurchasedItems(productNames: string[]): Promise<number> {
+    try {
+      logger.debug('Removing purchased items from shopping list', { productNames });
+
+      let removedCount = 0;
+
+      await db.transaction('rw', db.products, async () => {
+        for (const name of productNames) {
+          const product = await inventoryService.findExistingProduct(name);
+
+          if (product && product.isOnShoppingList) {
+            await db.products.update(product.id!, {
+              isOnShoppingList: false,
+            });
+            removedCount++;
+            logger.info(`Removed from shopping list: ${name}`);
+          }
+        }
+      });
+
+      logger.info('Purchased items removed from shopping list', { count: removedCount });
+      return removedCount;
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to remove purchased items', appError.details);
       throw appError;
     }
   }

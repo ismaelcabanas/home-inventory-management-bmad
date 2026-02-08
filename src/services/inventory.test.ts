@@ -378,4 +378,152 @@ describe('InventoryService', () => {
       });
     });
   });
+
+  // Story 6.1: Update Inventory from Confirmed Receipt Products
+  describe('replenishStock', () => {
+    it('should update existing products to High stock level', async () => {
+      // Create products with Low/Empty stock
+      const product1 = await inventoryService.addProduct('Milk');
+      const product2 = await inventoryService.addProduct('Bread');
+
+      await inventoryService.updateProduct(product1.id, { stockLevel: 'low' });
+      await inventoryService.updateProduct(product2.id, { stockLevel: 'empty' });
+
+      // Replenish stock
+      await inventoryService.replenishStock(['Milk', 'Bread']);
+
+      // Verify both products are now High
+      const updated1 = await inventoryService.getProduct(product1.id);
+      const updated2 = await inventoryService.getProduct(product2.id);
+
+      expect(updated1?.stockLevel).toBe('high');
+      expect(updated2?.stockLevel).toBe('high');
+    });
+
+    it('should add new products that do not exist', async () => {
+      await inventoryService.replenishStock(['Cheese', 'Eggs']);
+
+      const cheese = await db.products.filter(p => p.name === 'Cheese').first();
+      const eggs = await db.products.filter(p => p.name === 'Eggs').first();
+
+      expect(cheese).toBeDefined();
+      expect(cheese?.stockLevel).toBe('high');
+      expect(cheese?.isOnShoppingList).toBe(false);
+
+      expect(eggs).toBeDefined();
+      expect(eggs?.stockLevel).toBe('high');
+      expect(eggs?.isOnShoppingList).toBe(false);
+    });
+
+    it('should handle mixed existing and new products', async () => {
+      const existing = await inventoryService.addProduct('Butter');
+      await inventoryService.updateProduct(existing.id, { stockLevel: 'low' });
+
+      await inventoryService.replenishStock(['Butter', 'Yogurt']);
+
+      const updatedButter = await inventoryService.getProduct(existing.id);
+      const newYogurt = await db.products.filter(p => p.name === 'Yogurt').first();
+
+      expect(updatedButter?.stockLevel).toBe('high');
+      expect(newYogurt).toBeDefined();
+      expect(newYogurt?.stockLevel).toBe('high');
+    });
+
+    it('should use database transaction for atomicity', async () => {
+      // Create a product
+      const product = await inventoryService.addProduct('Test Product');
+      await inventoryService.updateProduct(product.id, { stockLevel: 'low' });
+
+      // Replenish should succeed
+      await expect(inventoryService.replenishStock(['Test Product'])).resolves.not.toThrow();
+
+      const updated = await inventoryService.getProduct(product.id);
+      expect(updated?.stockLevel).toBe('high');
+    });
+
+    it('should match product names case-insensitively', async () => {
+      const product = await inventoryService.addProduct('Milk');
+      await inventoryService.updateProduct(product.id, { stockLevel: 'low' });
+
+      await inventoryService.replenishStock(['milk']); // lowercase
+
+      const updated = await inventoryService.getProduct(product.id);
+      expect(updated?.stockLevel).toBe('high');
+    });
+
+    it('should handle empty product list', async () => {
+      await expect(inventoryService.replenishStock([])).resolves.not.toThrow();
+    });
+  });
+
+  describe('findExistingProduct', () => {
+    beforeEach(async () => {
+      await inventoryService.addProduct('Milk');
+      await inventoryService.addProduct('Organic Milk');
+      await inventoryService.addProduct('Bread');
+    });
+
+    it('should find product by exact name (case-insensitive)', async () => {
+      const found = await inventoryService.findExistingProduct('milk');
+      expect(found).toBeDefined();
+      expect(found?.name).toBe('Milk');
+    });
+
+    it('should find product by exact match with different case', async () => {
+      const found = await inventoryService.findExistingProduct('ORGANIC MILK');
+      expect(found).toBeDefined();
+      expect(found?.name).toBe('Organic Milk');
+    });
+
+    it('should return undefined for non-existent product', async () => {
+      const found = await inventoryService.findExistingProduct('Cheese');
+      expect(found).toBeUndefined();
+    });
+
+    it('should handle partial match (one name contains the other)', async () => {
+      const found = await inventoryService.findExistingProduct('Organic');
+      expect(found).toBeDefined();
+      expect(found?.name).toBe('Organic Milk');
+    });
+
+    it('should trim whitespace from search term', async () => {
+      const found = await inventoryService.findExistingProduct('  Milk  ');
+      expect(found).toBeDefined();
+      expect(found?.name).toBe('Milk');
+    });
+
+    it('should return undefined for empty search term', async () => {
+      const found = await inventoryService.findExistingProduct('');
+      expect(found).toBeUndefined();
+    });
+  });
+
+  describe('addProductFromReceipt', () => {
+    it('should add product with High stock level', async () => {
+      const product = await inventoryService.addProductFromReceipt('Cheese');
+
+      expect(product.id).toBeDefined();
+      expect(product.name).toBe('Cheese');
+      expect(product.stockLevel).toBe('high');
+      expect(product.isOnShoppingList).toBe(false);
+      expect(product.isChecked).toBe(false);
+    });
+
+    it('should trim whitespace from product name', async () => {
+      const product = await inventoryService.addProductFromReceipt('  Butter  ');
+      expect(product.name).toBe('Butter');
+    });
+
+    it('should persist product to database', async () => {
+      const added = await inventoryService.addProductFromReceipt('Eggs');
+      const retrieved = await inventoryService.getProduct(added.id);
+      expect(retrieved).toEqual(added);
+    });
+
+    it('should set timestamps correctly', async () => {
+      const product = await inventoryService.addProductFromReceipt('Yogurt');
+      expect(product.createdAt).toBeInstanceOf(Date);
+      expect(product.updatedAt).toBeInstanceOf(Date);
+    });
+  });
 });
