@@ -136,7 +136,7 @@ export interface ReceiptContextValue {
   addProduct: (name: string) => void; // Story 5.3: Add new product during review
   removeProduct: (productId: string) => void; // Story 5.3: Remove product during review
   confirmReview: () => void; // Story 5.3: Confirm review and proceed to inventory update
-  updateInventoryFromReceipt: () => Promise<void>; // Story 6.1: Update inventory from confirmed products
+  updateInventoryFromReceipt: (products?: RecognizedProduct[]) => Promise<void>; // Story 6.1: Update inventory from confirmed products
   stopCamera: () => void;
   clearError: () => void;
   videoRef: React.RefObject<HTMLVideoElement | null>;

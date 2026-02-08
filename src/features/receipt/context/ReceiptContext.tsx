@@ -14,6 +14,7 @@ import type {
   ReceiptContextValue,
   CameraState,
   OCRState,
+  RecognizedProduct,
 } from '@/features/receipt/types/receipt.types';
 
 // Create context
