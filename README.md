@@ -118,6 +118,33 @@ src/
 - `npm run test` - Run unit tests
 - `npm run test:e2e` - Run E2E tests
 
+## Architecture Documentation
+
+The project architecture is documented using C4 model diagrams. You can find the diagrams in the `docs/` directory:
+
+- `c4-context.excalidraw` - System Context (Level 1)
+- `c4-container.excalidraw` - Container Diagram (Level 2)
+- `c4-component.excalidraw` - Component Diagram (Level 3)
+
+### Generating Architecture Diagrams with Claude Code
+
+You can generate or update architecture diagrams using Claude Code with the `ccc-skills:excalidraw` skill.
+
+**Example prompts:**
+
+```
+Use the ccc-skills:excalidraw skill to generate an architecture diagram for this project.
+Save to docs/architecture.excalidraw
+```
+
+```
+Could you use C4 diagrams to create context, container, and component level architecture diagrams?
+```
+
+The diagrams can be opened and edited with:
+- [Excalidraw](https://excalidraw.com) (web)
+- [Excalidraw VS Code Extension](https://marketplace.visualstudio.com/items?itemName=pomdtr.excalidraw-editor)
+
 ## License
 
 Private - All rights reserved
