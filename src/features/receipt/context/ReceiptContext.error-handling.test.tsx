@@ -1,8 +1,13 @@
 /**
- * Integration Tests for Inventory Update Error Scenarios (Story 6.2)
+ * ReceiptContext Error Handling Tests (Story 6.2)
  *
- * These tests verify the complete error handling flow from UI through
- * services to database, ensuring data integrity and proper user feedback.
+ * These are context-level integration tests that verify the complete error handling
+ * flow from state management through mocked services, ensuring proper user feedback
+ * and state transitions.
+ *
+ * Note: Services are mocked here to test the context's error handling behavior.
+ * For true integration tests with real database transactions, see inventory.test.ts
+ * which tests the actual transaction rollback behavior.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -50,7 +55,7 @@ vi.mock('@/services/ocr', () => ({
   },
 }));
 
-describe('Inventory Update Error Integration Tests - Story 6.2', () => {
+describe('ReceiptContext Error Handling Tests - Story 6.2', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await db.products.clear();

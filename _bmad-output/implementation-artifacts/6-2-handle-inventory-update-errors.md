@@ -1,6 +1,6 @@
 # Story 6.2: Handle Inventory Update Errors
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -532,25 +532,30 @@ No critical issues encountered during implementation.
 
 1. **Enhanced clearError function**: Modified `clearError()` in ReceiptContext.tsx to also clear `updateError` state by adding a new `CLEAR_INVENTORY_UPDATE_ERROR` action type. This was necessary because the original implementation only cleared the main `error` state, not the `updateError` state.
 
-2. **Tests passing**: All 31 Story 6.2 tests passing. Total test count increased from 600 to 613 passing tests.
+2. **TypeScript type safety**: Added `CLEAR_INVENTORY_UPDATE_ERROR` to the `ReceiptAction` discriminated union in `receipt.types.ts` for complete type coverage.
 
-3. **Verification complete**: Confirmed all error handling from Story 6.1 was already correctly implemented. This story added comprehensive test coverage.
+3. **Test file naming**: Renamed "integration" test file to `ReceiptContext.error-handling.test.tsx` to accurately reflect that these are context-level tests with mocked services, not true integration tests with real database. Added clarifying comments.
 
-4. **Integration test file**: Created integration test file as `.tsx` to properly handle JSX syntax.
+4. **Tests passing**: All 31 Story 6.2 tests passing. Total test count increased from 600 to 613 passing tests.
 
-5. **Logger test fix**: Fixed logger test to expect the second parameter (undefined) when calling logger.error() without details.
+5. **Verification complete**: Confirmed all error handling from Story 6.1 was already correctly implemented. This story added comprehensive test coverage.
+
+6. **Code review fixes**: Fixed 2 medium issues found during code review:
+   - Added missing TypeScript type definition for new action
+   - Clarified test file naming and documentation
 
 ### File List
 
 **Modified Files:**
 - `src/features/receipt/context/ReceiptContext.tsx` - Added CLEAR_INVENTORY_UPDATE_ERROR action and updated clearError() to clear both error and updateError
+- `src/features/receipt/types/receipt.types.ts` - Added CLEAR_INVENTORY_UPDATE_ERROR to ReceiptAction union (code review fix)
 - `src/features/receipt/context/ReceiptContext.test.tsx` - Added 5 new error handling tests
 - `src/utils/logger.test.ts` - Added error logging tests for Story 6.2
 - `src/services/inventory.test.ts` - Added 5 transaction rollback tests
 
 **Created Files:**
 - `src/features/receipt/components/ReceiptScanner.test.tsx` - New test file with 23 tests for error UI
-- `src/integration/inventory-update-error.integration.test.tsx` - New integration test file with 8 tests for error scenarios
+- `src/features/receipt/context/ReceiptContext.error-handling.test.tsx` - Context-level error handling tests (renamed from integration.test.tsx during code review)
 
 **Test Results:**
 - 613 tests passing (was 600 before Story 6.2)
