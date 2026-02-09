@@ -80,5 +80,5 @@ development_status:
 
   epic-6: in-progress
   6-1-update-inventory-from-confirmed-receipt-products: done
-  6-2-handle-inventory-update-errors: backlog
+  6-2-handle-inventory-update-errors: ready-for-dev
   epic-6-retrospective: optional
