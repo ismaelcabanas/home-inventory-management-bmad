@@ -208,7 +208,7 @@ describe('ReceiptContext Error Handling Tests - Story 6.2', () => {
         result.current.addProduct('Product 3');
       });
 
-      const products = result.current.state.productsInReview.map(p => ({
+      void result.current.state.productsInReview.map(p => ({
         ...p,
         isCorrect: true,
       }));
@@ -309,7 +309,7 @@ describe('ReceiptContext Error Handling Tests - Story 6.2', () => {
         result.current.addProduct('Bread');
       });
 
-      const products = result.current.state.productsInReview.map(p => ({
+      void result.current.state.productsInReview.map(p => ({
         ...p,
         isCorrect: true,
       }));

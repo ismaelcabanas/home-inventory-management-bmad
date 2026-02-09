@@ -758,7 +758,7 @@ describe('ReceiptContext', () => {
           result.current.addProduct('Bread');
         });
 
-        const products = result.current.state.productsInReview.map(p => ({
+        void result.current.state.productsInReview.map(p => ({
           ...p,
           isCorrect: true,
         }));
