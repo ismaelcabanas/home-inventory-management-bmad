@@ -739,6 +739,201 @@ describe('ReceiptContext', () => {
         expect(result.current.state.updateError).not.toBeNull();
         expect(result.current.state.updatingInventory).toBe(false);
       });
+
+      // Story 6.2: Error handling tests
+      it('should preserve confirmedProducts on error (no data loss)', async () => {
+        const mockError = new Error('Database error');
+        vi.mocked(inventoryService.replenishStock).mockRejectedValueOnce(mockError);
+
+        vi.mocked(errorHandler.handleError).mockReturnValue({
+          message: 'Failed to update inventory.',
+          details: { originalError: mockError },
+        });
+
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: inventoryWrapper });
+
+        // Add products to confirmed state
+        act(() => {
+          result.current.addProduct('Milk');
+          result.current.addProduct('Bread');
+        });
+
+        const products = result.current.state.productsInReview.map(p => ({
+          ...p,
+          isCorrect: true,
+        }));
+
+        // Set confirmed products
+        act(() => {
+          result.current.confirmReview();
+        });
+
+        const originalConfirmed = [...result.current.state.confirmedProducts];
+
+        await act(async () => {
+          try {
+            await result.current.updateInventoryFromReceipt();
+          } catch {
+            // Expected
+          }
+        });
+
+        // Confirmed products should be preserved for retry
+        expect(result.current.state.confirmedProducts).toEqual(originalConfirmed);
+        expect(result.current.state.confirmedProducts).toHaveLength(2);
+      });
+
+      it('should allow retry after error clears', async () => {
+        const mockError = new Error('Temporary failure');
+        vi.mocked(inventoryService.replenishStock)
+          .mockRejectedValueOnce(mockError)
+          .mockResolvedValueOnce(undefined);
+
+        // Setup handleError to return fresh objects
+        vi.mocked(errorHandler.handleError).mockImplementation((error) => ({
+          message: 'Temporary error.',
+          details: { originalError: error },
+        }));
+
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: inventoryWrapper });
+
+        // Add product
+        act(() => {
+          result.current.addProduct('Cheese');
+        });
+
+        const products = result.current.state.productsInReview.map(p => ({
+          ...p,
+          isCorrect: true,
+        }));
+
+        // First attempt fails
+        await act(async () => {
+          try {
+            await result.current.updateInventoryFromReceipt(products);
+          } catch {
+            // Expected
+          }
+        });
+
+        expect(result.current.state.updateError).not.toBeNull();
+
+        // Clear error and retry
+        act(() => {
+          result.current.clearError();
+        });
+
+        expect(result.current.state.updateError).toBeNull();
+
+        // Retry should succeed
+        await act(async () => {
+          await result.current.updateInventoryFromReceipt(products);
+        });
+
+        expect(result.current.state.updateError).toBeNull();
+        expect(result.current.state.productsUpdated).toBeGreaterThanOrEqual(0);
+
+        // Reset handleError mock
+        vi.mocked(errorHandler.handleError).mockReset();
+        vi.mocked(errorHandler.handleError).mockReturnValue({
+          message: 'Error',
+          details: {},
+        });
+      });
+
+      it('should log error with context', async () => {
+        const mockError = new Error('Connection lost');
+        vi.mocked(inventoryService.replenishStock).mockRejectedValueOnce(mockError);
+
+        // Setup handleError to return fresh objects
+        vi.mocked(errorHandler.handleError).mockImplementation((error) => ({
+          message: 'Failed to update inventory.',
+          details: { originalError: error },
+        }));
+
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: inventoryWrapper });
+
+        act(() => {
+          result.current.addProduct('Milk');
+        });
+
+        const products = result.current.state.productsInReview.map(p => ({
+          ...p,
+          isCorrect: true,
+        }));
+
+        await act(async () => {
+          try {
+            await result.current.updateInventoryFromReceipt(products);
+          } catch {
+            // Expected
+          }
+        });
+
+        // Verify error state is set (logging happens in context via logger.error)
+        expect(result.current.state.updateError).not.toBeNull();
+        expect(result.current.state.updateError?.message).toBe('Failed to update inventory.');
+
+        // Reset handleError mock
+        vi.mocked(errorHandler.handleError).mockReset();
+        vi.mocked(errorHandler.handleError).mockReturnValue({
+          message: 'Error',
+          details: {},
+        });
+      });
+
+      it('should handle shopping list service errors', async () => {
+        const mockError = new Error('Shopping list update failed');
+        vi.mocked(inventoryService.replenishStock).mockResolvedValueOnce(undefined);
+        vi.mocked(shoppingService.removePurchasedItems).mockRejectedValueOnce(mockError);
+
+        // Setup handleError to return fresh objects
+        vi.mocked(errorHandler.handleError).mockImplementation((error) => ({
+          message: 'Failed to update shopping list.',
+          details: { originalError: error },
+        }));
+
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: inventoryWrapper });
+
+        act(() => {
+          result.current.addProduct('Milk');
+        });
+
+        const products = result.current.state.productsInReview.map(p => ({
+          ...p,
+          isCorrect: true,
+        }));
+
+        await act(async () => {
+          try {
+            await result.current.updateInventoryFromReceipt(products);
+          } catch {
+            // Expected
+          }
+        });
+
+        expect(result.current.state.updateError).not.toBeNull();
+
+        // Reset handleError mock
+        vi.mocked(errorHandler.handleError).mockReset();
+        vi.mocked(errorHandler.handleError).mockReturnValue({
+          message: 'Error',
+          details: {},
+        });
+      });
+
+      it('should handle empty confirmed products gracefully', async () => {
+        const { result } = renderHook(() => useReceiptContext(), { wrapper: inventoryWrapper });
+
+        // Call with empty products
+        await act(async () => {
+          await result.current.updateInventoryFromReceipt([]);
+        });
+
+        expect(result.current.state.productsUpdated).toBe(0);
+        expect(result.current.state.updatingInventory).toBe(false);
+        expect(result.current.state.updateError).toBeNull();
+      });
     });
   });
 

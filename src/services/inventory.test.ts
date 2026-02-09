@@ -454,6 +454,159 @@ describe('InventoryService', () => {
     it('should handle empty product list', async () => {
       await expect(inventoryService.replenishStock([])).resolves.not.toThrow();
     });
+
+    // Story 6.2: Transaction rollback tests
+    it('should rollback all changes if error occurs mid-transaction', async () => {
+      // Create products with Low stock
+      const product1 = await inventoryService.addProduct('Milk');
+      const product2 = await inventoryService.addProduct('Bread');
+
+      await inventoryService.updateProduct(product1.id, { stockLevel: 'low' });
+      await inventoryService.updateProduct(product2.id, { stockLevel: 'low' });
+
+      // Mock findExistingProduct to fail on second product
+      const originalFindExisting = inventoryService.findExistingProduct.bind(inventoryService);
+      let callCount = 0;
+      vi.spyOn(inventoryService, 'findExistingProduct').mockImplementation(async (name) => {
+        callCount++;
+        if (callCount === 2) {
+          throw new Error('Simulated database error');
+        }
+        return originalFindExisting(name);
+      });
+
+      // Attempt to replenish should fail
+      await expect(inventoryService.replenishStock(['Milk', 'Bread'])).rejects.toThrow();
+
+      // Verify both products remain in their original state (rollback occurred)
+      const milkAfter = await inventoryService.getProduct(product1.id);
+      const breadAfter = await inventoryService.getProduct(product2.id);
+
+      expect(milkAfter?.stockLevel).toBe('low'); // Should NOT be updated to high
+      expect(breadAfter?.stockLevel).toBe('low'); // Should NOT be updated to high
+
+      // Restore original method
+      vi.spyOn(inventoryService, 'findExistingProduct').mockRestore();
+    });
+
+    it('should not create new products if transaction fails', async () => {
+      // Start with empty database
+      await db.products.clear();
+
+      // Mock addProductFromReceipt to fail after first product
+      const originalAddFromReceipt = inventoryService.addProductFromReceipt.bind(inventoryService);
+      let callCount = 0;
+      vi.spyOn(inventoryService, 'addProductFromReceipt').mockImplementation(async (name) => {
+        callCount++;
+        if (callCount === 2) {
+          throw new Error('Failed to add second product');
+        }
+        return originalAddFromReceipt(name);
+      });
+
+      // Attempt to replenish with new products should fail
+      await expect(inventoryService.replenishStock(['Product1', 'Product2'])).rejects.toThrow();
+
+      // Verify no products were created (rollback occurred)
+      const allProducts = await db.products.toArray();
+      expect(allProducts.length).toBe(0);
+
+      // Restore original method
+      vi.spyOn(inventoryService, 'addProductFromReceipt').mockRestore();
+    });
+
+    it('should maintain atomicity across multiple operations', async () => {
+      // Create a product
+      const existing = await inventoryService.addProduct('Butter');
+      await inventoryService.updateProduct(existing.id, { stockLevel: 'low' });
+
+      // Mock to fail during update
+      const originalUpdate = db.products.update.bind(db.products);
+      let updateCallCount = 0;
+      vi.spyOn(db.products, 'update').mockImplementation(async (key, changes) => {
+        updateCallCount++;
+        // Fail on second update call
+        if (updateCallCount === 2) {
+          throw new Error('Simulated update failure');
+        }
+        return originalUpdate(key, changes);
+      });
+
+      // Attempt should fail
+      await expect(inventoryService.replenishStock(['Butter', 'NewProduct'])).rejects.toThrow();
+
+      // Verify existing product was not updated (rollback)
+      const butterAfter = await inventoryService.getProduct(existing.id);
+      expect(butterAfter?.stockLevel).toBe('low');
+
+      // Verify new product was not created (rollback)
+      const newProduct = await db.products.filter(p => p.name === 'NewProduct').first();
+      expect(newProduct).toBeUndefined();
+
+      // Restore original method
+      vi.spyOn(db.products, 'update').mockRestore();
+    });
+
+    it('should handle errors with large product lists', async () => {
+      // Create 20 products
+      const productNames = Array.from({ length: 20 }, (_, i) => `Product${i}`);
+      for (const name of productNames) {
+        const product = await inventoryService.addProduct(name);
+        await inventoryService.updateProduct(product.id, { stockLevel: 'low' });
+      }
+
+      // Mock to fail on 15th product
+      const originalFindExisting = inventoryService.findExistingProduct.bind(inventoryService);
+      let callCount = 0;
+      vi.spyOn(inventoryService, 'findExistingProduct').mockImplementation(async (name) => {
+        callCount++;
+        if (callCount === 15) {
+          throw new Error('Simulated failure at product 15');
+        }
+        return originalFindExisting(name);
+      });
+
+      // Attempt should fail
+      await expect(inventoryService.replenishStock(productNames)).rejects.toThrow();
+
+      // Verify all products remain in original state (complete rollback)
+      const allProducts = await inventoryService.getProducts();
+      for (const product of allProducts) {
+        expect(product.stockLevel).toBe('low');
+      }
+
+      // Restore original method
+      vi.spyOn(inventoryService, 'findExistingProduct').mockRestore();
+    });
+
+    it('should log error context for debugging', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const product = await inventoryService.addProduct('TestProduct');
+      await inventoryService.updateProduct(product.id, { stockLevel: 'low' });
+
+      // Mock to cause an error
+      vi.spyOn(inventoryService, 'findExistingProduct').mockRejectedValue(
+        new Error('Database connection lost')
+      );
+
+      try {
+        await inventoryService.replenishStock(['TestProduct']);
+      } catch {
+        // Expected to throw
+      }
+
+      // Verify error was logged with context
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[ERROR] Failed to replenish stock'),
+        expect.objectContaining({
+          productNames: expect.any(Array),
+        })
+      );
+
+      consoleSpy.mockRestore();
+      vi.spyOn(inventoryService, 'findExistingProduct').mockRestore();
+    });
   });
 
   describe('findExistingProduct', () => {

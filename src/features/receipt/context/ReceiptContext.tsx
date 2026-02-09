@@ -180,6 +180,12 @@ function receiptReducer(state: ReceiptState, action: ReceiptAction): ReceiptStat
         updatingInventory: false,
       };
 
+    case 'CLEAR_INVENTORY_UPDATE_ERROR':
+      return {
+        ...state,
+        updateError: null,
+      };
+
     case 'RESET':
       // Cleanup stream if present
       if (state.videoStream) {
@@ -502,9 +508,10 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
     }
   }, [state.videoStream]);
 
-  // Clear error
+  // Clear error (Story 6.2: Clears both error and updateError)
   const clearError = useCallback(() => {
     dispatch({ type: 'SET_ERROR', payload: null });
+    dispatch({ type: 'CLEAR_INVENTORY_UPDATE_ERROR' });
   }, []);
 
   // Story 5.3: Review state management methods
