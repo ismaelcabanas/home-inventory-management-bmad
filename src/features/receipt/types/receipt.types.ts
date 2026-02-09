@@ -4,6 +4,7 @@
  *
  * Story 5.4: Added offline queue support with isOnline state
  * Story 6.1: Added inventory update state (updatingInventory, updateError, productsUpdated)
+ * Story 6.2: Added CLEAR_INVENTORY_UPDATE_ERROR action type
  */
 
 import type { Product } from '@/types/product';
@@ -91,6 +92,7 @@ export interface ReceiptState {
  * Story 5.4 bug fix: Added SET_OCR_CONFIGURED action
  * Story 5.3: Added EDIT_PRODUCT_NAME, ADD_PRODUCT, REMOVE_PRODUCT, CONFIRM_REVIEW, SET_PRODUCTS_IN_REVIEW actions
  * Story 6.1: Added SET_UPDATING_INVENTORY, INVENTORY_UPDATE_SUCCESS, INVENTORY_UPDATE_ERROR actions
+ * Story 6.2: Added CLEAR_INVENTORY_UPDATE_ERROR action
  */
 export type ReceiptAction =
   | { type: 'SET_CAMERA_STATE'; payload: CameraState }
@@ -113,6 +115,7 @@ export type ReceiptAction =
   | { type: 'SET_UPDATING_INVENTORY'; payload: boolean } // Story 6.1: Set updating inventory state
   | { type: 'INVENTORY_UPDATE_SUCCESS'; payload: number } // Story 6.1: Products updated count
   | { type: 'INVENTORY_UPDATE_ERROR'; payload: AppError | null } // Story 6.1: Inventory update error
+  | { type: 'CLEAR_INVENTORY_UPDATE_ERROR' } // Story 6.2: Clear inventory update error state
   | { type: 'RESET' };
 
 /**
