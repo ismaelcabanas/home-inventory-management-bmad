@@ -42,8 +42,12 @@ test.describe('Inventory Management', () => {
     await page.getByRole('button', { name: /^add$/i }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
-    // Find the product card and click edit button
-    await page.getByRole('button', { name: `Edit ${originalName}` }).click();
+    // Story 7.1: Click 3-dot menu to open actions
+    const productCard = page.getByText(originalName).locator('../..');
+    await productCard.getByRole('button', { name: /actions/i }).click();
+
+    // Click Edit in the menu (use text content to be more specific)
+    await page.getByText('Edit').filter({ hasText: /^Edit$/ }).click();
 
     // Wait for edit dialog
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -71,8 +75,12 @@ test.describe('Inventory Management', () => {
     await page.getByRole('button', { name: /^add$/i }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
-    // Find the product and click delete button
-    await page.getByRole('button', { name: `Delete ${productName}` }).click();
+    // Story 7.1: Click 3-dot menu to open actions
+    const productCard = page.getByText(productName).locator('../..');
+    await productCard.getByRole('button', { name: /actions/i }).click();
+
+    // Click Delete in the menu (use text content to be more specific)
+    await page.getByText('Delete').filter({ hasText: /^Delete$/ }).click();
 
     // Confirm deletion in dialog
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -145,16 +153,12 @@ test.describe('Navigation', () => {
     // Verify we're on inventory page
     await expect(page.getByRole('heading', { name: /inventory/i })).toBeVisible();
 
-    // Navigate to shopping list
-    await page.getByRole('button', { name: /shopping/i }).click();
+    // Story 7.1: Navigate to shopping list (only 2 tabs now)
+    await page.getByRole('button', { name: 'Shopping', exact: true }).click();
     await expect(page).toHaveURL('/shopping');
 
-    // Navigate to scan
-    await page.getByRole('button', { name: /scan/i }).click();
-    await expect(page).toHaveURL('/scan');
-
     // Navigate back to inventory
-    await page.getByRole('button', { name: /inventory/i }).click();
+    await page.getByRole('button', { name: 'Inventory', exact: true }).click();
     await expect(page).toHaveURL('/');
   });
 
