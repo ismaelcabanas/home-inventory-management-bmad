@@ -11,7 +11,7 @@ export type StockLevel = typeof STOCK_LEVELS[number];
 export const getNextStockLevel = (current: StockLevel): StockLevel => {
   const currentIndex = STOCK_LEVELS.indexOf(current);
   const nextIndex = (currentIndex + 1) % STOCK_LEVELS.length;
-  return STOCK_LEVELS[nextIndex];
+  return STOCK_LEVELS[nextIndex]!;
 };
 
 /**
