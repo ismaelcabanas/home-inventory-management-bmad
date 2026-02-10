@@ -6,7 +6,6 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
-  Container,
   Stack,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -148,7 +147,7 @@ export function InventoryList() {
   const handleCycleStockLevel = async (productId: string) => {
     try {
       await cycleStockLevel(productId);
-    } catch (error) {
+    } catch (_error) {
       // Error already handled by InventoryContext
       // Silently catch here - error state will be displayed
     }

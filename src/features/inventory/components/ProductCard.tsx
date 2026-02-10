@@ -1,12 +1,10 @@
 import { memo, useState } from 'react';
 import { Card, Typography, Box, IconButton, Snackbar, Alert } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import RemoveShoppingCartIcon from '@mui/icons-material/RemoveShoppingCart';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import MenuIcon from '@mui/icons-material/Menu';
 import type { Product } from '@/types/product';
 import { useShoppingList } from '@/features/shopping/context/ShoppingContext';
 import { getStockLevelGradient, getStockLevelBorderColor, getStockLevelText } from '@/utils/stockLevels';
@@ -99,10 +97,6 @@ export const ProductCard = memo(function ProductCard({
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation(); // Prevent card tap from triggering
     setMenuAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setMenuAnchorEl(null);
   };
 
   const handleEditClick = () => {
