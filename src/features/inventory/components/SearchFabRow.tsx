@@ -13,11 +13,11 @@ export interface SearchFabRowProps {
 }
 
 /**
- * Story 7.1: Search bar and Add FAB row component
+ * Search bar and Add FAB row component
  *
- * Sticky row positioned above bottom navigation containing:
- * - Search bar (70% width)
- * - Add FAB (circular button, 48x48px)
+ * Full-width row positioned at bottom above navigation:
+ * - Search bar takes remaining space (flex: 1)
+ * - Add FAB fixed size (48x48px) on the right
  *
  * This component stays visible when scrolling long product lists.
  */
@@ -30,19 +30,21 @@ export const SearchFabRow = memo(function SearchFabRow({
   return (
     <Box
       sx={{
-        position: 'sticky',
+        position: 'fixed',
         bottom: 56, // Height of BottomNav
+        left: 0,
+        right: 0,
         zIndex: 10,
         display: 'flex',
         gap: 1,
-        px: 1.5, // 12px
+        px: 0, // No edge padding - full width
         py: 1,
         backgroundColor: 'background.paper',
         borderTop: '1px solid',
         borderTopColor: 'divider',
       }}
     >
-      {/* Search bar - 70% width */}
+      {/* Search bar - takes remaining space */}
       <TextField
         fullWidth
         value={searchTerm}
@@ -72,14 +74,14 @@ export const SearchFabRow = memo(function SearchFabRow({
         }}
         aria-label="Search products"
         sx={{
-          flex: 0.7,
+          flex: 1,
           '& .MuiOutlinedInput-root': {
             bgcolor: 'background.default',
           },
         }}
       />
 
-      {/* Add FAB - circular button 48x48px */}
+      {/* Add FAB - fixed size 48x48px */}
       <Fab
         color="primary"
         size="medium"
@@ -87,9 +89,10 @@ export const SearchFabRow = memo(function SearchFabRow({
         aria-label="Add product"
         disabled={!hasProducts}
         sx={{
-          flex: 0.3,
-          maxWidth: 48,
-          maxHeight: 48,
+          flex: '0 0 48px',
+          width: 48,
+          height: 48,
+          margin: '0 8px',
         }}
       >
         <AddIcon />
