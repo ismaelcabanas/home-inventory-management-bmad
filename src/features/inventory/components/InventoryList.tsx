@@ -147,7 +147,7 @@ export function InventoryList() {
   const handleCycleStockLevel = async (productId: string) => {
     try {
       await cycleStockLevel(productId);
-    } catch (_error) {
+    } catch {
       // Error already handled by InventoryContext
       // Silently catch here - error state will be displayed
     }
