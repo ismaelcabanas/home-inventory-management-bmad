@@ -1,20 +1,19 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
   Box,
-  Button,
   Typography,
   CircularProgress,
   Alert,
   Snackbar,
   Stack,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import HomeIcon from '@mui/icons-material/Home';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
 import { useInventory } from '@/features/inventory/context/InventoryContext';
 import { ProductCard } from './ProductCard';
 import { AddProductDialog } from './AddProductDialog';
 import { EditProductDialog } from './EditProductDialog';
-import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 import { SearchFabRow } from './SearchFabRow';
 import { EmptyState } from '@/components/shared/EmptyState';
 import type { Product } from '@/types/product';
@@ -22,11 +21,11 @@ import type { Product } from '@/types/product';
 const SNACKBAR_AUTO_HIDE_DURATION = 3000; // 3 seconds
 
 /**
- * Story 7.1: Redesigned InventoryList with new layout
+ * Improved InventoryList with better UX
  *
- * Key changes:
- * - Centered header with home icon (🏠)
- * - 12px edge margins for full-width cards
+ * Key improvements:
+ * - Enhanced empty state with better visual hierarchy
+ * - Long-press to edit (no 3-dot menu)
  * - SearchFabRow at bottom (sticky above nav)
  * - ProductCard with tap-to-cycle and gradients
  */
@@ -35,8 +34,6 @@ export function InventoryList() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [productBeingEdited, setProductBeingEdited] = useState<Product | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [productBeingDeleted, setProductBeingDeleted] = useState<Product | null>(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -104,21 +101,11 @@ export function InventoryList() {
     }
   };
 
-  const handleCloseEditDialog = () => {
-    setEditDialogOpen(false);
-    setProductBeingEdited(null);
-  };
-
-  const handleDeleteProduct = (product: Product) => {
-    setProductBeingDeleted(product);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!productBeingDeleted) return;
-
+  const handleDeleteProduct = async (id: string) => {
     try {
-      await deleteProduct(productBeingDeleted.id);
+      await deleteProduct(id);
+      setEditDialogOpen(false);
+      setProductBeingEdited(null);
       setSnackbar({
         open: true,
         message: 'Product deleted successfully',
@@ -130,13 +117,13 @@ export function InventoryList() {
         message: error instanceof Error ? error.message : 'Failed to delete product',
         severity: 'error',
       });
-      throw error; // Re-throw to prevent dialog close
+      throw error;
     }
   };
 
-  const handleCloseDeleteDialog = () => {
-    setDeleteDialogOpen(false);
-    setProductBeingDeleted(null);
+  const handleCloseEditDialog = () => {
+    setEditDialogOpen(false);
+    setProductBeingEdited(null);
   };
 
   const handleCloseSnackbar = () => {
@@ -164,7 +151,7 @@ export function InventoryList() {
 
   return (
     <Box sx={{ pb: 10 }}> {/* Bottom padding to account for sticky SearchFabRow + BottomNav */}
-      {/* Story 7.1 AC1: Centered header with title and home icon */}
+      {/* Centered header with title and home icon */}
       <Box
         sx={{
           display: 'flex',
@@ -197,30 +184,26 @@ export function InventoryList() {
 
       {/* Empty State - No products at all */}
       {!state.loading && state.products.length === 0 && (
-        <Box sx={{ px: 1.5 }}>
-          <EmptyState message="No products yet. Add your first product!" />
-          {/* Show centered Add button when no products */}
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setDialogOpen(true)}
-              size="large"
-            >
-              Add Product
-            </Button>
-          </Box>
-        </Box>
+        <EmptyState
+          title="Your inventory is empty"
+          message="Start by adding your first product to track. You can add items manually or scan receipts."
+          actionLabel="Add your first product"
+          onAction={() => setDialogOpen(true)}
+          icon={<InventoryIcon sx={{ fontSize: 40 }} />}
+        />
       )}
 
       {/* Empty State - No search results */}
       {!state.loading && state.products.length > 0 && filteredProducts.length === 0 && searchTerm.trim() && (
-        <Box sx={{ px: 1.5 }}>
-          <EmptyState message={`No products found matching "${searchTerm.trim()}"`} />
-        </Box>
+        <EmptyState
+          title="No products found"
+          message={`We couldn't find any products matching "${searchTerm.trim()}"`}
+          variant="search"
+          icon={<SearchOffIcon sx={{ fontSize: 40 }} />}
+        />
       )}
 
-      {/* Story 7.1 AC2: Product List with full-width cards (12px edge margins) */}
+      {/* Product List with full-width cards (12px edge margins) */}
       {filteredProducts.length > 0 && (
         <Box
           role="region"
@@ -234,7 +217,6 @@ export function InventoryList() {
                 key={product.id}
                 product={product}
                 onEdit={handleEditProduct}
-                onDelete={handleDeleteProduct}
                 onCycleStockLevel={handleCycleStockLevel}
                 onShoppingListChange={handleShoppingListChange}
               />
@@ -243,7 +225,7 @@ export function InventoryList() {
         </Box>
       )}
 
-      {/* Story 7.1 AC6: SearchFabRow - Sticky search + FAB row above bottom nav */}
+      {/* SearchFabRow - Sticky search + FAB row above bottom nav */}
       {state.products.length > 0 && (
         <SearchFabRow
           searchTerm={searchTerm}
@@ -260,20 +242,13 @@ export function InventoryList() {
         onAdd={handleAddProduct}
       />
 
-      {/* Edit Product Dialog */}
+      {/* Edit Product Dialog with delete capability */}
       <EditProductDialog
         open={editDialogOpen}
         onClose={handleCloseEditDialog}
         onEdit={handleSaveEdit}
+        onDelete={handleDeleteProduct}
         product={productBeingEdited}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmationDialog
-        open={deleteDialogOpen}
-        onClose={handleCloseDeleteDialog}
-        onConfirm={handleConfirmDelete}
-        productName={productBeingDeleted?.name || ''}
       />
 
       {/* Success/Error Snackbar */}
