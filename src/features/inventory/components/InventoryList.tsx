@@ -7,21 +7,32 @@ import {
   Alert,
   Snackbar,
   Container,
+  Stack,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import HomeIcon from '@mui/icons-material/Home';
 import { useInventory } from '@/features/inventory/context/InventoryContext';
 import { ProductCard } from './ProductCard';
 import { AddProductDialog } from './AddProductDialog';
 import { EditProductDialog } from './EditProductDialog';
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
-import { SearchBar } from './SearchBar';
+import { SearchFabRow } from './SearchFabRow';
 import { EmptyState } from '@/components/shared/EmptyState';
 import type { Product } from '@/types/product';
 
 const SNACKBAR_AUTO_HIDE_DURATION = 3000; // 3 seconds
 
+/**
+ * Story 7.1: Redesigned InventoryList with new layout
+ *
+ * Key changes:
+ * - Centered header with home icon (🏠)
+ * - 12px edge margins for full-width cards
+ * - SearchFabRow at bottom (sticky above nav)
+ * - ProductCard with tap-to-cycle and gradients
+ */
 export function InventoryList() {
-  const { state, loadProducts, addProduct, updateProduct, deleteProduct, clearError } = useInventory();
+  const { state, loadProducts, addProduct, updateProduct, deleteProduct, clearError, cycleStockLevel } = useInventory();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [productBeingEdited, setProductBeingEdited] = useState<Product | null>(null);
@@ -127,33 +138,19 @@ export function InventoryList() {
   const handleCloseDeleteDialog = () => {
     setDeleteDialogOpen(false);
     setProductBeingDeleted(null);
-    // Don't clear snackbar here - let it auto-hide after showing success/error
   };
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const handleStockLevelChange = async (productId: string, newLevel: Product['stockLevel']) => {
-    // Capture original state for rollback on error (AC5)
-    const originalProduct = state.products.find(p => p.id === productId);
-    if (!originalProduct) return;
-
+  // Story 7.1: Handle tap-to-cycle stock level
+  const handleCycleStockLevel = async (productId: string) => {
     try {
-      await updateProduct(productId, { stockLevel: newLevel });
-      setSnackbar({
-        open: true,
-        message: 'Stock level updated successfully',
-        severity: 'success',
-      });
+      await cycleStockLevel(productId);
     } catch (error) {
-      // Rollback UI to original state on persistence failure (AC5)
-      await updateProduct(productId, { stockLevel: originalProduct.stockLevel });
-      setSnackbar({
-        open: true,
-        message: error instanceof Error ? error.message : 'Failed to update stock level',
-        severity: 'error',
-      });
+      // Error already handled by InventoryContext
+      // Silently catch here - error state will be displayed
     }
   };
 
@@ -167,34 +164,29 @@ export function InventoryList() {
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 3 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
+    <Box sx={{ pb: 10 }}> {/* Bottom padding to account for sticky SearchFabRow + BottomNav */}
+      {/* Story 7.1 AC1: Centered header with title and home icon */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 1,
+          py: 2,
+          px: 1.5, // 12px
+        }}
+      >
+        <HomeIcon sx={{ fontSize: 28 }} />
+        <Typography variant="h5" component="h1">
           Inventory
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setDialogOpen(true)}
-        >
-          Add Product
-        </Button>
       </Box>
 
       {/* Error Alert */}
       {state.error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mx: 1.5, mb: 2 }}>
           {state.error}
         </Alert>
-      )}
-
-      {/* Search Bar */}
-      {!state.loading && state.products.length > 0 && (
-        <SearchBar
-          value={searchTerm}
-          onChange={setSearchTerm}
-        />
       )}
 
       {/* Loading State */}
@@ -206,28 +198,60 @@ export function InventoryList() {
 
       {/* Empty State - No products at all */}
       {!state.loading && state.products.length === 0 && (
-        <EmptyState message="No products yet. Add your first product!" />
+        <Box sx={{ px: 1.5 }}>
+          <EmptyState message="No products yet. Add your first product!" />
+          {/* Show centered Add button when no products */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setDialogOpen(true)}
+              size="large"
+            >
+              Add Product
+            </Button>
+          </Box>
+        </Box>
       )}
 
       {/* Empty State - No search results */}
       {!state.loading && state.products.length > 0 && filteredProducts.length === 0 && searchTerm.trim() && (
-        <EmptyState message={`No products found matching "${searchTerm.trim()}"`} />
+        <Box sx={{ px: 1.5 }}>
+          <EmptyState message={`No products found matching "${searchTerm.trim()}"`} />
+        </Box>
       )}
 
-      {/* Product List */}
+      {/* Story 7.1 AC2: Product List with full-width cards (12px edge margins) */}
       {filteredProducts.length > 0 && (
-        <Box role="region" aria-live="polite" aria-label="Product inventory">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onEdit={handleEditProduct}
-              onDelete={handleDeleteProduct}
-              onStockLevelChange={handleStockLevelChange}
-              onShoppingListChange={handleShoppingListChange}
-            />
-          ))}
+        <Box
+          role="region"
+          aria-live="polite"
+          aria-label="Product inventory"
+          sx={{ px: 1.5 }} // 12px edge margins
+        >
+          <Stack spacing={1.5}>
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onEdit={handleEditProduct}
+                onDelete={handleDeleteProduct}
+                onCycleStockLevel={handleCycleStockLevel}
+                onShoppingListChange={handleShoppingListChange}
+              />
+            ))}
+          </Stack>
         </Box>
+      )}
+
+      {/* Story 7.1 AC6: SearchFabRow - Sticky search + FAB row above bottom nav */}
+      {state.products.length > 0 && (
+        <SearchFabRow
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onAddProduct={() => setDialogOpen(true)}
+          hasProducts={state.products.length > 0}
+        />
       )}
 
       {/* Add Product Dialog */}
@@ -264,6 +288,6 @@ export function InventoryList() {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container>
+    </Box>
   );
 }

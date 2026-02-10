@@ -35,13 +35,14 @@ describe('AppLayout', () => {
     expect(screen.getByText('Test Content')).toBeInTheDocument();
   });
 
-  it('should render BottomNav component', () => {
+  it('should render BottomNav component (Story 7.1: 2 tabs only)', () => {
     renderAppLayout(<div>Test Content</div>);
 
-    // Check for bottom navigation items
+    // Story 7.1 AC7: Check for bottom navigation items - only 2 tabs
     expect(screen.getByText('Inventory')).toBeInTheDocument();
     expect(screen.getByText('Shopping')).toBeInTheDocument();
-    expect(screen.getByText('Scan')).toBeInTheDocument();
+    // Scan tab is NOT in navigation
+    expect(screen.queryByText('Scan')).not.toBeInTheDocument();
   });
 
   it('should have proper layout structure', () => {

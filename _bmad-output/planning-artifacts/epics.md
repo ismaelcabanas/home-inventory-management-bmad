@@ -4,8 +4,8 @@ inputDocuments:
   - "_bmad-output/planning-artifacts/prd.md"
   - "_bmad-output/planning-artifacts/architecture.md"
   - "_bmad-output/planning-artifacts/ux-design-specification.md"
-totalEpics: 6
-totalStories: 29
+totalEpics: 7
+totalStories: 30
 requirementsCoverage: "43/43 FRs (100%)"
 ---
 
@@ -1174,5 +1174,76 @@ So that I can retry or fix the issue.
 - No data is lost or corrupted (NFR4)
 **And** Error details are logged to console with `logger.error()`
 **And** The error handling can be tested by simulating database failures
+
+---
+
+### Epic 7: UX Improvements & Polish
+
+**Goal:** Improve the user experience based on competitive analysis and user feedback, making the app more intuitive, efficient, and visually polished.
+
+**User Outcome:** Users experience a cleaner, more efficient interface with better use of screen space, reduced visual clutter, and navigation that matches their mental models.
+
+**FRs Covered:** N/A (UX enhancement, no new FRs)
+
+**Key Features:**
+- Improved inventory page layout (full-width, edge-to-edge cards)
+- Tap-to-change stock level (replaces visible button grid)
+- Search and Add FAB repositioned below products
+- Simplified 2-tab navigation (Inventory, Shopping)
+- Scan action contextual to shopping flow
+
+**Why This Epic:** Post-MVP polish based on real usage and competitive analysis. Addresses UX friction points discovered during implementation and user feedback.
+
+---
+
+### Story 7.1: Redesign Inventory Page Layout and Navigation
+
+As a **user**,
+I want a cleaner, more efficient inventory page with better use of screen space,
+So that I can quickly view and update stock levels without visual clutter.
+
+**Acceptance Criteria:**
+
+**Given** I open the application to the inventory page
+**When** I view the page layout
+**Then** I see a centered header with title and icon (🏠 Inventory)
+**And** Product cards use full screen width with minimal padding (12px edge margins)
+**And** Each product card shows:
+- Product name (line 1)
+- Stock status text (line 2)
+- Color-coded background indicating stock level (gradient: green/yellow/orange/red)
+- 3-dot action menu (⋮) for Edit/Delete
+**And** The stock level is displayed as a single visual state (no visible button grid)
+
+**Given** I want to change a product's stock level
+**When** I tap anywhere on the product card
+**Then** The stock level cycles to the next state: High → Medium → Low → Empty → High
+**And** The card background color updates immediately
+**And** The stock status text updates immediately
+**And** The change persists to the database
+**And** A subtle visual confirmation appears (snackbar or animation)
+
+**Given** I want to search or add a product
+**When** I look at the bottom of the content area
+**Then** I see a search bar and Add FAB on the same row
+**And** The search bar takes ~70% width
+**And** The Add FAB is a circular button (48x48px) on the right
+**And** This row is positioned just above the bottom navigation
+
+**Given** I want to navigate the app
+**When** I look at the bottom navigation
+**Then** I see only 2 tabs: Inventory and Shopping
+**And** The Scan button is NOT visible in the main navigation
+**And** The Scan action is accessible from the Shopping page (to be implemented in future story)
+
+**Technical Implementation Notes:**
+- **Card Background Colors:**
+  - High: `linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)` with `border-left: 4px solid #4caf50`
+  - Medium: `linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%)` with `border-left: 4px solid #ff9800`
+  - Low: `linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)` with `border-left: 4px solid #ff5722`
+  - Empty: `linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)` with `border-left: 4px solid #f44336`
+- **Stock Level Cycle:** Tap on card triggers `updateProduct(id, { stockLevel: nextLevel })`
+- **Navigation:** Remove Scan from `BottomNav.tsx`, update to 2 tabs
+- **Search/FAB Row:** New component or section positioned above nav with `position: sticky; bottom: 56px`
 
 ---

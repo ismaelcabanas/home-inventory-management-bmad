@@ -65,6 +65,11 @@ vi.mock('@/services/ocr', async (importOriginal) => {
 
 const mockShoppingService = vi.mocked(shoppingService);
 
+/**
+ * Story 7.1: Updated tests for 2-tab navigation
+ * - Scan tab removed from main navigation
+ * - Inventory heading is now capitalized
+ */
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -80,24 +85,26 @@ describe('App', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /inventory/i })).toBeInTheDocument();
+      // Story 7.1 AC1: Centered header with "Inventory" (capitalized)
+      expect(screen.getByRole('heading', { name: /Inventory/i })).toBeInTheDocument();
     });
   });
 
-  it('renders with AppLayout and BottomNav', async () => {
+  it('renders with AppLayout and BottomNav (Story 7.1: 2 tabs only)', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
 
     render(<App />);
 
     await waitFor(() => {
-      // Check bottom navigation exists
+      // Story 7.1 AC7: Only 2 tabs - Inventory and Shopping
       expect(screen.getByRole('button', { name: /inventory/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /shopping/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /scan/i })).toBeInTheDocument();
+      // Scan tab is NOT in navigation
+      expect(screen.queryByRole('button', { name: /scan/i })).not.toBeInTheDocument();
     });
   });
 
-  it('navigates between routes', async () => {
+  it('navigates between routes (Story 7.1: 2 tabs)', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([]);
     const user = userEvent.setup();
 
@@ -112,16 +119,10 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: /shopping/i }));
     expect(await screen.findByText('Your shopping list is empty')).toBeInTheDocument();
 
-    // Navigate to receipt scanner
-    await user.click(screen.getByRole('button', { name: /scan/i }));
-    expect(await screen.findByText('Receipt Scanner')).toBeInTheDocument();
-    expect(screen.getByText('Take a photo of your receipt to update inventory')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /scan receipt/i })).toBeInTheDocument();
-
     // Navigate back to inventory
     await user.click(screen.getByRole('button', { name: /inventory/i }));
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /inventory/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Inventory/i })).toBeInTheDocument();
     });
   });
 
@@ -132,7 +133,7 @@ describe('App', () => {
 
     // Verify app renders (error boundaries allow normal rendering)
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /inventory/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Inventory/i })).toBeInTheDocument();
     });
   });
 
@@ -145,21 +146,17 @@ describe('App', () => {
 
     // Wait for app to load successfully
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /inventory/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Inventory/i })).toBeInTheDocument();
     });
 
     // Navigate to shopping (works fine)
     await user.click(screen.getByRole('button', { name: /shopping/i }));
     expect(await screen.findByText('Your shopping list is empty')).toBeInTheDocument();
 
-    // Navigate to scan (works fine)
-    await user.click(screen.getByRole('button', { name: /scan/i }));
-    expect(await screen.findByText('Receipt Scanner')).toBeInTheDocument();
-
     // Navigate back to inventory (works fine)
     await user.click(screen.getByRole('button', { name: /inventory/i }));
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /inventory/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Inventory/i })).toBeInTheDocument();
     });
 
     // CRITICAL TEST: Verify error boundaries exist and wrap each route

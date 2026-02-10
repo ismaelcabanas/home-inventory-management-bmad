@@ -68,8 +68,9 @@ describe('InventoryList', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
-      // H5: Chip removed, verify StockLevelPicker is rendered instead
-      expect(screen.getByLabelText(/Set stock level to High/i)).toBeInTheDocument();
+      // Story 7.1: New design - product has stock status text and 3-dot menu
+      expect(screen.getByText('In stock')).toBeInTheDocument();
+      expect(screen.getByLabelText(/Actions for Milk/i)).toBeInTheDocument();
     });
   });
 
@@ -212,7 +213,7 @@ describe('InventoryList', () => {
   });
 
   // Edit Product Tests
-  it('should open edit dialog when edit button clicked', async () => {
+  it('should open edit dialog when edit button clicked (via 3-dot menu)', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
 
     render(<InventoryList />, { wrapper });
@@ -221,14 +222,18 @@ describe('InventoryList', () => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
     });
 
-    const editButton = screen.getByLabelText(/Edit Milk/i);
+    // Story 7.1: Click 3-dot menu first, then Edit
+    const menuButton = screen.getByLabelText(/Actions for Milk/i);
+    fireEvent.click(menuButton);
+
+    const editButton = screen.getByText('Edit');
     fireEvent.click(editButton);
 
     expect(screen.getByText('Edit Product')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Milk')).toBeInTheDocument();
   });
 
-  it('should update product successfully', async () => {
+  it('should update product successfully (via 3-dot menu)', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
     vi.mocked(inventoryService.updateProduct).mockResolvedValue();
 
@@ -238,7 +243,10 @@ describe('InventoryList', () => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText(/Edit Milk/i));
+    // Story 7.1: Click 3-dot menu first, then Edit
+    const menuButton = screen.getByLabelText(/Actions for Milk/i);
+    fireEvent.click(menuButton);
+    fireEvent.click(screen.getByText('Edit'));
 
     const input = screen.getByLabelText(/Product Name/i);
     fireEvent.change(input, { target: { value: 'Whole Milk' } });
@@ -249,8 +257,8 @@ describe('InventoryList', () => {
     });
   });
 
-  // Delete Product Tests
-  it('should open delete confirmation dialog when delete button clicked', async () => {
+  // Delete Product Tests (Story 7.1: via 3-dot menu)
+  it('should open delete confirmation dialog when delete button clicked (via 3-dot menu)', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
 
     render(<InventoryList />, { wrapper });
@@ -259,14 +267,18 @@ describe('InventoryList', () => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
     });
 
-    const deleteButton = screen.getByLabelText(/Delete Milk/i);
+    // Story 7.1: Click 3-dot menu first, then Delete
+    const menuButton = screen.getByLabelText(/Actions for Milk/i);
+    fireEvent.click(menuButton);
+
+    const deleteButton = screen.getByText('Delete');
     fireEvent.click(deleteButton);
 
     expect(screen.getByText('Delete Product?')).toBeInTheDocument();
     expect(screen.getByText(/Delete "Milk"\?/)).toBeInTheDocument();
   });
 
-  it('should delete product successfully', async () => {
+  it('should delete product successfully (via 3-dot menu)', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
     vi.mocked(inventoryService.deleteProduct).mockResolvedValue();
 
@@ -276,15 +288,18 @@ describe('InventoryList', () => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText(/Delete Milk/i));
+    // Story 7.1: Click 3-dot menu first, then Delete
+    const menuButton = screen.getByLabelText(/Actions for Milk/i);
+    fireEvent.click(menuButton);
     fireEvent.click(screen.getByText('Delete'));
+    fireEvent.click(screen.getByText('Delete')); // Confirm delete
 
     await waitFor(() => {
       expect(screen.getByText('Product deleted successfully')).toBeInTheDocument();
     });
   });
 
-  it('should cancel delete operation', async () => {
+  it('should cancel delete operation (via 3-dot menu)', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
 
     render(<InventoryList />, { wrapper });
@@ -293,7 +308,10 @@ describe('InventoryList', () => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByLabelText(/Delete Milk/i));
+    // Story 7.1: Click 3-dot menu first, then Delete
+    const menuButton = screen.getByLabelText(/Actions for Milk/i);
+    fireEvent.click(menuButton);
+    fireEvent.click(screen.getByText('Delete'));
     fireEvent.click(screen.getByText('Cancel'));
 
     await waitFor(() => {
@@ -304,7 +322,7 @@ describe('InventoryList', () => {
     expect(screen.getByText('Milk')).toBeInTheDocument();
   });
 
-  it('should handle delete confirmation when productBeingDeleted is null', async () => {
+  it('should handle delete confirmation when productBeingDeleted is null (via 3-dot menu)', async () => {
     vi.mocked(inventoryService.getProducts).mockResolvedValue([mockProduct]);
     vi.mocked(inventoryService.deleteProduct).mockResolvedValue();
 
@@ -314,8 +332,10 @@ describe('InventoryList', () => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
     });
 
-    // Open dialog normally
-    fireEvent.click(screen.getByLabelText(/Delete Milk/i));
+    // Story 7.1: Click 3-dot menu first, then Delete
+    const menuButton = screen.getByLabelText(/Actions for Milk/i);
+    fireEvent.click(menuButton);
+    fireEvent.click(screen.getByText('Delete'));
 
     // Simulate edge case: dialog open but product cleared (shouldn't happen in practice)
     // The handleConfirmDelete early return should prevent deleteProduct call
@@ -521,7 +541,7 @@ describe('InventoryList', () => {
       });
     });
 
-    it('should persist search term during delete operation', async () => {
+    it('should persist search term during delete operation (via 3-dot menu)', async () => {
       const products: Product[] = [
         { id: '1', name: 'Milk', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false, isChecked: false },
         { id: '2', name: 'Chocolate Milk', stockLevel: 'medium', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false, isChecked: false },
@@ -546,10 +566,11 @@ describe('InventoryList', () => {
         expect(screen.queryByText('Bread')).not.toBeInTheDocument();
       });
 
-      // Delete one of the filtered products
-      const deleteButton = screen.getByLabelText(/Delete Milk/i);
-      fireEvent.click(deleteButton);
+      // Story 7.1: Delete one of the filtered products via 3-dot menu
+      const menuButton = screen.getByLabelText(/Actions for Milk/i);
+      fireEvent.click(menuButton);
       fireEvent.click(screen.getByText('Delete'));
+      fireEvent.click(screen.getByText('Delete')); // Confirm delete
 
       await waitFor(() => {
         expect(screen.getByText('Product deleted successfully')).toBeInTheDocument();
@@ -559,7 +580,7 @@ describe('InventoryList', () => {
       expect(searchInput).toHaveValue('milk');
     });
 
-    it('should persist search term during edit operation', async () => {
+    it('should persist search term during edit operation (via 3-dot menu)', async () => {
       const products: Product[] = [
         { id: '1', name: 'Milk', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false, isChecked: false },
         { id: '2', name: 'Bread', stockLevel: 'medium', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false, isChecked: false },
@@ -582,9 +603,10 @@ describe('InventoryList', () => {
         expect(screen.queryByText('Bread')).not.toBeInTheDocument();
       });
 
-      // Edit the product
-      const editButton = screen.getByLabelText(/Edit Milk/i);
-      fireEvent.click(editButton);
+      // Story 7.1: Edit the product via 3-dot menu
+      const menuButton = screen.getByLabelText(/Actions for Milk/i);
+      fireEvent.click(menuButton);
+      fireEvent.click(screen.getByText('Edit'));
 
       const editInput = screen.getByLabelText(/Product Name/i);
       fireEvent.change(editInput, { target: { value: 'Whole Milk' } });
