@@ -59,6 +59,7 @@ vi.mock('@/services/ocr', async (importOriginal) => {
       setInventoryService: vi.fn(),
       setOCRProvider: vi.fn(),
       getOCRProvider: vi.fn(() => ({ name: 'mock-provider' })),
+      getPendingCount: vi.fn().mockResolvedValue(0),
     },
   };
 });
@@ -122,7 +123,8 @@ describe('App', () => {
     // Navigate back to inventory
     await user.click(screen.getByRole('button', { name: /inventory/i }));
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /Inventory/i })).toBeInTheDocument();
+      // Use level: 1 to get the main h1 heading, not the empty state h5
+      expect(screen.getByRole('heading', { name: /Inventory/i, level: 1 })).toBeInTheDocument();
     });
   });
 
@@ -133,7 +135,8 @@ describe('App', () => {
 
     // Verify app renders (error boundaries allow normal rendering)
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /Inventory/i })).toBeInTheDocument();
+      // Use level: 1 to get the main h1 heading, not the empty state h5
+      expect(screen.getByRole('heading', { name: /Inventory/i, level: 1 })).toBeInTheDocument();
     });
   });
 
@@ -146,7 +149,8 @@ describe('App', () => {
 
     // Wait for app to load successfully
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /Inventory/i })).toBeInTheDocument();
+      // Use level: 1 to get the main h1 heading, not the empty state h5
+      expect(screen.getByRole('heading', { name: /Inventory/i, level: 1 })).toBeInTheDocument();
     });
 
     // Navigate to shopping (works fine)
@@ -156,7 +160,8 @@ describe('App', () => {
     // Navigate back to inventory (works fine)
     await user.click(screen.getByRole('button', { name: /inventory/i }));
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /Inventory/i })).toBeInTheDocument();
+      // Use level: 1 to get the main h1 heading, not the empty state h5
+      expect(screen.getByRole('heading', { name: /Inventory/i, level: 1 })).toBeInTheDocument();
     });
 
     // CRITICAL TEST: Verify error boundaries exist and wrap each route
