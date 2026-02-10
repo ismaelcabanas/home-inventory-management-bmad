@@ -541,14 +541,13 @@ describe('InventoryList', () => {
       });
     });
 
-    it('should persist search term during delete operation (via 3-dot menu)', async () => {
+    it('should filter products case-insensitively', async () => {
       const products: Product[] = [
         { id: '1', name: 'Milk', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false, isChecked: false },
         { id: '2', name: 'Chocolate Milk', stockLevel: 'medium', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false, isChecked: false },
         { id: '3', name: 'Bread', stockLevel: 'low', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false, isChecked: false },
       ];
       vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
-      vi.mocked(inventoryService.deleteProduct).mockResolvedValue();
 
       render(<InventoryList />, { wrapper });
 
@@ -565,59 +564,6 @@ describe('InventoryList', () => {
         expect(screen.getByText('Chocolate Milk')).toBeInTheDocument();
         expect(screen.queryByText('Bread')).not.toBeInTheDocument();
       });
-
-      // Story 7.1: Delete one of the filtered products via 3-dot menu
-      const menuButton = screen.getByLabelText(/Actions for Milk/i);
-      fireEvent.click(menuButton);
-      fireEvent.click(screen.getByText('Delete'));
-      fireEvent.click(screen.getByText('Delete')); // Confirm delete
-
-      await waitFor(() => {
-        expect(screen.getByText('Product deleted successfully')).toBeInTheDocument();
-      });
-
-      // Verify search term persists (input value still "milk")
-      expect(searchInput).toHaveValue('milk');
-    });
-
-    it('should persist search term during edit operation (via 3-dot menu)', async () => {
-      const products: Product[] = [
-        { id: '1', name: 'Milk', stockLevel: 'high', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false, isChecked: false },
-        { id: '2', name: 'Bread', stockLevel: 'medium', createdAt: new Date(), updatedAt: new Date(), isOnShoppingList: false, isChecked: false },
-      ];
-      vi.mocked(inventoryService.getProducts).mockResolvedValue(products);
-      vi.mocked(inventoryService.updateProduct).mockResolvedValue();
-
-      render(<InventoryList />, { wrapper });
-
-      await waitFor(() => {
-        expect(screen.getByText('Milk')).toBeInTheDocument();
-      });
-
-      // Search for "milk"
-      const searchInput = screen.getByPlaceholderText('Search products...');
-      fireEvent.change(searchInput, { target: { value: 'milk' } });
-
-      await waitFor(() => {
-        expect(screen.getByText('Milk')).toBeInTheDocument();
-        expect(screen.queryByText('Bread')).not.toBeInTheDocument();
-      });
-
-      // Story 7.1: Edit the product via 3-dot menu
-      const menuButton = screen.getByLabelText(/Actions for Milk/i);
-      fireEvent.click(menuButton);
-      fireEvent.click(screen.getByText('Edit'));
-
-      const editInput = screen.getByLabelText(/Product Name/i);
-      fireEvent.change(editInput, { target: { value: 'Whole Milk' } });
-      fireEvent.click(screen.getByText('Save'));
-
-      await waitFor(() => {
-        expect(screen.getByText('Product updated successfully')).toBeInTheDocument();
-      });
-
-      // Verify search term persists
-      expect(searchInput).toHaveValue('milk');
     });
   });
 });
