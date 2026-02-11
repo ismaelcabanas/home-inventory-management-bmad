@@ -5,7 +5,7 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
-  Stack,
+  Grid,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import InventoryIcon from '@mui/icons-material/Inventory';
@@ -203,26 +203,28 @@ export function InventoryList() {
         />
       )}
 
-      {/* Product List with full-width cards (12px edge margins) */}
+      {/* Product List with responsive grid layout */}
       {filteredProducts.length > 0 && (
-        <Box
+        <Grid
+          container
           role="region"
           aria-live="polite"
           aria-label="Product inventory"
-          sx={{ px: 1.5 }} // 12px edge margins
+          columns={{ xs: 1, md: 2 }}
+          spacing={2}
+          sx={{ px: { xs: 2, sm: 3 }, pb: 10 }}
         >
-          <Stack spacing={1.5}>
-            {filteredProducts.map((product) => (
+          {filteredProducts.map((product) => (
+            <Grid key={product.id} size={{ xs: 12, md: 6 }}>
               <ProductCard
-                key={product.id}
                 product={product}
                 onEdit={handleEditProduct}
                 onCycleStockLevel={handleCycleStockLevel}
                 onShoppingListChange={handleShoppingListChange}
               />
-            ))}
-          </Stack>
-        </Box>
+            </Grid>
+          ))}
+        </Grid>
       )}
 
       {/* SearchFabRow - Sticky search + FAB row above bottom nav */}
