@@ -205,26 +205,25 @@ export function InventoryList() {
 
       {/* Product List with responsive grid layout */}
       {filteredProducts.length > 0 && (
-        <Grid
-          container
+        <Box
           role="region"
           aria-live="polite"
           aria-label="Product inventory"
-          columns={{ xs: 1, md: 2 }}
-          spacing={2}
-          sx={{ px: { xs: 2, sm: 3 }, pb: 10 }}
+          sx={{ px: { xs: 1.5, sm: 3 }, pb: 10, width: '100%' }}
         >
-          {filteredProducts.map((product) => (
-            <Grid key={product.id} size={{ xs: 12, md: 6 }}>
-              <ProductCard
-                product={product}
-                onEdit={handleEditProduct}
-                onCycleStockLevel={handleCycleStockLevel}
-                onShoppingListChange={handleShoppingListChange}
-              />
-            </Grid>
-          ))}
-        </Grid>
+          <Grid container columns={{ xs: 1, md: 2 }} spacing={2} sx={{ width: '100%' }}>
+            {filteredProducts.map((product) => (
+              <Grid key={product.id} size={{ xs: 12, md: 6 }}>
+                <ProductCard
+                  product={product}
+                  onEdit={handleEditProduct}
+                  onCycleStockLevel={handleCycleStockLevel}
+                  onShoppingListChange={handleShoppingListChange}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
       )}
 
       {/* SearchFabRow - Sticky search + FAB row above bottom nav */}

@@ -120,6 +120,7 @@ export const ProductCard = memo(function ProductCard({
       sx={{
         mb: 1.5,
         mx: 0,
+        width: '100%',
         background: gradient,
         borderLeft: `4px solid ${borderColor}`,
         cursor: onCycleStockLevel ? 'pointer' : 'default',
