@@ -5,7 +5,6 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
-  Grid,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import InventoryIcon from '@mui/icons-material/Inventory';
@@ -209,20 +208,23 @@ export function InventoryList() {
           role="region"
           aria-live="polite"
           aria-label="Product inventory"
-          sx={{ px: { xs: 1.5, sm: 3 }, pb: 10, width: '100%' }}
+          sx={{
+            px: { xs: 1.5, sm: 3 },
+            pb: 10,
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: 2,
+          }}
         >
-          <Grid container columns={{ xs: 1, md: 2 }} spacing={2} sx={{ width: '100%' }}>
-            {filteredProducts.map((product) => (
-              <Grid key={product.id} size={{ xs: 12, md: 6 }}>
-                <ProductCard
-                  product={product}
-                  onEdit={handleEditProduct}
-                  onCycleStockLevel={handleCycleStockLevel}
-                  onShoppingListChange={handleShoppingListChange}
-                />
-              </Grid>
-            ))}
-          </Grid>
+          {filteredProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onEdit={handleEditProduct}
+              onCycleStockLevel={handleCycleStockLevel}
+              onShoppingListChange={handleShoppingListChange}
+            />
+          ))}
         </Box>
       )}
 
