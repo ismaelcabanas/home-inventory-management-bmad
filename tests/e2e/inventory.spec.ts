@@ -6,16 +6,16 @@ test.describe('Inventory Management', () => {
   });
 
   test('should display inventory list', async ({ page }) => {
-    // Verify inventory heading is visible
-    await expect(page.getByRole('heading', { name: /inventory/i })).toBeVisible();
+    // Verify inventory heading is visible (use level: 1 to avoid conflict with empty state h5)
+    await expect(page.getByRole('heading', { name: /inventory/i, level: 1 })).toBeVisible();
 
-    // Verify add product button is present
-    await expect(page.getByRole('button', { name: /add product/i })).toBeVisible();
+    // When empty, EmptyState has "Add your first product" button (not "add product" FAB)
+    await expect(page.getByRole('button', { name: /Add your first product/i })).toBeVisible();
   });
 
   test('should add a new product', async ({ page }) => {
-    // Click Add Product button
-    await page.getByRole('button', { name: /add product/i }).click();
+    // Click "Add your first product" button from EmptyState
+    await page.getByRole('button', { name: /Add your first product/i }).click();
 
     // Wait for dialog to appear
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -36,20 +36,20 @@ test.describe('Inventory Management', () => {
 
   test('should edit product name', async ({ page }) => {
     // First add a product to edit
-    await page.getByRole('button', { name: /add product/i }).click();
+    await page.getByRole('button', { name: /Add your first product/i }).click();
     const originalName = `Edit Test ${Date.now()}`;
     await page.getByLabel(/product name/i).fill(originalName);
     await page.getByRole('button', { name: /^add$/i }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
-    // Story 7.1: Click 3-dot menu to open actions
+    // Long-press on product card to open edit dialog (replaces 3-dot menu)
     const productCard = page.getByText(originalName).locator('../..');
-    await productCard.getByRole('button', { name: /actions/i }).click();
+    // Simulate long-press using mousedown/mouseup events
+    await productCard.dispatchEvent('mousedown');
+    await page.waitForTimeout(1000); // Hold for 1 second to trigger long-press
+    await productCard.dispatchEvent('mouseup');
 
-    // Click Edit in the menu (use text content to be more specific)
-    await page.getByText('Edit').filter({ hasText: /^Edit$/ }).click();
-
-    // Wait for edit dialog
+    // Edit dialog should appear
     await expect(page.getByRole('dialog')).toBeVisible();
 
     // Change name
@@ -69,21 +69,24 @@ test.describe('Inventory Management', () => {
 
   test('should delete product', async ({ page }) => {
     // First add a product to delete
-    await page.getByRole('button', { name: /add product/i }).click();
+    await page.getByRole('button', { name: /Add your first product/i }).click();
     const productName = `Delete Test ${Date.now()}`;
     await page.getByLabel(/product name/i).fill(productName);
     await page.getByRole('button', { name: /^add$/i }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
-    // Story 7.1: Click 3-dot menu to open actions
+    // Long-press on product card to open edit dialog (replaces 3-dot menu)
     const productCard = page.getByText(productName).locator('../..');
-    await productCard.getByRole('button', { name: /actions/i }).click();
+    // Simulate long-press using mousedown/mouseup events
+    await productCard.dispatchEvent('mousedown');
+    await page.waitForTimeout(1000); // Hold for 1 second to trigger long-press
+    await productCard.dispatchEvent('mouseup');
 
-    // Click Delete in the menu (use text content to be more specific)
-    await page.getByText('Delete').filter({ hasText: /^Delete$/ }).click();
+    // Click delete button in dialog header
+    await page.getByRole('button', { name: /delete/i }).first().click();
 
     // Confirm deletion in dialog
-    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('dialog', { name: /delete/i })).toBeVisible();
     await page.getByRole('button', { name: /delete/i }).last().click();
 
     // Wait for dialog to close
@@ -94,12 +97,16 @@ test.describe('Inventory Management', () => {
   });
 
   test('should search and filter products', async ({ page }) => {
-    // Add multiple products
+    // Add multiple products (use "Add your first product" button first, then FAB)
     const products = [`Apple ${Date.now()}`, `Banana ${Date.now()}`, `Cherry ${Date.now()}`];
 
-    for (const productName of products) {
-      await page.getByRole('button', { name: /add product/i }).click();
-      await page.getByLabel(/product name/i).fill(productName);
+    for (let i = 0; i < products.length; i++) {
+      // First product uses EmptyState button, subsequent use FAB
+      const buttonSelector = i === 0
+        ? 'button:has-text("Add your first product")'
+        : '[aria-label="Add product"]';
+      await page.locator(buttonSelector).click();
+      await page.getByLabel(/product name/i).fill(products[i]);
       await page.getByRole('button', { name: /^add$/i }).click();
       await expect(page.getByRole('dialog')).not.toBeVisible();
     }
@@ -130,7 +137,7 @@ test.describe('Inventory Management', () => {
   test('should persist data across page reloads', async ({ page }) => {
     // Add a product
     const productName = `Persist Test ${Date.now()}`;
-    await page.getByRole('button', { name: /add product/i }).click();
+    await page.getByRole('button', { name: /Add your first product/i }).click();
     await page.getByLabel(/product name/i).fill(productName);
     await page.getByRole('button', { name: /^add$/i }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
@@ -150,8 +157,8 @@ test.describe('Navigation', () => {
   test('should navigate between routes', async ({ page }) => {
     await page.goto('/');
 
-    // Verify we're on inventory page
-    await expect(page.getByRole('heading', { name: /inventory/i })).toBeVisible();
+    // Verify we're on inventory page (use level: 1 for main heading)
+    await expect(page.getByRole('heading', { name: /inventory/i, level: 1 })).toBeVisible();
 
     // Story 7.1: Navigate to shopping list (only 2 tabs now)
     await page.getByRole('button', { name: 'Shopping', exact: true }).click();
@@ -167,7 +174,7 @@ test.describe('Navigation', () => {
 
     // This test verifies error boundaries exist
     // In a real scenario, we'd need to trigger an error
-    // For now, just verify the page loads without crashing
-    await expect(page.getByRole('heading', { name: /inventory/i })).toBeVisible();
+    // For now, just verify the page loads without crashing (use level: 1)
+    await expect(page.getByRole('heading', { name: /inventory/i, level: 1 })).toBeVisible();
   });
 });

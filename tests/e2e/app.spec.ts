@@ -6,12 +6,12 @@ test('homepage loads successfully', async ({ page }) => {
   // Check page title
   await expect(page).toHaveTitle(/home-inventory-management/i)
 
-  // Verify app renders with inventory heading
-  const heading = page.getByRole('heading', { name: /inventory/i })
+  // Verify app renders with inventory heading (use level: 1 for main h1, not empty state h5)
+  const heading = page.getByRole('heading', { name: /inventory/i, level: 1 })
   await expect(heading).toBeVisible()
 
-  // Verify "Add Product" button is present
-  const addButton = page.getByRole('button', { name: /add product/i })
+  // When empty, EmptyState has "Add your first product" button (not "add product" FAB)
+  const addButton = page.getByRole('button', { name: /Add your first product/i })
   await expect(addButton).toBeVisible()
 })
 
