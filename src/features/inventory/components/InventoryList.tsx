@@ -149,7 +149,7 @@ export function InventoryList() {
   };
 
   return (
-    <Box sx={{ width: '100%', pb: 10 }}> {/* Bottom padding to account for sticky SearchFabRow + BottomNav */}
+    <Box sx={{ width: '100%', boxSizing: 'border-box', pb: 10 }}> {/* Bottom padding to account for sticky SearchFabRow + BottomNav */}
       {/* Centered header with title and home icon */}
       <Box
         sx={{
@@ -210,11 +210,12 @@ export function InventoryList() {
           aria-label="Product inventory"
           sx={{
             width: '100%',
-            px: { xs: 1.5, sm: 3 },
+            boxSizing: 'border-box',
+            px: { xs: 1.5, sm: 1.5 }, // 12px edge margins
             pb: 10,
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-            gap: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0,
           }}
         >
           {filteredProducts.map((product) => (
