@@ -20,8 +20,8 @@ interface Props {
  */
 export function AppLayout({ children }: Props) {
   return (
-    <Box sx={{ pb: 7 }}> {/* 56px padding = BottomNav height, prevents overlap */}
-      <Box component="main" sx={{ minHeight: 'calc(100vh - 56px)' }}>
+    <Box sx={{ width: '100%', boxSizing: 'border-box', pb: 7 }}> {/* 56px padding = BottomNav height, prevents overlap */}
+      <Box component="main" sx={{ width: '100%', boxSizing: 'border-box', minHeight: 'calc(100vh - 56px)' }}>
         {children}
       </Box>
       <BottomNav />
