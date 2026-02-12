@@ -149,7 +149,7 @@ export function InventoryList() {
   };
 
   return (
-    <Box sx={{ pb: 10 }}> {/* Bottom padding to account for sticky SearchFabRow + BottomNav */}
+    <Box sx={{ width: '100%', pb: 10 }}> {/* Bottom padding to account for sticky SearchFabRow + BottomNav */}
       {/* Centered header with title and home icon */}
       <Box
         sx={{
@@ -209,6 +209,7 @@ export function InventoryList() {
           aria-live="polite"
           aria-label="Product inventory"
           sx={{
+            width: '100%',
             px: { xs: 1.5, sm: 3 },
             pb: 10,
             display: 'grid',
