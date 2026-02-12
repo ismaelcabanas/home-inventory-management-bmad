@@ -1,35 +1,95 @@
-import { memo, useState } from 'react';
-import { Card, CardContent, Typography, Box, IconButton, Chip, Snackbar, Alert } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
+import { memo, useState, useRef, useCallback } from 'react';
+import { Card, Typography, Box, IconButton, Snackbar, Alert } from '@mui/material';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import RemoveShoppingCartIcon from '@mui/icons-material/RemoveShoppingCart';
-import type { Product, StockLevel } from '@/types/product';
-import { StockLevelPicker } from '@/components/StockLevelPicker';
-import { STOCK_LEVEL_CONFIG } from './stockLevelConfig';
+import EditIcon from '@mui/icons-material/Edit';
+import type { Product } from '@/types/product';
 import { useShoppingList } from '@/features/shopping/context/ShoppingContext';
+import { getStockLevelGradient, getStockLevelBorderColor, getStockLevelText } from '@/utils/stockLevels';
 
 export interface ProductCardProps {
   product: Product;
   onEdit: (product: Product) => void;
-  onDelete: (product: Product) => void;
-  onStockLevelChange?: (productId: string, stockLevel: StockLevel) => Promise<void>;
   onShoppingListChange?: () => Promise<void>; // Story 3.3: Callback to refresh inventory after add/remove
+  onCycleStockLevel?: (productId: string) => Promise<void>; // Story 7.1: Tap-to-cycle
 }
 
-export const ProductCard = memo(function ProductCard({ product, onEdit, onDelete, onStockLevelChange, onShoppingListChange }: ProductCardProps) {
+/**
+ * ProductCard with improved UX interactions
+ *
+ * Interaction design:
+ * - Short tap: Cycle stock level (high → medium → low → empty → high)
+ * - Long press (0.8s): Open edit modal
+ * - Shopping cart icon: Add/remove from shopping list
+ *
+ * Based on mobile UX best practices for intuitive gestures.
+ */
+export const ProductCard = memo(function ProductCard({
+  product,
+  onEdit,
+  onShoppingListChange,
+  onCycleStockLevel,
+}: ProductCardProps) {
   const [announceMessage, setAnnounceMessage] = useState<string>('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [isLongPress, setIsLongPress] = useState(false);
 
-  // Story 3.3: Manual shopping list management - get add/remove methods
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Story 3.3: Manual shopping list management
   const { addToList, removeFromList } = useShoppingList();
 
-  // Get stock level configuration for visual chip (Story 2.2)
-  const stockConfig = STOCK_LEVEL_CONFIG[product.stockLevel];
+  // Story 7.1: Get gradient and border color based on stock level
+  const gradient = getStockLevelGradient(product.stockLevel);
+  const borderColor = getStockLevelBorderColor(product.stockLevel);
+  const statusText = getStockLevelText(product.stockLevel);
+
+  // Long-press handler for edit
+  const startPress = useCallback(() => {
+    setIsLongPress(false);
+    // Start timer for long press (0.8s)
+    longPressTimerRef.current = setTimeout(() => {
+      setIsLongPress(true);
+      // Provide haptic feedback if available
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+    }, 800);
+  }, []);
+
+  const cancelPress = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const handlePressEnd = useCallback(async () => {
+    cancelPress();
+    if (isLongPress) {
+      // Long press detected - open edit modal
+      onEdit(product);
+    } else if (onCycleStockLevel) {
+      // Short tap - cycle stock level
+      try {
+        setAnnounceMessage(`Stock level changed from ${product.stockLevel}`);
+        setTimeout(() => setAnnounceMessage(''), 2000);
+
+        await onCycleStockLevel(product.id);
+
+        setSnackbarMessage('Stock level updated');
+        setSnackbarOpen(true);
+      } catch {
+        // Error handled by parent
+      }
+    }
+    setIsLongPress(false);
+  }, [isLongPress, product, onEdit, onCycleStockLevel, cancelPress]);
 
   // Story 3.3: Handle shopping list toggle
-  const handleShoppingListToggle = async () => {
+  const handleShoppingListToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       if (product.isOnShoppingList) {
         await removeFromList(product.id);
@@ -43,13 +103,11 @@ export const ProductCard = memo(function ProductCard({ product, onEdit, onDelete
       setSnackbarOpen(true);
       setTimeout(() => setAnnounceMessage(''), 2000);
 
-      // Refresh inventory to get updated isOnShoppingList value
       if (onShoppingListChange) {
         await onShoppingListChange();
       }
     } catch {
-      // Error handled by ShoppingContext (shows snackbar via error state)
-      // Silently catch here to prevent unhandled rejection
+      // Error handled by ShoppingContext
     }
   };
 
@@ -57,109 +115,126 @@ export const ProductCard = memo(function ProductCard({ product, onEdit, onDelete
     setSnackbarOpen(false);
   };
 
-  const handleStockLevelChange = async (newLevel: StockLevel) => {
-    if (onStockLevelChange) {
-      try {
-        // Update ARIA live region for screen readers (H4)
-        setAnnounceMessage(`Stock level changed to ${newLevel}`);
-        setTimeout(() => setAnnounceMessage(''), 2000);
-
-        await onStockLevelChange(product.id, newLevel);
-      } catch {
-        // Error handled by parent (InventoryList shows snackbar)
-        // Silently catch here to prevent unhandled rejection
-      }
-    }
-  };
-
   return (
-    <Card sx={{ mb: 2 }}>
-      <CardContent>
-        {/* ARIA live region for stock level change announcements (H4) */}
+    <Card
+      sx={{
+        mb: 1.5,
+        mx: 0,
+        width: '100%',
+        background: gradient,
+        borderLeft: `4px solid ${borderColor}`,
+        cursor: onCycleStockLevel ? 'pointer' : 'default',
+        transition: 'background-color 0.2s ease-in-out, transform 0.1s',
+        position: 'relative',
+        userSelect: 'none',
+        // Visual feedback on long press
+        ...(isLongPress && {
+          transform: 'scale(0.98)',
+          boxShadow: 4,
+        }),
+      }}
+      onTouchStart={startPress}
+      onTouchEnd={handlePressEnd}
+      onMouseDown={startPress}
+      onMouseUp={handlePressEnd}
+      onMouseLeave={cancelPress}
+      aria-label={`${product.name}, ${statusText}. Tap to cycle stock level. Long press to edit.`}
+    >
+      {/* ARIA live region for screen readers */}
+      <Box
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        sx={{
+          position: 'absolute',
+          left: '-10000px',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+        }}
+      >
+        {announceMessage}
+      </Box>
+
+      {/* Edit hint shown on long press */}
+      {isLongPress && (
         <Box
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
           sx={{
             position: 'absolute',
-            left: '-10000px',
-            width: '1px',
-            height: '1px',
-            overflow: 'hidden',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            bgcolor: 'background.paper',
+            px: 2,
+            py: 1,
+            borderRadius: 1,
+            boxShadow: 3,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            zIndex: 10,
+            animation: 'fadeIn 0.2s ease-in-out',
+            '@keyframes fadeIn': {
+              from: { opacity: 0 },
+              to: { opacity: 1 },
+            },
           }}
         >
-          {announceMessage}
+          <EditIcon color="primary" />
+          <Typography variant="body2" fontWeight="medium">
+            Edit
+          </Typography>
+        </Box>
+      )}
+
+      {/* Card content */}
+      <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Product name and stock status */}
+        <Box sx={{ flex: 1 }}>
+          <Typography
+            variant="body1"
+            component="h2"
+            sx={{
+              fontWeight: 'medium',
+              mb: 0.5,
+              color: 'text.primary',
+            }}
+          >
+            {product.name}
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+              fontWeight: 500,
+            }}
+          >
+            {statusText}
+          </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* Product name and actions */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6" component="h2">
-              {product.name}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-              {/* Story 3.3: Shopping list toggle button */}
-              <IconButton
-                onClick={handleShoppingListToggle}
-                aria-label={
-                  product.isOnShoppingList
-                    ? `Remove ${product.name} from shopping list`
-                    : `Add ${product.name} to shopping list`
-                }
-                sx={{
-                  minWidth: 44,
-                  minHeight: 44,
-                  color: product.isOnShoppingList ? 'warning.main' : 'action.active',
-                }}
-              >
-                {product.isOnShoppingList ? <RemoveShoppingCartIcon /> : <AddShoppingCartIcon />}
-              </IconButton>
-              <IconButton
-                onClick={() => onEdit(product)}
-                aria-label={`Edit ${product.name}`}
-                sx={{ minWidth: 44, minHeight: 44 }}
-              >
-                <EditIcon />
-              </IconButton>
-              <IconButton
-                onClick={() => onDelete(product)}
-                aria-label={`Delete ${product.name}`}
-                sx={{ minWidth: 44, minHeight: 44, color: 'error.main' }}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </Box>
-          </Box>
+        {/* Shopping list toggle button - only action button now */}
+        <IconButton
+          onClick={(e) => handleShoppingListToggle(e)}
+          aria-label={
+            product.isOnShoppingList
+              ? `Remove ${product.name} from shopping list`
+              : `Add ${product.name} to shopping list`
+          }
+          sx={{
+            minWidth: 44,
+            minHeight: 44,
+            color: product.isOnShoppingList ? 'warning.main' : 'action.active',
+          }}
+        >
+          {product.isOnShoppingList ? <RemoveShoppingCartIcon /> : <AddShoppingCartIcon />}
+        </IconButton>
+      </Box>
 
-          {/* Story 2.2: Stock Level Visual Indicator Chip (AC1) */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 1 }}>
-            <Chip
-              label={stockConfig.label}
-              size="small"
-              sx={{
-                backgroundColor: stockConfig.chipColor,
-                color: stockConfig.textColor,
-                fontWeight: 'medium',
-                fontSize: '14px',
-              }}
-            />
-          </Box>
-
-          {/* Stock level picker for changing stock level */}
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            <StockLevelPicker
-              currentLevel={product.stockLevel}
-              onLevelChange={handleStockLevelChange}
-              productId={product.id}
-            />
-          </Box>
-        </Box>
-      </CardContent>
-
-      {/* Story 3.3: Confirmation snackbar for add/remove actions */}
+      {/* Confirmation snackbar */}
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={3000}
+        autoHideDuration={2000}
         onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >

@@ -6,6 +6,7 @@ import { inventoryService } from '@/services/inventory';
 import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
 import type { Product } from '@/types/product';
+import { getNextStockLevel } from '@/utils/stockLevels';
 
 // State interface
 // TODO (Tech Debt #5): Consider adding readonly modifiers for extra type safety
@@ -35,6 +36,7 @@ export interface InventoryContextValue {
   deleteProduct: (id: string) => Promise<void>;
   searchProducts: (query: string) => Promise<void>;
   clearError: () => void;
+  cycleStockLevel: (productId: string) => Promise<void>; // Story 7.1: Tap-to-cycle stock level
 }
 
 // Create context
@@ -226,6 +228,37 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
     dispatch({ type: 'SET_ERROR', payload: null });
   };
 
+  // Story 7.1: Cycle stock level (tap-to-cycle interaction)
+  // Cycles: high → medium → low → empty → high
+  const cycleStockLevel = async (productId: string) => {
+    try {
+      // Get current product to determine next level
+      const currentProduct = state.products.find(p => p.id === productId);
+      if (!currentProduct) {
+        throw new Error(`Product with id ${productId} not found`);
+      }
+
+      // Calculate next stock level in cycle
+      const nextLevel = getNextStockLevel(currentProduct.stockLevel);
+
+      logger.debug('Cycling stock level', {
+        productId,
+        currentLevel: currentProduct.stockLevel,
+        nextLevel,
+      });
+
+      // Update to next level
+      await updateProduct(productId, { stockLevel: nextLevel });
+
+      logger.info('Stock level cycled successfully', { productId, newLevel: nextLevel });
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to cycle stock level', appError.details);
+      dispatch({ type: 'SET_ERROR', payload: appError.message });
+      throw error;
+    }
+  };
+
   const value: InventoryContextValue = {
     state,
     loadProducts,
@@ -234,6 +267,7 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
     deleteProduct,
     searchProducts,
     clearError,
+    cycleStockLevel,
   };
 
   return (

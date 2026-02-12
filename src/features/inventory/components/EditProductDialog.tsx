@@ -7,29 +7,34 @@ import {
   TextField,
   Button,
   CircularProgress,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import type { Product } from '@/types/product';
 
 export interface EditProductDialogProps {
   open: boolean;
   onClose: () => void;
   onEdit: (id: string, name: string) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
   product: Product | null;
 }
 
-export function EditProductDialog({ open, onClose, onEdit, product }: EditProductDialogProps) {
+export function EditProductDialog({ open, onClose, onEdit, onDelete, product }: EditProductDialogProps) {
   const [productName, setProductName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Initialize productName when product changes or dialog opens
-  // Clear productName and reset submitting state when dialog closes to prevent stale data
   useEffect(() => {
     if (product && open) {
       setProductName(product.name);
-      setSubmitting(false); // Reset submitting state when opening dialog
+      setSubmitting(false);
     } else if (!open) {
       setProductName('');
-      setSubmitting(false); // Reset submitting state when closing dialog
+      setSubmitting(false);
+      setDeleteDialogOpen(false);
     }
   }, [product, open]);
 
@@ -43,7 +48,6 @@ export function EditProductDialog({ open, onClose, onEdit, product }: EditProduc
       setProductName('');
       onClose();
     } catch {
-      // Error handled by parent, keep dialog open for retry
       setSubmitting(false);
     }
   };
@@ -55,37 +59,92 @@ export function EditProductDialog({ open, onClose, onEdit, product }: EditProduc
     }
   };
 
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!product) return;
+    setSubmitting(true);
+    try {
+      await onDelete!(product.id);
+      setProductName('');
+      setDeleteDialogOpen(false);
+      onClose();
+    } catch {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <form onSubmit={handleSubmit}>
-        <DialogTitle>Edit Product</DialogTitle>
+    <>
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+        <form onSubmit={handleSubmit}>
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            Edit Product
+            {onDelete && (
+              <Tooltip title="Delete product">
+                <IconButton
+                  onClick={handleDeleteClick}
+                  disabled={submitting}
+                  color="error"
+                  aria-label="Delete product"
+                  type="button"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+          </DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Product Name"
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
+              disabled={submitting}
+              required
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={submitting || !productName.trim()}
+            >
+              {submitting ? <CircularProgress size={24} /> : 'Save'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete Product?</DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Product Name"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={productName}
-            onChange={(e) => setProductName(e.target.value)}
-            disabled={submitting}
-            required
-          />
+          Are you sure you want to delete "{product?.name}"? This action cannot be undone.
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} disabled={submitting}>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={submitting}>
             Cancel
           </Button>
           <Button
-            type="submit"
+            onClick={handleDeleteConfirm}
+            color="error"
             variant="contained"
-            disabled={submitting || !productName.trim()}
+            disabled={submitting}
           >
-            {submitting ? <CircularProgress size={24} /> : 'Save'}
+            {submitting ? <CircularProgress size={24} /> : 'Delete'}
           </Button>
         </DialogActions>
-      </form>
-    </Dialog>
+      </Dialog>
+    </>
   );
 }

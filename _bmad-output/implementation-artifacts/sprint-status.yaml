@@ -82,3 +82,7 @@ development_status:
   6-1-update-inventory-from-confirmed-receipt-products: done
   6-2-handle-inventory-update-errors: done
   epic-6-retrospective: optional
+
+  epic-7: in-progress
+  7-1-redesign-inventory-page-layout-and-navigation: done
+  epic-7-retrospective: optional

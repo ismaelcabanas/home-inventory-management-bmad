@@ -1,15 +1,19 @@
 import { BottomNavigation, BottomNavigationAction, Paper, Badge } from '@mui/material';
-import { Home as HomeIcon, ShoppingCart as ShoppingCartIcon, CameraAlt as CameraIcon } from '@mui/icons-material';
+import { Home as HomeIcon, ShoppingCart as ShoppingCartIcon } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useShoppingList } from '@/features/shopping/context/ShoppingContext';
 
 /**
- * Bottom navigation bar for mobile-first navigation.
- * Fixed to bottom of screen with three main sections:
+ * Story 7.1: Bottom navigation bar - Simplified to 2 tabs
+ *
+ * Story 7.1 AC7: Simplified 2-Tab Navigation
+ * - Only 2 tabs: Inventory (Home icon), Shopping (Shopping cart icon)
+ * - Scan button removed from main navigation (contextual access from Shopping page)
+ *
+ * Fixed to bottom of screen with two main sections:
  * - Home (Inventory)
  * - Shopping List
- * - Receipt Scanner
  */
 export function BottomNav() {
   const navigate = useNavigate();
@@ -27,7 +31,8 @@ export function BottomNav() {
         setValue(1);
         break;
       case '/scan':
-        setValue(2);
+        // Scan route still exists for existing routes, but not shown in nav
+        setValue(0); // Default to inventory when on scan route
         break;
       default:
         setValue(0);
@@ -57,9 +62,6 @@ export function BottomNav() {
         break;
       case 1:
         navigate('/shopping');
-        break;
-      case 2:
-        navigate('/scan');
         break;
     }
   };
@@ -95,10 +97,6 @@ export function BottomNav() {
               <ShoppingCartIcon />
             )
           }
-        />
-        <BottomNavigationAction
-          label="Scan"
-          icon={<CameraIcon />}
         />
       </BottomNavigation>
     </Paper>

@@ -25,9 +25,10 @@ describe('EmptyState', () => {
     expect(screen.getByText('No items found')).toBeInTheDocument();
   });
 
-  it('should render title as h6 variant', () => {
+  it('should render title as h5 variant', () => {
     render(<EmptyState title="Empty List" message="Add items to get started" />);
     const title = screen.getByText('Empty List');
-    expect(title.tagName).toBe('H6');
+    // Component uses variant="h5" for styling but renders as h2 HTML element
+    expect(title.tagName).toBe('H2');
   });
 });
