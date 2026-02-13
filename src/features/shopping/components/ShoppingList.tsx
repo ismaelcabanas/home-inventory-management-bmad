@@ -1,17 +1,23 @@
-import { useEffect, useState } from 'react';
-import { Box, Typography, CircularProgress, Alert, List, Fab, Zoom } from '@mui/material';
+import { useEffect, useState, useMemo } from 'react';
+import { Box, Typography, CircularProgress, Alert, List, SpeedDial, SpeedDialIcon, SpeedDialAction, Zoom } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CheckroomIcon from '@mui/icons-material/Checkroom';
+import AddIcon from '@mui/icons-material/Add';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useShoppingList } from '../context/ShoppingContext';
 import { ShoppingListItem } from './ShoppingListItem';
 import { ShoppingProgress } from './ShoppingProgress';
+import { AddProductsDialog } from './AddProductsDialog';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { FeatureErrorBoundary } from '@/components/shared/ErrorBoundary/FeatureErrorBoundary';
+import { useInventory } from '@/features/inventory/context/InventoryContext';
 
 function ShoppingListContent() {
-  const { state, loadShoppingList, clearError, startShoppingMode, endShoppingMode, progress } = useShoppingList();
+  const { state, loadShoppingList, clearError, startShoppingMode, endShoppingMode, progress, addToList } = useShoppingList();
+  const { state: inventoryState } = useInventory();
   const { items, loading, error, isShoppingMode } = state;
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const { products: allProducts } = inventoryState;
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   useEffect(() => {
     loadShoppingList();
@@ -26,22 +32,40 @@ function ShoppingListContent() {
     return () => clearInterval(interval);
   }, [loadShoppingList]);
 
+  // Story 7.4: Compute products NOT on shopping list
+  const availableProducts = useMemo(() => {
+    const shoppingListProductIds = new Set(items.map((item) => item.id));
+    return allProducts.filter((p) => !shoppingListProductIds.has(p.id));
+  }, [allProducts, items]);
+
   // Story 4.4: Handle Shopping Mode toggle
   const handleModeToggle = async () => {
-    setIsTransitioning(true);
-    try {
-      if (isShoppingMode) {
-        await endShoppingMode();
-      } else {
-        await startShoppingMode();
-      }
-    } finally {
-      setIsTransitioning(false);
+    if (isShoppingMode) {
+      await endShoppingMode();
+    } else {
+      await startShoppingMode();
     }
   };
 
-  // Story 4.4: FAB position - above BottomNav (which is typically 56-80px)
-  const fabStyle = {
+  // Story 7.4: Open add products dialog
+  const handleOpenAddDialog = () => {
+    setAddDialogOpen(true);
+  };
+
+  // Story 7.4: Close add products dialog
+  const handleCloseAddDialog = () => {
+    setAddDialogOpen(false);
+  };
+
+  // Story 7.4: Add product to shopping list
+  const handleAddProduct = async (productId: string) => {
+    await addToList(productId);
+    // Refresh shopping list to show newly added product
+    await loadShoppingList();
+  };
+
+  // SpeedDial position - above BottomNav (which is typically 56-80px)
+  const speedDialStyle = {
     position: 'fixed' as const,
     bottom: 80, // Above BottomNav
     right: 16,
@@ -55,18 +79,32 @@ function ShoppingListContent() {
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
           <CircularProgress />
         </Box>
-        {/* Story 4.4: FAB always visible */}
+        {/* SpeedDial for Shopping List Actions */}
         <Zoom in>
-          <Fab
-            color={isShoppingMode ? 'secondary' : 'primary'}
-            onClick={handleModeToggle}
-            disabled={isTransitioning}
-            aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
-            sx={fabStyle}
+          <SpeedDial
+            ariaLabel="Shopping list actions"
+            sx={speedDialStyle}
+            icon={<SpeedDialIcon icon={<MoreVertIcon />} />}
           >
-            {isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-          </Fab>
+            <SpeedDialAction
+              icon={<AddIcon />}
+              tooltipTitle="Add Products"
+              onClick={handleOpenAddDialog}
+            />
+            <SpeedDialAction
+              icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
+              tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
+              onClick={handleModeToggle}
+            />
+          </SpeedDial>
         </Zoom>
+        {/* Story 7.4: Add Products Dialog */}
+        <AddProductsDialog
+          open={addDialogOpen}
+          onClose={handleCloseAddDialog}
+          availableProducts={availableProducts}
+          onAddProduct={handleAddProduct}
+        />
       </Box>
     );
   }
@@ -78,18 +116,32 @@ function ShoppingListContent() {
         <Alert severity="error" onClose={clearError}>
           {error}
         </Alert>
-        {/* Story 4.4: FAB always visible */}
+        {/* SpeedDial for Shopping List Actions */}
         <Zoom in>
-          <Fab
-            color={isShoppingMode ? 'secondary' : 'primary'}
-            onClick={handleModeToggle}
-            disabled={isTransitioning}
-            aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
-            sx={fabStyle}
+          <SpeedDial
+            ariaLabel="Shopping list actions"
+            sx={speedDialStyle}
+            icon={<SpeedDialIcon icon={<MoreVertIcon />} />}
           >
-            {isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-          </Fab>
+            <SpeedDialAction
+              icon={<AddIcon />}
+              tooltipTitle="Add Products"
+              onClick={handleOpenAddDialog}
+            />
+            <SpeedDialAction
+              icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
+              tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
+              onClick={handleModeToggle}
+            />
+          </SpeedDial>
         </Zoom>
+        {/* Story 7.4: Add Products Dialog */}
+        <AddProductsDialog
+          open={addDialogOpen}
+          onClose={handleCloseAddDialog}
+          availableProducts={availableProducts}
+          onAddProduct={handleAddProduct}
+        />
       </Box>
     );
   }
@@ -102,25 +154,39 @@ function ShoppingListContent() {
           title="Your shopping list is empty"
           message="Mark items as Low or Empty in inventory to auto-add them here"
         />
-        {/* Story 4.4: FAB always visible */}
+        {/* SpeedDial for Shopping List Actions */}
         <Zoom in>
-          <Fab
-            color={isShoppingMode ? 'secondary' : 'primary'}
-            onClick={handleModeToggle}
-            disabled={isTransitioning}
-            aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
-            sx={fabStyle}
+          <SpeedDial
+            ariaLabel="Shopping list actions"
+            sx={speedDialStyle}
+            icon={<SpeedDialIcon icon={<MoreVertIcon />} />}
           >
-            {isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-          </Fab>
+            <SpeedDialAction
+              icon={<AddIcon />}
+              tooltipTitle="Add Products"
+              onClick={handleOpenAddDialog}
+            />
+            <SpeedDialAction
+              icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
+              tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
+              onClick={handleModeToggle}
+            />
+          </SpeedDial>
         </Zoom>
+        {/* Story 7.4: Add Products Dialog */}
+        <AddProductsDialog
+          open={addDialogOpen}
+          onClose={handleCloseAddDialog}
+          availableProducts={availableProducts}
+          onAddProduct={handleAddProduct}
+        />
       </Box>
     );
   }
 
   return (
     <Box pb={8} // Story 4.3: Extra padding to prevent FAB from covering last items
->
+  >
       <Typography variant="h6" gutterBottom>
         Shopping List ({items.length})
       </Typography>
@@ -132,18 +198,32 @@ function ShoppingListContent() {
           <ShoppingListItem key={item.id} product={item} isShoppingMode={isShoppingMode} />
         ))}
       </List>
-      {/* Story 4.4: FAB for Shopping Mode toggle */}
+      {/* SpeedDial for Shopping List Actions */}
       <Zoom in>
-        <Fab
-          color={isShoppingMode ? 'secondary' : 'primary'}
-          onClick={handleModeToggle}
-          disabled={isTransitioning}
-          aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
-          sx={fabStyle}
+        <SpeedDial
+          ariaLabel="Shopping list actions"
+          sx={speedDialStyle}
+          icon={<SpeedDialIcon icon={<MoreVertIcon />} />}
         >
-          {isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-        </Fab>
+          <SpeedDialAction
+            icon={<AddIcon />}
+            tooltipTitle="Add Products"
+            onClick={handleOpenAddDialog}
+          />
+          <SpeedDialAction
+            icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
+            tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
+            onClick={handleModeToggle}
+          />
+        </SpeedDial>
       </Zoom>
+      {/* Story 7.4: Add Products Dialog */}
+      <AddProductsDialog
+        open={addDialogOpen}
+        onClose={handleCloseAddDialog}
+        availableProducts={availableProducts}
+        onAddProduct={handleAddProduct}
+      />
     </Box>
   );
 }
