@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { ShoppingList } from './ShoppingList';
 import { ShoppingProvider } from '../context/ShoppingContext';
 import * as ShoppingContext from '../context/ShoppingContext';
+import * as InventoryContext from '@/features/inventory/context/InventoryContext';
 import React from 'react';
 import type { Product } from '@/types/product';
 
@@ -14,6 +15,13 @@ vi.mock('@/services/shopping', () => ({
     getShoppingMode: vi.fn().mockResolvedValue(false), // Story 4.4: Shopping Mode
     setShoppingMode: vi.fn().mockResolvedValue(undefined), // Story 4.4: Shopping Mode
   },
+}));
+
+// Story 7.4: Mock InventoryContext
+vi.mock('@/features/inventory/context/InventoryContext', () => ({
+  useInventory: vi.fn(() => ({
+    state: { products: [], loading: false, error: null },
+  })),
 }));
 
 vi.mock('./ShoppingListItem', () => ({
