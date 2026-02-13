@@ -75,6 +75,7 @@ export const SearchFabRow = memo(function SearchFabRow({
         aria-label="Search products"
         sx={{
           flex: 1,
+          pl: 2,
           '& .MuiOutlinedInput-root': {
             bgcolor: 'background.default',
           },

@@ -125,7 +125,7 @@ Story created via correct-course workflow to address user feedback about search 
 
 ### File List
 
-- `src/features/inventory/components/SearchBar.tsx` (added left padding: `pl: 2`)
+- `src/features/inventory/components/SearchFabRow.tsx` (added left padding: `pl: 2`)
 
 ## Change Log
 
