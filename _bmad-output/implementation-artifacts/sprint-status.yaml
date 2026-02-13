@@ -85,7 +85,7 @@ development_status:
 
   epic-7: in-progress
   7-1-redesign-inventory-page-layout-and-navigation: done
-  7-2-add-left-padding-to-search-textbox: backlog
-  7-3-remove-add-to-shopping-list-from-inventory: backlog
-  7-4-add-fab-to-shopping-list-page: backlog
+  7-2-add-left-padding-to-search-textbox: review
+  7-3-remove-add-to-shopping-list-from-inventory: ready-for-dev
+  7-4-add-fab-to-shopping-list-page: ready-for-dev
   epic-7-retrospective: optional

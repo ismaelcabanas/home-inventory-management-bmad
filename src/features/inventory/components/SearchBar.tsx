@@ -40,7 +40,7 @@ export function SearchBar({
         ),
       }}
       aria-label="Search products"
-      sx={{ mb: (theme) => theme.spacing(2) }}
+      sx={{ mb: (theme) => theme.spacing(2), pl: 2 }}
     />
   );
 }
