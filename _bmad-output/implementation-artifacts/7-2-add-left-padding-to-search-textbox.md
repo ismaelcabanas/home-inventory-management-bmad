@@ -1,6 +1,6 @@
 # Story 7.2: Add Left Padding to Search Textbox
 
-Status: review
+Status: done
 
 ## Story
 
