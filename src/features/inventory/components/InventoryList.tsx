@@ -139,15 +139,6 @@ export function InventoryList() {
     }
   };
 
-  // Story 3.3: Refresh inventory after shopping list add/remove operations
-  const handleShoppingListChange = async () => {
-    try {
-      await loadProducts();
-    } catch {
-      // Error already handled by InventoryContext
-    }
-  };
-
   return (
     <Box sx={{ width: '100%', boxSizing: 'border-box', pb: 10 }}> {/* Bottom padding to account for sticky SearchFabRow + BottomNav */}
       {/* Centered header with title and home icon */}
@@ -224,7 +215,6 @@ export function InventoryList() {
               product={product}
               onEdit={handleEditProduct}
               onCycleStockLevel={handleCycleStockLevel}
-              onShoppingListChange={handleShoppingListChange}
             />
           ))}
         </Box>
