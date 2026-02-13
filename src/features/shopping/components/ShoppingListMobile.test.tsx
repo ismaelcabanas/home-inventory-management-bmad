@@ -5,8 +5,16 @@ import { render, screen } from '@testing-library/react';
 import { ShoppingList } from './ShoppingList';
 import { ShoppingProvider } from '../context/ShoppingContext';
 import * as ShoppingContext from '../context/ShoppingContext';
+import * as InventoryContext from '@/features/inventory/context/InventoryContext';
 import React from 'react';
 import type { Product } from '@/types/product';
+
+// Story 7.4: Mock InventoryContext
+vi.mock('@/features/inventory/context/InventoryContext', () => ({
+  useInventory: vi.fn(() => ({
+    state: { products: [], loading: false, error: null },
+  })),
+}));
 
 // Helper to generate many products for performance testing
 const generateProducts = (count: number): Product[] =>
