@@ -16,7 +16,6 @@ export interface ProductCardProps {
  * Interaction design:
  * - Short tap: Cycle stock level (high → medium → low → empty → high)
  * - Long press (0.8s): Open edit modal
- * - Shopping cart icon: Add/remove from shopping list
  *
  * Based on mobile UX best practices for intuitive gestures.
  */
