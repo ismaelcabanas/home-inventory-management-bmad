@@ -1,16 +1,12 @@
 import { memo, useState, useRef, useCallback } from 'react';
-import { Card, Typography, Box, IconButton, Snackbar, Alert } from '@mui/material';
-import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
-import RemoveShoppingCartIcon from '@mui/icons-material/RemoveShoppingCart';
+import { Card, Typography, Box, Snackbar, Alert } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import type { Product } from '@/types/product';
-import { useShoppingList } from '@/features/shopping/context/ShoppingContext';
 import { getStockLevelGradient, getStockLevelBorderColor, getStockLevelText } from '@/utils/stockLevels';
 
 export interface ProductCardProps {
   product: Product;
   onEdit: (product: Product) => void;
-  onShoppingListChange?: () => Promise<void>; // Story 3.3: Callback to refresh inventory after add/remove
   onCycleStockLevel?: (productId: string) => Promise<void>; // Story 7.1: Tap-to-cycle
 }
 
@@ -20,14 +16,12 @@ export interface ProductCardProps {
  * Interaction design:
  * - Short tap: Cycle stock level (high → medium → low → empty → high)
  * - Long press (0.8s): Open edit modal
- * - Shopping cart icon: Add/remove from shopping list
  *
  * Based on mobile UX best practices for intuitive gestures.
  */
 export const ProductCard = memo(function ProductCard({
   product,
   onEdit,
-  onShoppingListChange,
   onCycleStockLevel,
 }: ProductCardProps) {
   const [announceMessage, setAnnounceMessage] = useState<string>('');
@@ -36,9 +30,6 @@ export const ProductCard = memo(function ProductCard({
   const [isLongPress, setIsLongPress] = useState(false);
 
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Story 3.3: Manual shopping list management
-  const { addToList, removeFromList } = useShoppingList();
 
   // Story 7.1: Get gradient and border color based on stock level
   const gradient = getStockLevelGradient(product.stockLevel);
@@ -87,30 +78,6 @@ export const ProductCard = memo(function ProductCard({
     setIsLongPress(false);
   }, [isLongPress, product, onEdit, onCycleStockLevel, cancelPress]);
 
-  // Story 3.3: Handle shopping list toggle
-  const handleShoppingListToggle = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      if (product.isOnShoppingList) {
-        await removeFromList(product.id);
-        setAnnounceMessage('Removed from shopping list');
-        setSnackbarMessage('Removed from shopping list');
-      } else {
-        await addToList(product.id);
-        setAnnounceMessage('Added to shopping list');
-        setSnackbarMessage('Added to shopping list');
-      }
-      setSnackbarOpen(true);
-      setTimeout(() => setAnnounceMessage(''), 2000);
-
-      if (onShoppingListChange) {
-        await onShoppingListChange();
-      }
-    } catch {
-      // Error handled by ShoppingContext
-    }
-  };
-
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
@@ -138,7 +105,7 @@ export const ProductCard = memo(function ProductCard({
       onMouseDown={startPress}
       onMouseUp={handlePressEnd}
       onMouseLeave={cancelPress}
-      aria-label={`${product.name}, ${statusText}. Tap to cycle stock level. Long press to edit.`}
+      aria-label={`${product.name}, ${statusText}. ${onCycleStockLevel ? 'Tap to cycle stock level. Long press to edit.' : 'Long press to edit.'}`}
     >
       {/* ARIA live region for screen readers */}
       <Box
@@ -188,9 +155,9 @@ export const ProductCard = memo(function ProductCard({
       )}
 
       {/* Card content */}
-      <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{ p: 2 }}>
         {/* Product name and stock status */}
-        <Box sx={{ flex: 1 }}>
+        <Box>
           <Typography
             variant="body1"
             component="h2"
@@ -212,23 +179,6 @@ export const ProductCard = memo(function ProductCard({
             {statusText}
           </Typography>
         </Box>
-
-        {/* Shopping list toggle button - only action button now */}
-        <IconButton
-          onClick={(e) => handleShoppingListToggle(e)}
-          aria-label={
-            product.isOnShoppingList
-              ? `Remove ${product.name} from shopping list`
-              : `Add ${product.name} to shopping list`
-          }
-          sx={{
-            minWidth: 44,
-            minHeight: 44,
-            color: product.isOnShoppingList ? 'warning.main' : 'action.active',
-          }}
-        >
-          {product.isOnShoppingList ? <RemoveShoppingCartIcon /> : <AddShoppingCartIcon />}
-        </IconButton>
       </Box>
 
       {/* Confirmation snackbar */}
