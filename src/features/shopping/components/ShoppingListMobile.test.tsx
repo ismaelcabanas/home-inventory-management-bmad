@@ -121,9 +121,10 @@ describe('ShoppingList - Mobile Layout (Story 4.3)', () => {
       expect(screen.getByText('Milk')).toBeInTheDocument();
       expect(screen.getByText('Bread')).toBeInTheDocument();
 
-      // Verify there's a List element with padding
-      const listElement = container.querySelector('.MuiList-root');
-      expect(listElement).toBeInTheDocument();
+      // Story 7.5: Changed from List to Box with 12px margins
+      // Verify the container box exists
+      const containerBox = container.querySelector('.MuiBox-root');
+      expect(containerBox).toBeInTheDocument();
     });
   });
 
