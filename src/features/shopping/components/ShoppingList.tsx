@@ -208,13 +208,11 @@ function ShoppingListContent() {
           <SpeedDialAction
             icon={<AddIcon />}
             tooltipTitle="Add Products"
-            tooltipOpen
             onClick={handleOpenAddDialog}
           />
           <SpeedDialAction
             icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
             tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
-            tooltipOpen
             onClick={handleModeToggle}
           />
         </SpeedDial>
