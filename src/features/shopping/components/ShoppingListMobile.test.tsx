@@ -5,7 +5,6 @@ import { render, screen } from '@testing-library/react';
 import { ShoppingList } from './ShoppingList';
 import { ShoppingProvider } from '../context/ShoppingContext';
 import * as ShoppingContext from '../context/ShoppingContext';
-import * as InventoryContext from '@/features/inventory/context/InventoryContext';
 import React from 'react';
 import type { Product } from '@/types/product';
 
