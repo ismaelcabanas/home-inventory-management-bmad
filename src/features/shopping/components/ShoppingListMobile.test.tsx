@@ -8,6 +8,13 @@ import * as ShoppingContext from '../context/ShoppingContext';
 import React from 'react';
 import type { Product } from '@/types/product';
 
+// Story 7.4: Mock InventoryContext
+vi.mock('@/features/inventory/context/InventoryContext', () => ({
+  useInventory: vi.fn(() => ({
+    state: { products: [], loading: false, error: null },
+  })),
+}));
+
 // Helper to generate many products for performance testing
 const generateProducts = (count: number): Product[] =>
   Array.from({ length: count }, (_, i) => ({
@@ -97,11 +104,11 @@ describe('ShoppingList - Mobile Layout (Story 4.3)', () => {
       expect(screen.getByText('Bread')).toBeInTheDocument();
     });
 
-    it('should render FAB button for Shopping Mode toggle', () => {
+    it('should render SpeedDial for Shopping List actions', () => {
       render(<ShoppingList />, { wrapper });
 
-      // Story 4.3 AC6: Shopping Mode FAB (from Story 4.4) must still work
-      expect(screen.getByRole('button', { name: /start shopping mode/i })).toBeInTheDocument();
+      // Story 4.3 AC6: SpeedDial (replaced dual FABs from Story 4.4 and 7.4) must work
+      expect(screen.getByRole('button', { name: /shopping list actions/i })).toBeInTheDocument();
     });
   });
 
