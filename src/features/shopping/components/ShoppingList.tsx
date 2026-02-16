@@ -17,7 +17,6 @@ function ShoppingListContent() {
   const { state: inventoryState } = useInventory();
   const { items, loading, error, isShoppingMode } = state;
   const { products: allProducts } = inventoryState;
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -41,15 +40,10 @@ function ShoppingListContent() {
 
   // Story 4.4: Handle Shopping Mode toggle
   const handleModeToggle = async () => {
-    setIsTransitioning(true);
-    try {
-      if (isShoppingMode) {
-        await endShoppingMode();
-      } else {
-        await startShoppingMode();
-      }
-    } finally {
-      setIsTransitioning(false);
+    if (isShoppingMode) {
+      await endShoppingMode();
+    } else {
+      await startShoppingMode();
     }
   };
 
@@ -103,7 +97,6 @@ function ShoppingListContent() {
               tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
               tooltipOpen
               onClick={handleModeToggle}
-              disabled={isTransitioning}
             />
           </SpeedDial>
         </Zoom>
@@ -143,7 +136,6 @@ function ShoppingListContent() {
               tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
               tooltipOpen
               onClick={handleModeToggle}
-              disabled={isTransitioning}
             />
           </SpeedDial>
         </Zoom>
@@ -184,7 +176,6 @@ function ShoppingListContent() {
               tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
               tooltipOpen
               onClick={handleModeToggle}
-              disabled={isTransitioning}
             />
           </SpeedDial>
         </Zoom>
@@ -231,7 +222,6 @@ function ShoppingListContent() {
             tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
             tooltipOpen
             onClick={handleModeToggle}
-            disabled={isTransitioning}
           />
         </SpeedDial>
       </Zoom>
