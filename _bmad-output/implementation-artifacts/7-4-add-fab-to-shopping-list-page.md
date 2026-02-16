@@ -1,6 +1,6 @@
 # Story 7.4: Add FAB to Shopping List Page for Manual Product Addition
 
-Status: review
+Status: done
 
 ## Story
 
