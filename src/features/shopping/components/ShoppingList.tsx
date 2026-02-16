@@ -1,8 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Box, Typography, CircularProgress, Alert, List, Fab, Zoom } from '@mui/material';
+import { Box, Typography, CircularProgress, Alert, List, SpeedDial, SpeedDialIcon, SpeedDialAction, Zoom } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CheckroomIcon from '@mui/icons-material/Checkroom';
 import AddIcon from '@mui/icons-material/Add';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useShoppingList } from '../context/ShoppingContext';
 import { ShoppingListItem } from './ShoppingListItem';
 import { ShoppingProgress } from './ShoppingProgress';
@@ -69,17 +70,8 @@ function ShoppingListContent() {
     await loadShoppingList();
   };
 
-  // Story 7.4: FAB position - above BottomNav (which is typically 56-80px)
-  // Add products FAB on the left, Shopping Mode FAB on the right
-  const addFabStyle = {
-    position: 'fixed' as const,
-    bottom: 80, // Above BottomNav
-    left: 16,
-    zIndex: 1000,
-  };
-
-  // Story 4.4: Shopping Mode FAB on the right
-  const modeFabStyle = {
+  // SpeedDial position - above BottomNav (which is typically 56-80px)
+  const speedDialStyle = {
     position: 'fixed' as const,
     bottom: 80, // Above BottomNav
     right: 16,
@@ -93,28 +85,27 @@ function ShoppingListContent() {
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
           <CircularProgress />
         </Box>
-        {/* Story 7.4: Add products FAB (left) */}
+        {/* SpeedDial for Shopping List Actions */}
         <Zoom in>
-          <Fab
-            color="success"
-            onClick={handleOpenAddDialog}
-            aria-label="Add products to shopping list"
-            sx={addFabStyle}
+          <SpeedDial
+            ariaLabel="Shopping list actions"
+            sx={speedDialStyle}
+            icon={<SpeedDialIcon icon={<MoreVertIcon />} />}
           >
-            <AddIcon />
-          </Fab>
-        </Zoom>
-        {/* Story 4.4: Shopping Mode FAB (right) */}
-        <Zoom in>
-          <Fab
-            color={isShoppingMode ? 'secondary' : 'primary'}
-            onClick={handleModeToggle}
-            disabled={isTransitioning}
-            aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
-            sx={modeFabStyle}
-          >
-            {isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-          </Fab>
+            <SpeedDialAction
+              icon={<AddIcon />}
+              tooltipTitle="Add Products"
+              tooltipOpen
+              onClick={handleOpenAddDialog}
+            />
+            <SpeedDialAction
+              icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
+              tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
+              tooltipOpen
+              onClick={handleModeToggle}
+              disabled={isTransitioning}
+            />
+          </SpeedDial>
         </Zoom>
         {/* Story 7.4: Add Products Dialog */}
         <AddProductsDialog
@@ -134,28 +125,27 @@ function ShoppingListContent() {
         <Alert severity="error" onClose={clearError}>
           {error}
         </Alert>
-        {/* Story 7.4: Add products FAB (left) */}
+        {/* SpeedDial for Shopping List Actions */}
         <Zoom in>
-          <Fab
-            color="success"
-            onClick={handleOpenAddDialog}
-            aria-label="Add products to shopping list"
-            sx={addFabStyle}
+          <SpeedDial
+            ariaLabel="Shopping list actions"
+            sx={speedDialStyle}
+            icon={<SpeedDialIcon icon={<MoreVertIcon />} />}
           >
-            <AddIcon />
-          </Fab>
-        </Zoom>
-        {/* Story 4.4: Shopping Mode FAB (right) */}
-        <Zoom in>
-          <Fab
-            color={isShoppingMode ? 'secondary' : 'primary'}
-            onClick={handleModeToggle}
-            disabled={isTransitioning}
-            aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
-            sx={modeFabStyle}
-          >
-            {isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-          </Fab>
+            <SpeedDialAction
+              icon={<AddIcon />}
+              tooltipTitle="Add Products"
+              tooltipOpen
+              onClick={handleOpenAddDialog}
+            />
+            <SpeedDialAction
+              icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
+              tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
+              tooltipOpen
+              onClick={handleModeToggle}
+              disabled={isTransitioning}
+            />
+          </SpeedDial>
         </Zoom>
         {/* Story 7.4: Add Products Dialog */}
         <AddProductsDialog
@@ -176,28 +166,27 @@ function ShoppingListContent() {
           title="Your shopping list is empty"
           message="Mark items as Low or Empty in inventory to auto-add them here"
         />
-        {/* Story 7.4: Add products FAB (left) */}
+        {/* SpeedDial for Shopping List Actions */}
         <Zoom in>
-          <Fab
-            color="success"
-            onClick={handleOpenAddDialog}
-            aria-label="Add products to shopping list"
-            sx={addFabStyle}
+          <SpeedDial
+            ariaLabel="Shopping list actions"
+            sx={speedDialStyle}
+            icon={<SpeedDialIcon icon={<MoreVertIcon />} />}
           >
-            <AddIcon />
-          </Fab>
-        </Zoom>
-        {/* Story 4.4: Shopping Mode FAB (right) */}
-        <Zoom in>
-          <Fab
-            color={isShoppingMode ? 'secondary' : 'primary'}
-            onClick={handleModeToggle}
-            disabled={isTransitioning}
-            aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
-            sx={modeFabStyle}
-          >
-            {isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-          </Fab>
+            <SpeedDialAction
+              icon={<AddIcon />}
+              tooltipTitle="Add Products"
+              tooltipOpen
+              onClick={handleOpenAddDialog}
+            />
+            <SpeedDialAction
+              icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
+              tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
+              tooltipOpen
+              onClick={handleModeToggle}
+              disabled={isTransitioning}
+            />
+          </SpeedDial>
         </Zoom>
         {/* Story 7.4: Add Products Dialog */}
         <AddProductsDialog
@@ -224,28 +213,27 @@ function ShoppingListContent() {
           <ShoppingListItem key={item.id} product={item} isShoppingMode={isShoppingMode} />
         ))}
       </List>
-      {/* Story 7.4: Add products FAB (left) */}
+      {/* SpeedDial for Shopping List Actions */}
       <Zoom in>
-        <Fab
-          color="success"
-          onClick={handleOpenAddDialog}
-          aria-label="Add products to shopping list"
-          sx={addFabStyle}
+        <SpeedDial
+          ariaLabel="Shopping list actions"
+          sx={speedDialStyle}
+          icon={<SpeedDialIcon icon={<MoreVertIcon />} />}
         >
-          <AddIcon />
-        </Fab>
-      </Zoom>
-      {/* Story 4.4: Shopping Mode FAB (right) */}
-      <Zoom in>
-        <Fab
-          color={isShoppingMode ? 'secondary' : 'primary'}
-          onClick={handleModeToggle}
-          disabled={isTransitioning}
-          aria-label={isShoppingMode ? 'End shopping mode' : 'Start shopping mode'}
-          sx={modeFabStyle}
-        >
-          {isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-        </Fab>
+          <SpeedDialAction
+            icon={<AddIcon />}
+            tooltipTitle="Add Products"
+            tooltipOpen
+            onClick={handleOpenAddDialog}
+          />
+          <SpeedDialAction
+            icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
+            tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
+            tooltipOpen
+            onClick={handleModeToggle}
+            disabled={isTransitioning}
+          />
+        </SpeedDial>
       </Zoom>
       {/* Story 7.4: Add Products Dialog */}
       <AddProductsDialog
