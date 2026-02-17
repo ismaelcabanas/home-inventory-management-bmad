@@ -1,6 +1,6 @@
 # Story 7.5: Redesign Shopping List Page Layout
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
