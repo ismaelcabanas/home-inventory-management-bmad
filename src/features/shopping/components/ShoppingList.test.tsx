@@ -297,8 +297,10 @@ describe('ShoppingList', () => {
 
       render(<ShoppingList />, { wrapper });
 
-      // Shopping cart icon should be present for the toggle action
-      expect(screen.getByTestId('ShoppingCartIcon')).toBeInTheDocument();
+      // Story 7.5: Shopping cart icon should be present in header
+      // And also for the toggle action in SpeedDial
+      const icons = screen.getAllByTestId('ShoppingCartIcon');
+      expect(icons.length).toBeGreaterThan(0);
       expect(screen.queryByTestId('CheckroomIcon')).not.toBeInTheDocument();
     });
 

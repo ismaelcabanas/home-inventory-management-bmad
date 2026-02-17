@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Box, Typography, CircularProgress, Alert, List, SpeedDial, SpeedDialIcon, SpeedDialAction, Zoom } from '@mui/material';
+import { Box, Typography, CircularProgress, Alert, SpeedDial, SpeedDialIcon, SpeedDialAction, Zoom } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CheckroomIcon from '@mui/icons-material/Checkroom';
 import AddIcon from '@mui/icons-material/Add';
@@ -75,7 +75,18 @@ function ShoppingListContent() {
   if (loading) {
     return (
       <Box>
-        <Typography variant="h6">Shopping List</Typography>
+        {/* Story 7.5: Centered header with icon */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            py: 2,
+          }}
+        >
+          <ShoppingCartIcon sx={{ mr: 1 }} />
+          <Typography variant="h6">Shopping List</Typography>
+        </Box>
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
           <CircularProgress />
         </Box>
@@ -112,7 +123,18 @@ function ShoppingListContent() {
   if (error) {
     return (
       <Box>
-        <Typography variant="h6">Shopping List</Typography>
+        {/* Story 7.5: Centered header with icon */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            py: 2,
+          }}
+        >
+          <ShoppingCartIcon sx={{ mr: 1 }} />
+          <Typography variant="h6">Shopping List</Typography>
+        </Box>
         <Alert severity="error" onClose={clearError}>
           {error}
         </Alert>
@@ -149,7 +171,18 @@ function ShoppingListContent() {
   if (items.length === 0) {
     return (
       <Box>
-        <Typography variant="h6">Shopping List</Typography>
+        {/* Story 7.5: Centered header with icon */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            py: 2,
+          }}
+        >
+          <ShoppingCartIcon sx={{ mr: 1 }} />
+          <Typography variant="h6">Shopping List</Typography>
+        </Box>
         <EmptyState
           title="Your shopping list is empty"
           message="Mark items as Low or Empty in inventory to auto-add them here"
@@ -187,45 +220,54 @@ function ShoppingListContent() {
   return (
     <Box pb={8} // Story 4.3: Extra padding to prevent FAB from covering last items
   >
-      <Typography variant="h6" gutterBottom>
-        Shopping List ({items.length})
-      </Typography>
-      {/* Story 4.2: Shopping Progress Indicator */}
-      <ShoppingProgress checkedCount={progress.checkedCount} totalCount={progress.totalCount} />
-      {/* Story 4.3: BottomNav clearance padding (80px = 10 MUI spacing units) */}
-      <List sx={{ paddingBottom: 10 }}>
-        {items.map((item) => (
-          <ShoppingListItem key={item.id} product={item} isShoppingMode={isShoppingMode} />
-        ))}
-      </List>
-      {/* SpeedDial for Shopping List Actions */}
-      <Zoom in>
-        <SpeedDial
-          ariaLabel="Shopping list actions"
-          sx={speedDialStyle}
-          icon={<SpeedDialIcon icon={<MoreVertIcon />} />}
-        >
-          <SpeedDialAction
-            icon={<AddIcon />}
-            tooltipTitle="Add Products"
-            onClick={handleOpenAddDialog}
-          />
-          <SpeedDialAction
-            icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-            tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
-            onClick={handleModeToggle}
-          />
-        </SpeedDial>
-      </Zoom>
-      {/* Story 7.4: Add Products Dialog */}
-      <AddProductsDialog
-        open={addDialogOpen}
-        onClose={handleCloseAddDialog}
-        availableProducts={availableProducts}
-        onAddProduct={handleAddProduct}
-      />
+    {/* Story 7.5: Centered header with icon */}
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        py: 2,
+      }}
+    >
+      <ShoppingCartIcon sx={{ mr: 1 }} />
+      <Typography variant="h6">Shopping List</Typography>
     </Box>
-  );
+    {/* Story 4.2: Shopping Progress Indicator */}
+    <ShoppingProgress checkedCount={progress.checkedCount} totalCount={progress.totalCount} />
+    {/* Story 7.5: Shopping list items with 12px margins */}
+    <Box sx={{ px: 1.5 }}>
+      {items.map((item) => (
+        <ShoppingListItem key={item.id} product={item} isShoppingMode={isShoppingMode} />
+      ))}
+    </Box>
+    {/* SpeedDial for Shopping List Actions */}
+    <Zoom in>
+      <SpeedDial
+        ariaLabel="Shopping list actions"
+        sx={speedDialStyle}
+        icon={<SpeedDialIcon icon={<MoreVertIcon />} />}
+      >
+        <SpeedDialAction
+          icon={<AddIcon />}
+          tooltipTitle="Add Products"
+          onClick={handleOpenAddDialog}
+        />
+        <SpeedDialAction
+          icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
+          tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
+          onClick={handleModeToggle}
+        />
+      </SpeedDial>
+    </Zoom>
+    {/* Story 7.4: Add Products Dialog */}
+    <AddProductsDialog
+      open={addDialogOpen}
+      onClose={handleCloseAddDialog}
+      availableProducts={availableProducts}
+      onAddProduct={handleAddProduct}
+    />
+  </Box>
+);
 }
 
 export function ShoppingList() {

@@ -1247,3 +1247,69 @@ So that I can quickly view and update stock levels without visual clutter.
 - **Search/FAB Row:** New component or section positioned above nav with `position: sticky; bottom: 56px`
 
 ---
+
+### Story 7.5: Redesign Shopping List Page Layout
+
+As a **user**,
+I want a cleaner, more efficient shopping list page that matches the inventory page design,
+So that I have a consistent visual experience across the app and can easily manage my shopping list.
+
+**Acceptance Criteria:**
+
+**Given** I open the application to the shopping list page
+**When** I view the page layout
+**Then** I see a centered header with title and icon (🛒 Shopping List)
+**And** Shopping list items use full screen width with minimal padding (12px edge margins)
+**And** Each shopping list item shows:
+- Product name (line 1, prominent)
+- Stock status text (line 2, smaller)
+- Color-coded background indicating stock level (matching inventory gradients)
+- Checkbox for checking off items while shopping
+- 3-dot action menu (⋮) for Remove from list
+
+**Given** I view a shopping list item
+**When** I look at the card background
+**Then** The card shows a gradient background matching the inventory page design:
+- High stock: `linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)` with `border-left: 4px solid #4caf50`
+- Medium stock: `linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%)` with `border-left: 4px solid #ff9800`
+- Low stock: `linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)` with `border-left: 4px solid #ff5722`
+- Empty stock: `linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)` with `border-left: 4px solid #f44336`
+**And** Colors provide sufficient contrast for text readability (NFR8)
+
+**Given** I am checking off items while shopping
+**When** I tap the checkbox on a shopping list item
+**Then** The item is marked as checked
+**And** A visual strikethrough or dimming effect appears on the product name
+**And** The checkbox shows a checked state
+**And** The progress indicator updates to reflect the change
+
+**Given** I am in Shopping Mode
+**When** I view the shopping list
+**Then** I see all items with their checkboxes
+**And** Tapping a checkbox toggles the checked state
+**And** The progress indicator shows completion percentage
+
+**Given** I want to access shopping list actions
+**When** I look at the bottom of the content area
+**Then** I see the existing SpeedDial with actions (Add Products, Shopping Mode toggle)
+**And** The SpeedDial is positioned in the bottom-right corner
+**And** The SpeedDial does not overlap the bottom navigation
+
+**Given** I want to remove an item from the shopping list
+**When** I tap the 3-dot menu (⋮) on an item
+**Then** A menu appears with "Remove from list" option
+**And** Tapping "Remove from list" removes the item
+**And** The item disappears from the list
+**And** The change persists to the database
+
+**Technical Implementation Notes:**
+- **Card Component:** Update or create `ShoppingListItem.tsx` to use full-width cards with gradient backgrounds
+- **Stock Level Gradients:** Reuse gradient styles from `src/utils/stockLevels.ts`
+- **Layout:** Apply 12px edge margins matching inventory page
+- **Header:** Center the "Shopping List" title with shopping cart icon
+- **Checkbox:** Maintain existing checkbox functionality with improved visual design
+- **Progress Indicator:** Keep existing `ShoppingProgress` component
+- **SpeedDial:** Keep existing SpeedDial actions (Add Products, Shopping Mode)
+- **3-dot Menu:** Add action menu for removing items from list
+
+---
