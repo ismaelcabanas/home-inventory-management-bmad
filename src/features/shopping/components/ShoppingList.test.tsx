@@ -5,6 +5,7 @@ import { ShoppingProvider } from '../context/ShoppingContext';
 import * as ShoppingContext from '../context/ShoppingContext';
 import React from 'react';
 import type { Product } from '@/types/product';
+import { eventBus, EVENTS } from '@/utils/eventBus';
 
 // Mock dependencies
 vi.mock('@/services/shopping', () => ({
@@ -480,6 +481,87 @@ describe('ShoppingList', () => {
       const progress = screen.getByTestId('shopping-progress');
       expect(progress).toHaveAttribute('data-checked', '2');
       expect(progress).toHaveAttribute('data-total', '2');
+    });
+  });
+
+  // Story 8.1: Event-Driven Synchronization Tests
+  describe('Event-Driven Synchronization (Story 8.1)', () => {
+    beforeEach(() => {
+      // Clear all event listeners before each test
+      eventBus._clearForTesting();
+    });
+
+    it('should call loadShoppingList on mount', () => {
+      render(<ShoppingList />, { wrapper });
+
+      // Initial load should happen once on mount
+      expect(mockLoadShoppingList).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call loadShoppingList when inventory product updated event is emitted', () => {
+      render(<ShoppingList />, { wrapper });
+
+      // Clear the initial mount call
+      vi.clearAllMocks();
+
+      // Emit the event
+      eventBus.emit(EVENTS.INVENTORY_PRODUCT_UPDATED, { id: '123', updates: { stockLevel: 'low' } });
+
+      // loadShoppingList should be called in response to event
+      expect(mockLoadShoppingList).toHaveBeenCalledTimes(1);
+    });
+
+    it('should set up event listener on mount and clean up on unmount', () => {
+      const { unmount } = render(<ShoppingList />, { wrapper });
+
+      // Clear initial call
+      vi.clearAllMocks();
+
+      // Emit event - should trigger loadShoppingList
+      eventBus.emit(EVENTS.INVENTORY_PRODUCT_UPDATED, { id: '123', updates: { stockLevel: 'low' } });
+      expect(mockLoadShoppingList).toHaveBeenCalledTimes(1);
+
+      // Clear for next test
+      vi.clearAllMocks();
+
+      // Unmount component
+      unmount();
+
+      // Emit event after unmount - should NOT trigger loadShoppingList
+      eventBus.emit(EVENTS.INVENTORY_PRODUCT_UPDATED, { id: '456', updates: { stockLevel: 'high' } });
+      expect(mockLoadShoppingList).not.toHaveBeenCalled();
+    });
+
+    it('should handle multiple rapid events correctly', () => {
+      render(<ShoppingList />, { wrapper });
+
+      // Clear initial mount call
+      vi.clearAllMocks();
+
+      // Emit multiple rapid events
+      eventBus.emit(EVENTS.INVENTORY_PRODUCT_UPDATED, { id: '1', updates: { stockLevel: 'low' } });
+      eventBus.emit(EVENTS.INVENTORY_PRODUCT_UPDATED, { id: '2', updates: { stockLevel: 'empty' } });
+      eventBus.emit(EVENTS.INVENTORY_PRODUCT_UPDATED, { id: '3', updates: { stockLevel: 'high' } });
+
+      // All events should trigger loadShoppingList calls
+      expect(mockLoadShoppingList).toHaveBeenCalledTimes(3);
+    });
+
+    it('should not have any polling intervals set up', () => {
+      vi.useFakeTimers();
+
+      render(<ShoppingList />, { wrapper });
+
+      // Clear initial mount call
+      vi.clearAllMocks();
+
+      // Advance time by 10 seconds (would trigger polling twice if it existed)
+      vi.advanceTimersByTime(10000);
+
+      // No additional loadShoppingList calls should have been made
+      expect(mockLoadShoppingList).not.toHaveBeenCalled();
+
+      vi.useRealTimers();
     });
   });
 });

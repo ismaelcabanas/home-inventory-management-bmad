@@ -7,6 +7,7 @@ import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
 import type { Product } from '@/types/product';
 import { getNextStockLevel } from '@/utils/stockLevels';
+import { eventBus, EVENTS } from '@/utils/eventBus';
 
 // State interface
 // TODO (Tech Debt #5): Consider adding readonly modifiers for extra type safety
@@ -171,6 +172,10 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
 
       await inventoryService.updateProduct(id, updates);
       dispatch({ type: 'UPDATE_PRODUCT', payload: { id, updates } });
+
+      // Emit event for cross-context synchronization (replaces polling)
+      // Story 8.1: Event-Driven Synchronization
+      eventBus.emit(EVENTS.INVENTORY_PRODUCT_UPDATED, { id, updates });
 
       logger.info('Product updated successfully', { id });
     } catch (error) {

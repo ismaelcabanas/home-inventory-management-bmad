@@ -4,9 +4,10 @@ inputDocuments:
   - "_bmad-output/planning-artifacts/prd.md"
   - "_bmad-output/planning-artifacts/architecture.md"
   - "_bmad-output/planning-artifacts/ux-design-specification.md"
-totalEpics: 7
-totalStories: 30
+totalEpics: 8
+totalStories: 31
 requirementsCoverage: "43/43 FRs (100%)"
+note: Epic 8 added for technical debt and performance improvements (non-functional requirements)
 ---
 
 # home-inventory-management-bmad - Epic Breakdown
@@ -1311,5 +1312,70 @@ So that I have a consistent visual experience across the app and can easily mana
 - **Progress Indicator:** Keep existing `ShoppingProgress` component
 - **SpeedDial:** Keep existing SpeedDial actions (Add Products, Shopping Mode)
 - **3-dot Menu:** Add action menu for removing items from list
+
+---
+
+## Epic 8: Technical Debt & Performance Improvements
+
+**Goal:** Improve application performance, maintainability, and code quality by addressing accumulated technical debt from previous development cycles.
+
+**User Outcome:** Users experience faster performance, better battery life on mobile devices, and more reliable behavior. Developers benefit from cleaner code that's easier to maintain and extend.
+
+**FRs Covered:** N/A (Technical debt cleanup, no new functional requirements)
+
+**Key Features:**
+- Event-driven synchronization between contexts (replaces polling)
+- Bundle size optimization through code splitting
+- Improved test coverage and reliability
+- Reduced battery drain on mobile devices
+
+**Why This Epic:** Technical debt accumulates naturally during feature development. Proactively addressing high-impact items improves performance and prevents compounding problems in future epics.
+
+---
+
+### Story 8.1: Event-Driven Synchronization to Replace Polling
+
+As a **system architect/developer**,
+I want **to replace the polling mechanism between Inventory and Shopping contexts with event-driven synchronization**,
+so that **the application eliminates unnecessary database queries, reduces battery drain on mobile devices, and provides instant UI updates when stock levels change**.
+
+**Acceptance Criteria:**
+
+**Given** the ShoppingList component is mounted
+**When** a product's stock level changes in InventoryContext
+**Then** the ShoppingList updates within <1 second (no 5-second lag)
+
+**Given** the application is idle on a mobile device
+**When** no stock level changes occur
+**Then** zero database queries are made (no polling)
+
+**Given** a user changes stock level from High to Low in Inventory
+**When** the change is persisted
+**Then** the ShoppingList immediately adds the product
+
+**Given** a user changes stock level from Low to High in Inventory
+**When** the change is persisted
+**Then** the ShoppingList immediately removes the product
+
+**Given** the application is running
+**When** I inspect the network/database activity
+**Then** no polling intervals are found
+
+**Given** multiple rapid stock level changes occur
+**When** events are emitted
+**Then** all events are handled correctly without race conditions
+
+**Given** the ShoppingList component unmounts
+**When** cleanup occurs
+**Then** event listeners are properly removed (no memory leaks)
+
+**Technical Implementation Notes:**
+- **Event Bus Utility:** Create `src/utils/eventBus.ts` with EventEmitter class (on/off/emit methods)
+- **InventoryContext:** Import and emit `inventory:product:updated` event after successful updateProduct
+- **ShoppingList:** Replace `setInterval` polling with event listener using useEffect
+- **Cleanup:** Remove event listeners in useEffect cleanup function
+- **Tests:** Add unit tests for EventBus, integration tests for context communication
+
+**Tech Debt Reference:** Resolves Issue #10 in `docs/technical-debt.md`
 
 ---

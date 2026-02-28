@@ -11,6 +11,7 @@ import { AddProductsDialog } from './AddProductsDialog';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { FeatureErrorBoundary } from '@/components/shared/ErrorBoundary/FeatureErrorBoundary';
 import { useInventory } from '@/features/inventory/context/InventoryContext';
+import { eventBus, EVENTS } from '@/utils/eventBus';
 
 function ShoppingListContent() {
   const { state, loadShoppingList, clearError, startShoppingMode, endShoppingMode, progress, addToList } = useShoppingList();
@@ -20,16 +21,17 @@ function ShoppingListContent() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   useEffect(() => {
+    // Initial load
     loadShoppingList();
 
-    // Refresh every 5 seconds to catch stock level changes from InventoryContext
-    // TODO (Tech Debt #10): Replace polling with event-driven synchronization
-    // See: docs/technical-debt.md - Issue #10
-    const interval = setInterval(() => {
-      loadShoppingList();
-    }, 5000);
+    // Story 8.1: Event-driven synchronization (replaces polling)
+    // Listen for product updates from InventoryContext
+    eventBus.on(EVENTS.INVENTORY_PRODUCT_UPDATED, loadShoppingList);
 
-    return () => clearInterval(interval);
+    // Cleanup: remove event listener on unmount
+    return () => {
+      eventBus.off(EVENTS.INVENTORY_PRODUCT_UPDATED, loadShoppingList);
+    };
   }, [loadShoppingList]);
 
   // Story 7.4: Compute products NOT on shopping list

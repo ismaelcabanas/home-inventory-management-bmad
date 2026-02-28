@@ -3,6 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { InventoryProvider, useInventory } from './InventoryContext';
 import { inventoryService } from '@/services/inventory';
 import type { Product } from '@/types/product';
+import { eventBus, EVENTS } from '@/utils/eventBus';
 
 // Mock the inventory service
 vi.mock('@/services/inventory', () => ({
@@ -448,6 +449,98 @@ describe('InventoryContext', () => {
       await waitFor(() => {
         expect(result.current.state.products).toEqual(mockProducts);
         expect(result.current.state.error).toBeNull();
+      });
+    });
+  });
+
+  // Story 8.1: Event-Driven Synchronization Tests
+  describe('event emission', () => {
+    beforeEach(() => {
+      // Clear all event listeners before each test
+      eventBus._clearForTesting();
+    });
+
+    it('should emit event after successful updateProduct', async () => {
+      vi.mocked(inventoryService.updateProduct).mockResolvedValue();
+      const eventCallback = vi.fn();
+
+      // Listen for the event
+      eventBus.on(EVENTS.INVENTORY_PRODUCT_UPDATED, eventCallback);
+
+      const { result } = renderHook(() => useInventory(), {
+        wrapper: InventoryProvider,
+      });
+
+      await act(async () => {
+        await result.current.updateProduct('1', { stockLevel: 'low' });
+      });
+
+      // Verify event was emitted with correct payload
+      expect(eventCallback).toHaveBeenCalledTimes(1);
+      expect(eventCallback).toHaveBeenCalledWith({
+        id: '1',
+        updates: { stockLevel: 'low' },
+      });
+    });
+
+    it('should not emit event when updateProduct fails', async () => {
+      vi.mocked(inventoryService.updateProduct).mockRejectedValue(
+        new Error('Update failed')
+      );
+      const eventCallback = vi.fn();
+
+      // Listen for the event
+      eventBus.on(EVENTS.INVENTORY_PRODUCT_UPDATED, eventCallback);
+
+      const { result } = renderHook(() => useInventory(), {
+        wrapper: InventoryProvider,
+      });
+
+      let caughtError: unknown = null;
+
+      await act(async () => {
+        try {
+          await result.current.updateProduct('1', { stockLevel: 'low' });
+        } catch (error) {
+          caughtError = error;
+        }
+      });
+
+      // Verify event was NOT emitted on failure
+      expect(eventCallback).not.toHaveBeenCalled();
+      expect(caughtError).toBeInstanceOf(Error);
+    });
+
+    it('should emit event for multiple rapid updates', async () => {
+      vi.mocked(inventoryService.updateProduct).mockResolvedValue();
+      const eventCallback = vi.fn();
+
+      // Listen for the event
+      eventBus.on(EVENTS.INVENTORY_PRODUCT_UPDATED, eventCallback);
+
+      const { result } = renderHook(() => useInventory(), {
+        wrapper: InventoryProvider,
+      });
+
+      await act(async () => {
+        await result.current.updateProduct('1', { stockLevel: 'medium' });
+        await result.current.updateProduct('1', { stockLevel: 'low' });
+        await result.current.updateProduct('1', { stockLevel: 'empty' });
+      });
+
+      // Verify all events were emitted
+      expect(eventCallback).toHaveBeenCalledTimes(3);
+      expect(eventCallback).toHaveBeenNthCalledWith(1, {
+        id: '1',
+        updates: { stockLevel: 'medium' },
+      });
+      expect(eventCallback).toHaveBeenNthCalledWith(2, {
+        id: '1',
+        updates: { stockLevel: 'low' },
+      });
+      expect(eventCallback).toHaveBeenNthCalledWith(3, {
+        id: '1',
+        updates: { stockLevel: 'empty' },
       });
     });
   });
