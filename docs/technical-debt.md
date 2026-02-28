@@ -451,9 +451,9 @@ Given the growing trend, consider addressing when:
 | #7: Bundle size optimization | Low→Medium | 4-6 hours | Performance | 1.10, 3.1 | Monitoring |
 | #8: Stock level UI space | High | 2-4 hours | Mobile UX | 2.2 | Open |
 | #9: Timing test anti-pattern | Medium | 2-9 hours | Test Reliability | 2.2 | Open |
-| **#10: Event-driven sync** | **Medium** | **3-4 hours** | **Performance/Architecture** | **3.1** | **Open** |
+| **#10: Event-driven sync** | **Medium** | **3-4 hours** | **Performance/Architecture** | **3.1** | **✅ Resolved** |
 
-**Total Estimated Effort:** 16-34 hours depending on approach
+**Total Estimated Effort:** 13-31 hours (Issue #10 completed)
 
 ## Prioritization Guidance (Updated)
 
@@ -848,9 +848,18 @@ Timing assertions in unit tests create more problems than they solve. If AC requ
 **Category:** Architecture / Performance
 **Location:** `src/features/shopping/components/ShoppingList.tsx:15-18`
 **Story:** 3.1
+**Status:** ✅ RESOLVED (Story 8.1 - 2026-02-28)
 
 **Description:**
 ShoppingList currently uses polling (5-second interval) to detect stock level changes from InventoryContext. This is a temporary solution that works but creates unnecessary database queries and battery drain on mobile devices.
+
+**Resolution:**
+Implemented event-driven synchronization using EventBus pattern:
+- Created `src/utils/eventBus.ts` with EventEmitter class
+- InventoryContext emits `inventory:product:updated` event after product updates
+- ShoppingList listens for events and refreshes automatically
+- Zero unnecessary queries, instant UI updates, proper cleanup on unmount
+- All tests passing (59 tests for modified components)
 
 **Current Implementation:**
 ```tsx
