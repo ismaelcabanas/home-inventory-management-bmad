@@ -457,7 +457,7 @@ describe('InventoryContext', () => {
   describe('event emission', () => {
     beforeEach(() => {
       // Clear all event listeners before each test
-      (eventBus as any).events.clear();
+      eventBus._clearForTesting();
     });
 
     it('should emit event after successful updateProduct', async () => {

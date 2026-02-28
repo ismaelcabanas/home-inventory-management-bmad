@@ -488,7 +488,7 @@ describe('ShoppingList', () => {
   describe('Event-Driven Synchronization (Story 8.1)', () => {
     beforeEach(() => {
       // Clear all event listeners before each test
-      (eventBus as any).events.clear();
+      eventBus._clearForTesting();
     });
 
     it('should call loadShoppingList on mount', () => {

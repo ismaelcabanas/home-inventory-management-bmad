@@ -55,6 +55,14 @@ class EventBus {
   emit(event: string, data?: unknown): void {
     this.events.get(event)?.forEach(callback => callback(data));
   }
+
+  /**
+   * Clear all event listeners (testing utility)
+   * NOTE: This is a test-only method and should NOT be used in production code
+   */
+  _clearForTesting(): void {
+    this.events.clear();
+  }
 }
 
 // Singleton instance for app-wide event bus

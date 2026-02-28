@@ -4,7 +4,7 @@ import { eventBus, EVENTS } from './eventBus';
 describe('EventBus', () => {
   beforeEach(() => {
     // Clear all event listeners before each test
-    (eventBus as any).events.clear();
+    eventBus._clearForTesting();
   });
 
   describe('on()', () => {
@@ -128,10 +128,10 @@ describe('EventBus', () => {
       eventBus.on('test-event', callback);
       eventBus.off('test-event', callback);
 
-      // Verify the internal Set is empty for this event
-      const hasListeners = (eventBus as any).events.has('test-event');
+      // Verify the callback is no longer called after cleanup
+      eventBus.emit('test-event');
 
-      expect(hasListeners).toBe(false);
+      expect(callback).not.toHaveBeenCalled();
     });
 
     it('should only remove the specific callback, not others', () => {
@@ -146,11 +146,6 @@ describe('EventBus', () => {
 
       expect(callback1).not.toHaveBeenCalled();
       expect(callback2).toHaveBeenCalledTimes(1);
-
-      // Verify the internal Set still has one listener
-      const listenerCount = (eventBus as any).events.get('test-event')?.size;
-
-      expect(listenerCount).toBe(1);
     });
   });
 });
