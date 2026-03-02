@@ -1,4 +1,4 @@
-# generated: 2026-01-13
+# generated: 2026-03-02
 # project: home-inventory-management-bmad
 # project_key: home-inventory-management-bmad
 # tracking_system: file-system
@@ -33,7 +33,7 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-01-13
+generated: 2026-03-02
 project: home-inventory-management-bmad
 project_key: home-inventory-management-bmad
 tracking_system: file-system
@@ -94,3 +94,10 @@ development_status:
   epic-8: in-progress
   8-1-event-driven-synchronization: done
   epic-8-retrospective: optional
+
+  epic-9: backlog
+  9-1-enhanced-shopping-mode-entry-and-visual-states: backlog
+  9-2-user-initiated-shopping-completion: backlog
+  9-3-post-shopping-receipt-scan-prompt: backlog
+  9-4-add-receipt-scan-to-shopping-list-speeddial: backlog
+  epic-9-retrospective: optional

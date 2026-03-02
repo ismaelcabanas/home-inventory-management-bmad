@@ -4,10 +4,10 @@ inputDocuments:
   - "_bmad-output/planning-artifacts/prd.md"
   - "_bmad-output/planning-artifacts/architecture.md"
   - "_bmad-output/planning-artifacts/ux-design-specification.md"
-totalEpics: 8
-totalStories: 31
+totalEpics: 9
+totalStories: 35
 requirementsCoverage: "43/43 FRs (100%)"
-note: Epic 8 added for technical debt and performance improvements (non-functional requirements)
+note: Epic 8 added for technical debt and performance improvements (non-functional requirements); Epic 9 added for shopping lifecycle and post-shopping experience (UX enhancement)
 ---
 
 # home-inventory-management-bmad - Epic Breakdown
@@ -1377,5 +1377,157 @@ so that **the application eliminates unnecessary database queries, reduces batte
 - **Tests:** Add unit tests for EventBus, integration tests for context communication
 
 **Tech Debt Reference:** Resolves Issue #10 in `docs/technical-debt.md`
+
+---
+
+## Epic 9: Shopping Lifecycle & Post-Shopping Experience
+
+**Goal:** Create a guided shopping lifecycle that helps users transition from pre-shopping → in-store → post-shopping (receipt scanning) with clear states and actions at each phase.
+
+**User Outcome:** Users have a clear, intentional shopping journey with friction-free transitions from list preparation → in-store checking off → receipt scanning for inventory update.
+
+**FRs Covered:** N/A (UX enhancement) - Improves: FR17 (access shopping list in-store), FR18 (mark items collected), FR43 (success confirmation after receipt processing)
+
+**Key Features:**
+- Explicit shopping mode states (Not Started → In Progress → Completed)
+- User-initiated shopping completion (not automatic)
+- Guided transition to receipt scanning after shopping
+- Graceful handling of partial shopping (not all items found)
+- Receipt scan access from Shopping List SpeedDial
+
+**Why This Epic:** Completes the user journey by providing clear transition points. Currently, users can check off items while shopping but have no clear path to receipt scanning. This epic creates a complete shopping lifecycle: prepare → shop → scan receipt → update inventory.
+
+**User-Reported Problem:** User identified that after shopping, there's no clear way to access receipt scanning from the Shopping List page. The scan action is only available via manual URL navigation, creating a disconnect in the user journey.
+
+---
+
+### Story 9.1: Enhanced Shopping Mode Entry & Visual States
+
+As a **user**,
+I want a clear "Start Shopping" action that transforms the shopping list into a focused shopping mode,
+So that I know when I'm in "shopping mode" vs. just viewing my list.
+
+**Acceptance Criteria:**
+
+**Given** I have items on my shopping list
+**When** I view the shopping list page
+**Then** I see a prominent "Start Shopping" button (not hidden in SpeedDial)
+**And** The button is disabled if the list is empty
+**And** The button text shows how many items: "Start Shopping (12 items)"
+
+**Given** I tap "Start Shopping"
+**When** Shopping mode activates
+**Then** The page header changes from "🛒 Shopping List" to "🛒 Shopping Mode"
+**And** A visual state change occurs (background color or accent)
+**And** The "Start Shopping" button becomes "End Shopping"
+**And** A clear exit button (✕) appears in the header
+**And** The progress indicator becomes more prominent
+**And** Touch targets increase in size (optimized for one-handed use)
+
+**Given** I am in shopping mode
+**When** I navigate away and return to the Shopping tab
+**Then** Shopping mode state persists (I'm still in shopping mode)
+**And** I can manually exit via "End Shopping" or the ✕ button
+
+---
+
+### Story 9.2: User-Initiated Shopping Completion
+
+As a **user**,
+I want to explicitly end my shopping trip when I'm done (regardless of whether I found all items),
+So that I can proceed to checkout and receipt scanning on my own terms.
+
+**Acceptance Criteria:**
+
+**Given** I am in shopping mode with items on my list
+**When** I tap "End Shopping" or the ✕ exit button
+**Then** I see a completion confirmation modal asking "Are you done shopping?"
+**And** The modal shows:
+  - How many items I checked off: "You collected 10 of 12 items"
+  - Two options: "Yes, I'm done" / "No, continue shopping"
+
+**Given** I tap "Yes, I'm done"
+**When** Shopping mode ends
+**Then** Shopping mode exits (visual state returns to normal)
+**And** All checked items remain checked (state preserved)
+**And** Unchecked items stay on the list (not removed)
+**And** I am immediately prompted with receipt scan option (Story 9.3)
+
+**Given** I tap "No, continue shopping"
+**When** I choose to continue
+**Then** The modal closes
+**And** I remain in shopping mode
+**And** No state changes occur
+
+**Given** I checked ALL items on my list (checkedCount === totalCount)
+**When** I tap the last checkbox
+**Then** The completion modal automatically appears
+**And** The message is celebratory: "Great job! You got everything! 🎉"
+
+**Given** I checked SOME but NOT ALL items
+**When** I tap "End Shopping"
+**Then** The modal shows helpful messaging: "You collected 10 of 12 items. Any items not collected will stay on your list for next time."
+
+---
+
+### Story 9.3: Post-Shopping Receipt Scan Prompt
+
+As a **user**,
+I want to be prompted to scan my receipt immediately after ending shopping mode,
+So that I can update my inventory while it's top of mind and complete the automation loop.
+
+**Acceptance Criteria:**
+
+**Given** I have confirmed "Yes, I'm done" to end shopping
+**When** The shopping completion modal closes
+**Then** I immediately see a "Scan Receipt?" prompt modal
+**And** The modal is focused and clear with:
+  - Icon: 📸 Receipt icon
+  - Title: "Scan Your Receipt"
+  - Message: "Update your inventory automatically by scanning your receipt"
+  - Primary CTA: "Scan Receipt" button (prominent, bottom of modal)
+  - Secondary action: "I'll do it later" link (subtle, top-right or bottom)
+
+**Given** I tap "Scan Receipt"
+**When** I choose to scan
+**Then** I am navigated to the `/scan` route
+**And** The receipt scanner camera activates
+**And** The normal receipt scanning flow begins (already implemented)
+
+**Given** I tap "I'll do it later"
+**When** I defer scanning
+**Then** The modal closes
+**And** I return to the Shopping List screen
+**And** The "Start Shopping" button is available for next shopping trip
+
+---
+
+### Story 9.4: Add Receipt Scan to Shopping List SpeedDial
+
+As a **user**,
+I want to access receipt scanning from the Shopping List at any time (not just after shopping mode),
+So that I can scan receipts even if I forgot to do it immediately after shopping.
+
+**Acceptance Criteria:**
+
+**Given** I am on the Shopping List page
+**When** I tap the SpeedDial (⋮)
+**Then** I see three actions:
+  - ➕ Add Products
+  - 🛒 Start/End Shopping Mode
+  - 📸 **Scan Receipt** (NEW)
+
+**Given** I tap "Scan Receipt" from the SpeedDial
+**When** I initiate scanning
+**Then** I am navigated to `/scan`
+**And** The normal receipt scanning flow begins
+
+**Given** I am NOT in shopping mode
+**When** I tap "Scan Receipt"
+**Then** I can still access the scanner (no shopping mode requirement)
+
+**Given** I am in shopping mode
+**When** I tap "Scan Receipt"
+**Then** I can access the scanner without ending shopping mode first
 
 ---
