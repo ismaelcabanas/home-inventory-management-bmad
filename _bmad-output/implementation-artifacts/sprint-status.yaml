@@ -95,8 +95,8 @@ development_status:
   8-1-event-driven-synchronization: done
   epic-8-retrospective: optional
 
-  epic-9: backlog
-  9-1-enhanced-shopping-mode-entry-and-visual-states: backlog
+  epic-9: in-progress
+  9-1-enhanced-shopping-mode-entry-and-visual-states: review
   9-2-user-initiated-shopping-completion: backlog
   9-3-post-shopping-receipt-scan-prompt: backlog
   9-4-add-receipt-scan-to-shopping-list-speeddial: backlog
