@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Box, Typography, CircularProgress, Alert, SpeedDial, SpeedDialIcon, SpeedDialAction, Zoom } from '@mui/material';
+import { Box, Typography, CircularProgress, Alert, SpeedDial, SpeedDialIcon, SpeedDialAction, Zoom, Button, IconButton } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CheckroomIcon from '@mui/icons-material/Checkroom';
 import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import CloseIcon from '@mui/icons-material/Close';
 import { useShoppingList } from '../context/ShoppingContext';
 import { ShoppingListItem } from './ShoppingListItem';
 import { ShoppingProgress } from './ShoppingProgress';
@@ -76,23 +77,44 @@ function ShoppingListContent() {
 
   if (loading) {
     return (
-      <Box>
+      <Box
+        sx={{
+          // Story 9.1: Subtle background change when in shopping mode
+          bgcolor: isShoppingMode ? 'action.hover' : 'background.default',
+          transition: 'background-color 0.3s ease',
+          minHeight: '100vh',
+        }}
+      >
         {/* Story 7.5: Centered header with icon */}
+        {/* Story 9.1: Enhanced header with dynamic title and exit button */}
         <Box
           sx={{
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             py: 2,
+            position: 'relative',
           }}
         >
           <ShoppingCartIcon sx={{ mr: 1 }} />
-          <Typography variant="h6">Shopping List</Typography>
+          <Typography variant="h6">{isShoppingMode ? 'Shopping Mode' : 'Shopping List'}</Typography>
+
+          {/* Story 9.1: Exit button in shopping mode */}
+          {isShoppingMode && (
+            <IconButton
+              onClick={handleModeToggle}
+              sx={{ position: 'absolute', right: 16 }}
+              aria-label="Exit shopping mode"
+            >
+              <CloseIcon />
+            </IconButton>
+          )}
         </Box>
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
           <CircularProgress />
         </Box>
         {/* SpeedDial for Shopping List Actions */}
+        {/* Story 9.1: Removed Shopping Mode toggle - now a prominent button */}
         <Zoom in>
           <SpeedDial
             ariaLabel="Shopping list actions"
@@ -103,11 +125,6 @@ function ShoppingListContent() {
               icon={<AddIcon />}
               tooltipTitle="Add Products"
               onClick={handleOpenAddDialog}
-            />
-            <SpeedDialAction
-              icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-              tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
-              onClick={handleModeToggle}
             />
           </SpeedDial>
         </Zoom>
@@ -124,23 +141,44 @@ function ShoppingListContent() {
 
   if (error) {
     return (
-      <Box>
+      <Box
+        sx={{
+          // Story 9.1: Subtle background change when in shopping mode
+          bgcolor: isShoppingMode ? 'action.hover' : 'background.default',
+          transition: 'background-color 0.3s ease',
+          minHeight: '100vh',
+        }}
+      >
         {/* Story 7.5: Centered header with icon */}
+        {/* Story 9.1: Enhanced header with dynamic title and exit button */}
         <Box
           sx={{
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             py: 2,
+            position: 'relative',
           }}
         >
           <ShoppingCartIcon sx={{ mr: 1 }} />
-          <Typography variant="h6">Shopping List</Typography>
+          <Typography variant="h6">{isShoppingMode ? 'Shopping Mode' : 'Shopping List'}</Typography>
+
+          {/* Story 9.1: Exit button in shopping mode */}
+          {isShoppingMode && (
+            <IconButton
+              onClick={handleModeToggle}
+              sx={{ position: 'absolute', right: 16 }}
+              aria-label="Exit shopping mode"
+            >
+              <CloseIcon />
+            </IconButton>
+          )}
         </Box>
         <Alert severity="error" onClose={clearError}>
           {error}
         </Alert>
         {/* SpeedDial for Shopping List Actions */}
+        {/* Story 9.1: Removed Shopping Mode toggle - now a prominent button */}
         <Zoom in>
           <SpeedDial
             ariaLabel="Shopping list actions"
@@ -151,11 +189,6 @@ function ShoppingListContent() {
               icon={<AddIcon />}
               tooltipTitle="Add Products"
               onClick={handleOpenAddDialog}
-            />
-            <SpeedDialAction
-              icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-              tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
-              onClick={handleModeToggle}
             />
           </SpeedDial>
         </Zoom>
@@ -172,24 +205,45 @@ function ShoppingListContent() {
 
   if (items.length === 0) {
     return (
-      <Box>
+      <Box
+        sx={{
+          // Story 9.1: Subtle background change when in shopping mode
+          bgcolor: isShoppingMode ? 'action.hover' : 'background.default',
+          transition: 'background-color 0.3s ease',
+          minHeight: '100vh',
+        }}
+      >
         {/* Story 7.5: Centered header with icon */}
+        {/* Story 9.1: Enhanced header with dynamic title and exit button */}
         <Box
           sx={{
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             py: 2,
+            position: 'relative',
           }}
         >
           <ShoppingCartIcon sx={{ mr: 1 }} />
-          <Typography variant="h6">Shopping List</Typography>
+          <Typography variant="h6">{isShoppingMode ? 'Shopping Mode' : 'Shopping List'}</Typography>
+
+          {/* Story 9.1: Exit button in shopping mode */}
+          {isShoppingMode && (
+            <IconButton
+              onClick={handleModeToggle}
+              sx={{ position: 'absolute', right: 16 }}
+              aria-label="Exit shopping mode"
+            >
+              <CloseIcon />
+            </IconButton>
+          )}
         </Box>
         <EmptyState
           title="Your shopping list is empty"
           message="Mark items as Low or Empty in inventory to auto-add them here"
         />
         {/* SpeedDial for Shopping List Actions */}
+        {/* Story 9.1: Removed Shopping Mode toggle - now a prominent button */}
         <Zoom in>
           <SpeedDial
             ariaLabel="Shopping list actions"
@@ -200,11 +254,6 @@ function ShoppingListContent() {
               icon={<AddIcon />}
               tooltipTitle="Add Products"
               onClick={handleOpenAddDialog}
-            />
-            <SpeedDialAction
-              icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-              tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
-              onClick={handleModeToggle}
             />
           </SpeedDial>
         </Zoom>
@@ -220,55 +269,104 @@ function ShoppingListContent() {
   }
 
   return (
-    <Box pb={8} // Story 4.3: Extra padding to prevent FAB from covering last items
-  >
-    {/* Story 7.5: Centered header with icon */}
     <Box
+      pb={8} // Story 4.3: Extra padding to prevent FAB from covering last items
       sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        py: 2,
+        // Story 9.1: Subtle background change when in shopping mode
+        bgcolor: isShoppingMode ? 'action.hover' : 'background.default',
+        transition: 'background-color 0.3s ease',
+        minHeight: '100vh',
       }}
     >
-      <ShoppingCartIcon sx={{ mr: 1 }} />
-      <Typography variant="h6">Shopping List</Typography>
-    </Box>
-    {/* Story 4.2: Shopping Progress Indicator */}
-    <ShoppingProgress checkedCount={progress.checkedCount} totalCount={progress.totalCount} />
-    {/* Story 7.5: Shopping list items with 12px margins */}
-    <Box sx={{ px: 1.5 }}>
-      {items.map((item) => (
-        <ShoppingListItem key={item.id} product={item} isShoppingMode={isShoppingMode} />
-      ))}
-    </Box>
-    {/* SpeedDial for Shopping List Actions */}
-    <Zoom in>
-      <SpeedDial
-        ariaLabel="Shopping list actions"
-        sx={speedDialStyle}
-        icon={<SpeedDialIcon icon={<MoreVertIcon />} />}
+      {/* Story 7.5: Centered header with icon */}
+      {/* Story 9.1: Enhanced header with dynamic title and exit button */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          py: 2,
+          position: 'relative',
+        }}
       >
-        <SpeedDialAction
-          icon={<AddIcon />}
-          tooltipTitle="Add Products"
-          onClick={handleOpenAddDialog}
-        />
-        <SpeedDialAction
-          icon={isShoppingMode ? <CheckroomIcon /> : <ShoppingCartIcon />}
-          tooltipTitle={isShoppingMode ? 'End Shopping Mode' : 'Start Shopping Mode'}
-          onClick={handleModeToggle}
-        />
-      </SpeedDial>
-    </Zoom>
-    {/* Story 7.4: Add Products Dialog */}
-    <AddProductsDialog
-      open={addDialogOpen}
-      onClose={handleCloseAddDialog}
-      availableProducts={availableProducts}
-      onAddProduct={handleAddProduct}
-    />
-  </Box>
+        <ShoppingCartIcon sx={{ mr: 1 }} />
+        <Typography variant="h6">{isShoppingMode ? 'Shopping Mode' : 'Shopping List'}</Typography>
+
+        {/* Story 9.1: Exit button in shopping mode */}
+        {isShoppingMode && (
+          <IconButton
+            onClick={handleModeToggle}
+            sx={{ position: 'absolute', right: 16 }}
+            aria-label="Exit shopping mode"
+          >
+            <CloseIcon />
+          </IconButton>
+        )}
+      </Box>
+
+      {/* Story 9.1: Prominent Start/End Shopping button */}
+      {!isShoppingMode && items.length > 0 && (
+        <Box sx={{ px: 1.5, mb: 2 }}>
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            startIcon={<ShoppingCartIcon />}
+            onClick={handleModeToggle}
+            disabled={items.length === 0}
+            sx={{ minHeight: 56, py: 1.5 }}
+          >
+            Start Shopping ({items.length} {items.length === 1 ? 'item' : 'items'})
+          </Button>
+        </Box>
+      )}
+
+      {isShoppingMode && (
+        <Box sx={{ px: 1.5, mb: 2 }}>
+          <Button
+            variant="outlined"
+            fullWidth
+            size="large"
+            startIcon={<CheckroomIcon />}
+            onClick={handleModeToggle}
+            sx={{ minHeight: 56, py: 1.5 }}
+          >
+            End Shopping
+          </Button>
+        </Box>
+      )}
+
+      {/* Story 4.2: Shopping Progress Indicator */}
+      <ShoppingProgress checkedCount={progress.checkedCount} totalCount={progress.totalCount} />
+      {/* Story 7.5: Shopping list items with 12px margins */}
+      <Box sx={{ px: 1.5 }}>
+        {items.map((item) => (
+          <ShoppingListItem key={item.id} product={item} isShoppingMode={isShoppingMode} />
+        ))}
+      </Box>
+      {/* SpeedDial for Shopping List Actions */}
+      {/* Story 9.1: Removed Shopping Mode toggle - now a prominent button */}
+      <Zoom in>
+        <SpeedDial
+          ariaLabel="Shopping list actions"
+          sx={speedDialStyle}
+          icon={<SpeedDialIcon icon={<MoreVertIcon />} />}
+        >
+          <SpeedDialAction
+            icon={<AddIcon />}
+            tooltipTitle="Add Products"
+            onClick={handleOpenAddDialog}
+          />
+        </SpeedDial>
+      </Zoom>
+      {/* Story 7.4: Add Products Dialog */}
+      <AddProductsDialog
+        open={addDialogOpen}
+        onClose={handleCloseAddDialog}
+        availableProducts={availableProducts}
+        onAddProduct={handleAddProduct}
+      />
+    </Box>
 );
 }
 

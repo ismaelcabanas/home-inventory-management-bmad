@@ -270,7 +270,7 @@ describe('ShoppingList', () => {
       expect(screen.getByTestId('MoreVertIcon')).toBeInTheDocument();
     });
 
-    it('should have 2 SpeedDialAction buttons (Add Products, Toggle Shopping Mode)', () => {
+    it('should have 1 SpeedDialAction button (Add Products) - Story 9.1: Shopping Mode moved to prominent button', () => {
       render(<ShoppingList />, { wrapper });
 
       // SpeedDial actions are rendered but may be hidden until SpeedDial is opened
@@ -278,11 +278,12 @@ describe('ShoppingList', () => {
       const addButton = screen.getByRole('menuitem', { name: /add products/i });
       expect(addButton).toBeInTheDocument();
 
-      const toggleButton = screen.getByRole('menuitem', { name: /start shopping mode/i });
-      expect(toggleButton).toBeInTheDocument();
+      // Story 9.1: Shopping Mode toggle is no longer in SpeedDial
+      const toggleButton = screen.queryByRole('menuitem', { name: /start shopping mode/i });
+      expect(toggleButton).not.toBeInTheDocument();
     });
 
-    it('should show Shopping cart icon when in Planning Mode', () => {
+    it('should show Shopping cart icon when in Planning Mode - Story 9.1: Header icon only (SpeedDial no longer has toggle)', () => {
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
         state: { items: [], loading: false, error: null, count: 0, isShoppingMode: false },
         loadShoppingList: mockLoadShoppingList,
@@ -299,15 +300,15 @@ describe('ShoppingList', () => {
       render(<ShoppingList />, { wrapper });
 
       // Story 7.5: Shopping cart icon should be present in header
-      // And also for the toggle action in SpeedDial
+      // Story 9.1: SpeedDial no longer has the shopping mode toggle
       const icons = screen.getAllByTestId('ShoppingCartIcon');
       expect(icons.length).toBeGreaterThan(0);
       expect(screen.queryByTestId('CheckroomIcon')).not.toBeInTheDocument();
     });
 
-    it('should show Checkroom icon when in Shopping Mode', () => {
+    it('should show Checkroom icon when in Shopping Mode - Story 9.1: Only on prominent End Shopping button, not in SpeedDial', () => {
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
-        state: { items: [], loading: false, error: null, count: 0, isShoppingMode: true },
+        state: { items: mockProducts, loading: false, error: null, count: 2, isShoppingMode: true },
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
@@ -321,13 +322,13 @@ describe('ShoppingList', () => {
 
       render(<ShoppingList />, { wrapper });
 
-      // Checkroom icon should be present for the toggle action
+      // Story 9.1: Checkroom icon is on the prominent "End Shopping" button
       expect(screen.getByTestId('CheckroomIcon')).toBeInTheDocument();
     });
 
-    it('should render toggle action with Start Shopping Mode tooltip in Planning Mode', () => {
+    it('should render toggle action with Start Shopping Mode tooltip in Planning Mode - Story 9.1: Prominent button, not SpeedDial', () => {
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
-        state: { items: [], loading: false, error: null, count: 0, isShoppingMode: false },
+        state: { items: mockProducts, loading: false, error: null, count: 2, isShoppingMode: false },
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
@@ -341,14 +342,18 @@ describe('ShoppingList', () => {
 
       render(<ShoppingList />, { wrapper });
 
-      // SpeedDialAction for toggle shopping mode should be present
-      const toggleButton = screen.getByRole('menuitem', { name: /start shopping mode/i });
-      expect(toggleButton).toBeInTheDocument();
+      // Story 9.1: Shopping Mode is now a prominent button, not in SpeedDial
+      const startButton = screen.getByRole('button', { name: /start shopping/i });
+      expect(startButton).toBeInTheDocument();
+
+      // SpeedDial should no longer have the toggle action
+      const toggleButton = screen.queryByRole('menuitem', { name: /start shopping mode/i });
+      expect(toggleButton).not.toBeInTheDocument();
     });
 
-    it('should render toggle action with End Shopping Mode tooltip in Shopping Mode', () => {
+    it('should render toggle action with End Shopping Mode tooltip in Shopping Mode - Story 9.1: Prominent button, not SpeedDial', () => {
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
-        state: { items: [], loading: false, error: null, count: 0, isShoppingMode: true },
+        state: { items: mockProducts, loading: false, error: null, count: 2, isShoppingMode: true },
         loadShoppingList: mockLoadShoppingList,
         refreshCount: mockRefreshCount,
         clearError: mockClearError,
@@ -362,9 +367,13 @@ describe('ShoppingList', () => {
 
       render(<ShoppingList />, { wrapper });
 
-      // SpeedDialAction for toggle shopping mode should be present
-      const toggleButton = screen.getByRole('menuitem', { name: /end shopping mode/i });
-      expect(toggleButton).toBeInTheDocument();
+      // Story 9.1: Shopping Mode is now a prominent button, not in SpeedDial
+      const endButton = screen.getByRole('button', { name: /end shopping/i });
+      expect(endButton).toBeInTheDocument();
+
+      // SpeedDial should no longer have the toggle action
+      const toggleButton = screen.queryByRole('menuitem', { name: /end shopping mode/i });
+      expect(toggleButton).not.toBeInTheDocument();
     });
 
     it('should render AddIcon for Add Products action', () => {
@@ -481,6 +490,226 @@ describe('ShoppingList', () => {
       const progress = screen.getByTestId('shopping-progress');
       expect(progress).toHaveAttribute('data-checked', '2');
       expect(progress).toHaveAttribute('data-total', '2');
+    });
+  });
+
+  // Story 9.1: Enhanced Shopping Mode Entry & Visual States Tests
+  describe('Enhanced Shopping Mode Entry (Story 9.1)', () => {
+    // Create a consistent test state with exactly 2 items
+    const twoItems = mockProducts.slice(0, 2);
+
+    it('should render "Start Shopping" button prominently when list has items', () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: false },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      // Should render prominent Start Shopping button
+      const startButton = screen.getByRole('button', { name: /start shopping/i });
+      expect(startButton).toBeInTheDocument();
+      // Check the button contains the item count somewhere in its content
+      expect(startButton.textContent).toContain('2');
+    });
+
+    it('should show correct item count in Start Shopping button', () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: mockProducts.slice(0, 1), loading: false, error: null, count: 1, isShoppingMode: false },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 1 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      // Should show singular "item" when count is 1
+      const startButton = screen.getByRole('button', { name: /start shopping/i });
+      expect(startButton).toBeInTheDocument();
+      expect(startButton.textContent).toContain('1');
+    });
+
+    it('should not show Start Shopping button when list is empty', () => {
+      render(<ShoppingList />, { wrapper });
+
+      // Should NOT show Start Shopping button when list is empty
+      const startButton = screen.queryByRole('button', { name: /start shopping/i });
+      expect(startButton).not.toBeInTheDocument();
+    });
+
+    it('should render "End Shopping" button when in shopping mode', () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      // Should show End Shopping button instead
+      const endButton = screen.getByRole('button', { name: /end shopping/i });
+      expect(endButton).toBeInTheDocument();
+
+      // Should not show Start Shopping button
+      const startButton = screen.queryByRole('button', { name: /start shopping/i });
+      expect(startButton).not.toBeInTheDocument();
+    });
+
+    it('should show "Shopping Mode" in header when in shopping mode', () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      // Header should show "Shopping Mode" instead of "Shopping List"
+      expect(screen.getByText('Shopping Mode')).toBeInTheDocument();
+      expect(screen.queryByText('Shopping List')).not.toBeInTheDocument();
+    });
+
+    it('should show ✕ exit button in header when in shopping mode', () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      // CloseIcon (✕) should be present in header when in shopping mode
+      expect(screen.getByTestId('CloseIcon')).toBeInTheDocument();
+    });
+
+    it('should not show ✕ exit button when not in shopping mode', () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: false },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      // CloseIcon (✕) should NOT be present when not in shopping mode
+      expect(screen.queryByTestId('CloseIcon')).not.toBeInTheDocument();
+    });
+
+    it('should call startShoppingMode when Start Shopping button is clicked', async () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: false },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const startButton = screen.getByRole('button', { name: /start shopping/i });
+      startButton.click();
+
+      // Wait for async call
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(mockStartShoppingMode).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call endShoppingMode when End Shopping button is clicked', async () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const endButton = screen.getByRole('button', { name: /end shopping/i });
+      endButton.click();
+
+      // Wait for async call
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(mockEndShoppingMode).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call endShoppingMode when ✕ exit button is clicked', async () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 0, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const exitButton = screen.getByRole('button', { name: /exit shopping mode/i });
+      exitButton.click();
+
+      // Wait for async call
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(mockEndShoppingMode).toHaveBeenCalledTimes(1);
     });
   });
 
