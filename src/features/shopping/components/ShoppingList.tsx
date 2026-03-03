@@ -8,6 +8,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useShoppingList } from '../context/ShoppingContext';
 import { ShoppingListItem } from './ShoppingListItem';
 import { ShoppingProgress } from './ShoppingProgress';
+import { ShoppingCompletionDialog } from './ShoppingCompletionDialog';
 import { AddProductsDialog } from './AddProductsDialog';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { FeatureErrorBoundary } from '@/components/shared/ErrorBoundary/FeatureErrorBoundary';
@@ -20,6 +21,9 @@ function ShoppingListContent() {
   const { items, loading, error, isShoppingMode } = state;
   const { products: allProducts } = inventoryState;
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  // Story 9.2: Completion dialog state
+  const [completionDialogOpen, setCompletionDialogOpen] = useState(false);
 
   useEffect(() => {
     // Initial load
@@ -40,6 +44,23 @@ function ShoppingListContent() {
     const shoppingListProductIds = new Set(items.map((item) => item.id));
     return allProducts.filter((p) => !shoppingListProductIds.has(p.id));
   }, [allProducts, items]);
+
+  // Story 9.2: Auto-prompt completion dialog when all items checked (AC4)
+  useEffect(() => {
+    // Auto-open completion dialog when all items are checked
+    if (
+      progress.checkedCount === progress.totalCount &&
+      progress.totalCount > 0 &&
+      !completionDialogOpen &&
+      isShoppingMode
+    ) {
+      // Small delay to allow user to see the last checkmark
+      const timer = setTimeout(() => {
+        setCompletionDialogOpen(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [progress.checkedCount, progress.totalCount, completionDialogOpen, isShoppingMode]);
 
   // Story 4.4: Handle Shopping Mode toggle
   const handleModeToggle = async () => {
@@ -65,6 +86,23 @@ function ShoppingListContent() {
     await addToList(productId);
     // Refresh shopping list to show newly added product
     await loadShoppingList();
+  };
+
+  // Story 9.2: Open completion dialog
+  const handleOpenCompletionDialog = () => {
+    setCompletionDialogOpen(true);
+  };
+
+  // Story 9.2: Confirm completion - exits shopping mode
+  const handleConfirmCompletion = async () => {
+    await endShoppingMode();
+    setCompletionDialogOpen(false);
+    // Story 9.3: Will trigger receipt scan prompt here
+  };
+
+  // Story 9.2: Cancel completion - stays in shopping mode
+  const handleCancelCompletion = () => {
+    setCompletionDialogOpen(false);
   };
 
   // SpeedDial position - above BottomNav (which is typically 56-80px)
@@ -100,9 +138,10 @@ function ShoppingListContent() {
           <Typography variant="h6">{isShoppingMode ? 'Shopping Mode' : 'Shopping List'}</Typography>
 
           {/* Story 9.1: Exit button in shopping mode */}
+          {/* Story 9.2: Now opens completion dialog */}
           {isShoppingMode && (
             <IconButton
-              onClick={handleModeToggle}
+              onClick={handleOpenCompletionDialog}
               sx={{ position: 'absolute', right: 16 }}
               aria-label="Exit shopping mode"
             >
@@ -135,6 +174,14 @@ function ShoppingListContent() {
           availableProducts={availableProducts}
           onAddProduct={handleAddProduct}
         />
+        {/* Story 9.2: Shopping Completion Dialog */}
+        <ShoppingCompletionDialog
+          open={completionDialogOpen}
+          checkedCount={progress.checkedCount}
+          totalCount={progress.totalCount}
+          onConfirm={handleConfirmCompletion}
+          onCancel={handleCancelCompletion}
+        />
       </Box>
     );
   }
@@ -164,9 +211,10 @@ function ShoppingListContent() {
           <Typography variant="h6">{isShoppingMode ? 'Shopping Mode' : 'Shopping List'}</Typography>
 
           {/* Story 9.1: Exit button in shopping mode */}
+          {/* Story 9.2: Now opens completion dialog */}
           {isShoppingMode && (
             <IconButton
-              onClick={handleModeToggle}
+              onClick={handleOpenCompletionDialog}
               sx={{ position: 'absolute', right: 16 }}
               aria-label="Exit shopping mode"
             >
@@ -199,6 +247,14 @@ function ShoppingListContent() {
           availableProducts={availableProducts}
           onAddProduct={handleAddProduct}
         />
+        {/* Story 9.2: Shopping Completion Dialog */}
+        <ShoppingCompletionDialog
+          open={completionDialogOpen}
+          checkedCount={progress.checkedCount}
+          totalCount={progress.totalCount}
+          onConfirm={handleConfirmCompletion}
+          onCancel={handleCancelCompletion}
+        />
       </Box>
     );
   }
@@ -228,9 +284,10 @@ function ShoppingListContent() {
           <Typography variant="h6">{isShoppingMode ? 'Shopping Mode' : 'Shopping List'}</Typography>
 
           {/* Story 9.1: Exit button in shopping mode */}
+          {/* Story 9.2: Now opens completion dialog */}
           {isShoppingMode && (
             <IconButton
-              onClick={handleModeToggle}
+              onClick={handleOpenCompletionDialog}
               sx={{ position: 'absolute', right: 16 }}
               aria-label="Exit shopping mode"
             >
@@ -264,6 +321,14 @@ function ShoppingListContent() {
           availableProducts={availableProducts}
           onAddProduct={handleAddProduct}
         />
+        {/* Story 9.2: Shopping Completion Dialog */}
+        <ShoppingCompletionDialog
+          open={completionDialogOpen}
+          checkedCount={progress.checkedCount}
+          totalCount={progress.totalCount}
+          onConfirm={handleConfirmCompletion}
+          onCancel={handleCancelCompletion}
+        />
       </Box>
     );
   }
@@ -293,9 +358,10 @@ function ShoppingListContent() {
         <Typography variant="h6">{isShoppingMode ? 'Shopping Mode' : 'Shopping List'}</Typography>
 
         {/* Story 9.1: Exit button in shopping mode */}
+        {/* Story 9.2: Now opens completion dialog */}
         {isShoppingMode && (
           <IconButton
-            onClick={handleModeToggle}
+            onClick={handleOpenCompletionDialog}
             sx={{ position: 'absolute', right: 16 }}
             aria-label="Exit shopping mode"
           >
@@ -321,6 +387,7 @@ function ShoppingListContent() {
         </Box>
       )}
 
+      {/* Story 9.2: End Shopping button now opens completion dialog */}
       {isShoppingMode && (
         <Box sx={{ px: 1.5, mb: 2 }}>
           <Button
@@ -328,7 +395,7 @@ function ShoppingListContent() {
             fullWidth
             size="large"
             startIcon={<CheckroomIcon />}
-            onClick={handleModeToggle}
+            onClick={handleOpenCompletionDialog}
             sx={{ minHeight: 56, py: 1.5 }}
           >
             End Shopping
@@ -366,8 +433,16 @@ function ShoppingListContent() {
         availableProducts={availableProducts}
         onAddProduct={handleAddProduct}
       />
+      {/* Story 9.2: Shopping Completion Dialog */}
+      <ShoppingCompletionDialog
+        open={completionDialogOpen}
+        checkedCount={progress.checkedCount}
+        totalCount={progress.totalCount}
+        onConfirm={handleConfirmCompletion}
+        onCancel={handleCancelCompletion}
+      />
     </Box>
-);
+  );
 }
 
 export function ShoppingList() {

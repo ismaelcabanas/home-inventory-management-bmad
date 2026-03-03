@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { act } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { ShoppingList } from './ShoppingList';
 import { ShoppingProvider } from '../context/ShoppingContext';
 import * as ShoppingContext from '../context/ShoppingContext';
@@ -679,7 +680,20 @@ describe('ShoppingList', () => {
       render(<ShoppingList />, { wrapper });
 
       const endButton = screen.getByRole('button', { name: /end shopping/i });
-      endButton.click();
+      await act(async () => {
+        endButton.click();
+      });
+
+      // Story 9.2: Now opens completion dialog instead of directly exiting
+      // User must confirm before endShoppingMode is called
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByText(/Are you done shopping?/i)).toBeInTheDocument();
+
+      // Click confirm button to complete shopping
+      const confirmButton = screen.getByRole('button', { name: /yes, i'm done/i });
+      await act(async () => {
+        confirmButton.click();
+      });
 
       // Wait for async call
       await new Promise(resolve => setTimeout(resolve, 0));
@@ -704,7 +718,19 @@ describe('ShoppingList', () => {
       render(<ShoppingList />, { wrapper });
 
       const exitButton = screen.getByRole('button', { name: /exit shopping mode/i });
-      exitButton.click();
+      await act(async () => {
+        exitButton.click();
+      });
+
+      // Story 9.2: Now opens completion dialog instead of directly exiting
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByText(/Are you done shopping?/i)).toBeInTheDocument();
+
+      // Click confirm button to complete shopping
+      const confirmButton = screen.getByRole('button', { name: /yes, i'm done/i });
+      await act(async () => {
+        confirmButton.click();
+      });
 
       // Wait for async call
       await new Promise(resolve => setTimeout(resolve, 0));
@@ -791,6 +817,215 @@ describe('ShoppingList', () => {
       expect(mockLoadShoppingList).not.toHaveBeenCalled();
 
       vi.useRealTimers();
+    });
+  });
+
+  // Story 9.2: User-Initiated Shopping Completion Tests
+  describe('User-Initiated Shopping Completion (Story 9.2)', () => {
+    // Create a consistent test state with exactly 2 items
+    const twoItems = mockProducts.slice(0, 2);
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('should open completion dialog when End Shopping button is clicked', async () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 1, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const endButton = screen.getByRole('button', { name: /end shopping/i });
+      fireEvent.click(endButton);
+
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByText(/Are you done shopping?/i)).toBeInTheDocument();
+      expect(screen.getByText(/You collected 1 of 2 items/i)).toBeInTheDocument();
+    });
+
+    it('should open completion dialog when ✕ exit button is clicked', async () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 1, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const exitButton = screen.getByRole('button', { name: /exit shopping mode/i });
+      await act(async () => {
+        fireEvent.click(exitButton);
+      });
+
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByText(/Are you done shopping?/i)).toBeInTheDocument();
+    });
+
+    it('should exit shopping mode when confirm button clicked', async () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 1, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const endButton = screen.getByRole('button', { name: /end shopping/i });
+      await act(async () => {
+        fireEvent.click(endButton);
+      });
+
+      const confirmButton = screen.getByRole('button', { name: /yes, i'm done/i });
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+
+      // Wait for dialog to close (MUI Dialog has transition animation)
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+
+      expect(mockEndShoppingMode).toHaveBeenCalledTimes(1);
+    });
+
+    it('should stay in shopping mode when cancel button clicked', async () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 1, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const endButton = screen.getByRole('button', { name: /end shopping/i });
+      await act(async () => {
+        fireEvent.click(endButton);
+      });
+
+      const cancelButton = screen.getByRole('button', { name: /no, continue shopping/i });
+      await act(async () => {
+        fireEvent.click(cancelButton);
+      });
+
+      // Wait for dialog to close (MUI Dialog has transition animation)
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+
+      expect(mockEndShoppingMode).not.toHaveBeenCalled();
+    });
+
+    it('should show celebratory message when all items collected (AC4)', async () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 2, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const endButton = screen.getByRole('button', { name: /end shopping/i });
+      await act(async () => {
+        fireEvent.click(endButton);
+      });
+
+      expect(screen.getByText(/Great job! You got everything! 🎉/i)).toBeInTheDocument();
+      expect(screen.getByText(/You collected 2 of 2 items/i)).toBeInTheDocument();
+    });
+
+    it('should show helpful messaging for partial completion (AC5)', async () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 1, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const endButton = screen.getByRole('button', { name: /end shopping/i });
+      await act(async () => {
+        fireEvent.click(endButton);
+      });
+
+      expect(screen.getByText(/Any items not collected will stay on your list for next time/i)).toBeInTheDocument();
+    });
+
+    it('should auto-prompt dialog when all items checked (AC4)', async () => {
+      vi.useFakeTimers();
+      try {
+        const mockContextValue = {
+          state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+          loadShoppingList: mockLoadShoppingList,
+          refreshCount: mockRefreshCount,
+          clearError: mockClearError,
+          addToList: mockAddToList,
+          removeFromList: mockRemoveFromList,
+          toggleItemChecked: mockToggleItemChecked,
+          startShoppingMode: mockStartShoppingMode,
+          endShoppingMode: mockEndShoppingMode,
+          progress: { checkedCount: 2, totalCount: 2 }, // Start with all checked
+        };
+
+        vi.spyOn(ShoppingContext, 'useShoppingList').mockReturnValue(mockContextValue);
+
+        render(<ShoppingList />, { wrapper });
+
+        // Advance time past the 500ms delay
+        await act(async () => {
+          vi.advanceTimersByTime(600);
+        });
+
+        // Dialog should be open
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText(/Great job! You got everything! 🎉/i)).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });
