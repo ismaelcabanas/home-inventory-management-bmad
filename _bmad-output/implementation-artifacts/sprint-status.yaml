@@ -98,6 +98,6 @@ development_status:
   epic-9: in-progress
   9-1-enhanced-shopping-mode-entry-and-visual-states: done
   9-2-user-initiated-shopping-completion: done
-  9-3-post-shopping-receipt-scan-prompt: backlog
+  9-3-post-shopping-receipt-scan-prompt: done
   9-4-add-receipt-scan-to-shopping-list-speeddial: backlog
   epic-9-retrospective: optional

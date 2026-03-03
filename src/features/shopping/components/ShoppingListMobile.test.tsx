@@ -7,6 +7,7 @@ import { ShoppingProvider } from '../context/ShoppingContext';
 import * as ShoppingContext from '../context/ShoppingContext';
 import React from 'react';
 import type { Product } from '@/types/product';
+import { BrowserRouter } from 'react-router-dom';
 
 // Story 7.4: Mock InventoryContext
 vi.mock('@/features/inventory/context/InventoryContext', () => ({
@@ -60,7 +61,9 @@ const mockProducts: Product[] = [
 ];
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <ShoppingProvider>{children}</ShoppingProvider>
+  <BrowserRouter>
+    <ShoppingProvider>{children}</ShoppingProvider>
+  </BrowserRouter>
 );
 
 describe('ShoppingList - Mobile Layout (Story 4.3)', () => {
