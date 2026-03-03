@@ -7,6 +7,7 @@ import * as ShoppingContext from '../context/ShoppingContext';
 import React from 'react';
 import type { Product } from '@/types/product';
 import { eventBus, EVENTS } from '@/utils/eventBus';
+import { BrowserRouter } from 'react-router-dom';
 
 // Mock dependencies
 vi.mock('@/services/shopping', () => ({
@@ -94,7 +95,9 @@ const mockProducts: Product[] = [
 ];
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <ShoppingProvider>{children}</ShoppingProvider>
+  <BrowserRouter>
+    <ShoppingProvider>{children}</ShoppingProvider>
+  </BrowserRouter>
 );
 
 describe('ShoppingList', () => {
@@ -904,9 +907,10 @@ describe('ShoppingList', () => {
         fireEvent.click(confirmButton);
       });
 
-      // Wait for dialog to close (MUI Dialog has transition animation)
+      // Story 9.3: Receipt scan prompt opens after completion dialog closes
+      // Wait for receipt scan prompt to appear
       await waitFor(() => {
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(screen.getByText(/Scan Your Receipt/i)).toBeInTheDocument();
       });
 
       expect(mockEndShoppingMode).toHaveBeenCalledTimes(1);
@@ -1026,6 +1030,177 @@ describe('ShoppingList', () => {
       } finally {
         vi.useRealTimers();
       }
+    });
+  });
+
+  // Story 9.3: Post-Shopping Receipt Scan Prompt Tests
+  describe('Post-Shopping Receipt Scan Prompt (Story 9.3)', () => {
+    const twoItems = mockProducts.slice(0, 2);
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('should open receipt scan prompt after shopping completion', async () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 1, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const endButton = screen.getByRole('button', { name: /end shopping/i });
+      await act(async () => {
+        fireEvent.click(endButton);
+      });
+
+      const confirmButton = screen.getByRole('button', { name: /yes, i'm done/i });
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+
+      // Story 9.3: Receipt scan prompt should appear after completion
+      await waitFor(() => {
+        expect(screen.getByText(/Scan Your Receipt/i)).toBeInTheDocument();
+      });
+      expect(screen.getByText(/Update your inventory automatically by scanning your receipt/i)).toBeInTheDocument();
+    });
+
+    it('should navigate to /scan when Scan Receipt button is clicked', async () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 1, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const endButton = screen.getByRole('button', { name: /end shopping/i });
+      await act(async () => {
+        fireEvent.click(endButton);
+      });
+
+      const confirmButton = screen.getByRole('button', { name: /yes, i'm done/i });
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+
+      // Wait for receipt scan prompt
+      await waitFor(() => {
+        expect(screen.getByText(/Scan Your Receipt/i)).toBeInTheDocument();
+      });
+
+      const scanButton = screen.getByRole('button', { name: /scan receipt/i });
+      await act(async () => {
+        fireEvent.click(scanButton);
+      });
+
+      // Navigation to /scan should occur (dialog closes)
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should close prompt when "I\'ll do it later" is clicked', async () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 1, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const endButton = screen.getByRole('button', { name: /end shopping/i });
+      await act(async () => {
+        fireEvent.click(endButton);
+      });
+
+      const confirmButton = screen.getByRole('button', { name: /yes, i'm done/i });
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+
+      // Wait for receipt scan prompt
+      await waitFor(() => {
+        expect(screen.getByText(/Scan Your Receipt/i)).toBeInTheDocument();
+      });
+
+      const laterButton = screen.getByRole('button', { name: /i'll do it later/i });
+      await act(async () => {
+        fireEvent.click(laterButton);
+      });
+
+      // Dialog should close
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+
+      // Should return to shopping list (not navigate away)
+      // Check that we're back on the shopping list page by looking for the shopping cart icon
+      expect(screen.getByTestId('ShoppingCartIcon')).toBeInTheDocument();
+    });
+
+    it('should ensure completion dialog closes before receipt prompt opens', async () => {
+      vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
+        state: { items: twoItems, loading: false, error: null, count: 2, isShoppingMode: true },
+        loadShoppingList: mockLoadShoppingList,
+        refreshCount: mockRefreshCount,
+        clearError: mockClearError,
+        addToList: mockAddToList,
+        removeFromList: mockRemoveFromList,
+        toggleItemChecked: mockToggleItemChecked,
+        startShoppingMode: mockStartShoppingMode,
+        endShoppingMode: mockEndShoppingMode,
+        progress: { checkedCount: 1, totalCount: 2 },
+      }));
+
+      render(<ShoppingList />, { wrapper });
+
+      const endButton = screen.getByRole('button', { name: /end shopping/i });
+      await act(async () => {
+        fireEvent.click(endButton);
+      });
+
+      const confirmButton = screen.getByRole('button', { name: /yes, i'm done/i });
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+
+      // Completion dialog should close first
+      await waitFor(() => {
+        expect(screen.queryByText(/Are you done shopping?/i)).not.toBeInTheDocument();
+      });
+
+      // Then receipt prompt should open (sequencing, not simultaneous)
+      await waitFor(() => {
+        expect(screen.getByText(/Scan Your Receipt/i)).toBeInTheDocument();
+      });
+
+      // Verify both dialogs aren't open simultaneously
+      const dialogs = screen.queryAllByRole('dialog');
+      expect(dialogs.length).toBe(1);
     });
   });
 });

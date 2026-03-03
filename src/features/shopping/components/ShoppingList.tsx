@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, Typography, CircularProgress, Alert, SpeedDial, SpeedDialIcon, SpeedDialAction, Zoom, Button, IconButton } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CheckroomIcon from '@mui/icons-material/Checkroom';
@@ -9,6 +10,7 @@ import { useShoppingList } from '../context/ShoppingContext';
 import { ShoppingListItem } from './ShoppingListItem';
 import { ShoppingProgress } from './ShoppingProgress';
 import { ShoppingCompletionDialog } from './ShoppingCompletionDialog';
+import { ReceiptScanPromptDialog } from './ReceiptScanPromptDialog';
 import { AddProductsDialog } from './AddProductsDialog';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { FeatureErrorBoundary } from '@/components/shared/ErrorBoundary/FeatureErrorBoundary';
@@ -16,6 +18,7 @@ import { useInventory } from '@/features/inventory/context/InventoryContext';
 import { eventBus, EVENTS } from '@/utils/eventBus';
 
 function ShoppingListContent() {
+  const navigate = useNavigate();
   const { state, loadShoppingList, clearError, startShoppingMode, endShoppingMode, progress, addToList } = useShoppingList();
   const { state: inventoryState } = useInventory();
   const { items, loading, error, isShoppingMode } = state;
@@ -24,6 +27,9 @@ function ShoppingListContent() {
 
   // Story 9.2: Completion dialog state
   const [completionDialogOpen, setCompletionDialogOpen] = useState(false);
+
+  // Story 9.3: Receipt scan prompt state
+  const [receiptPromptOpen, setReceiptPromptOpen] = useState(false);
 
   useEffect(() => {
     // Initial load
@@ -52,6 +58,7 @@ function ShoppingListContent() {
       progress.checkedCount === progress.totalCount &&
       progress.totalCount > 0 &&
       !completionDialogOpen &&
+      !receiptPromptOpen &&
       isShoppingMode
     ) {
       // Small delay to allow user to see the last checkmark
@@ -60,7 +67,7 @@ function ShoppingListContent() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [progress.checkedCount, progress.totalCount, completionDialogOpen, isShoppingMode]);
+  }, [progress.checkedCount, progress.totalCount, completionDialogOpen, receiptPromptOpen, isShoppingMode]);
 
   // Story 4.4: Handle Shopping Mode toggle
   const handleModeToggle = async () => {
@@ -93,16 +100,31 @@ function ShoppingListContent() {
     setCompletionDialogOpen(true);
   };
 
+  // Story 9.3: Close receipt prompt handler
+  const handleCloseReceiptPrompt = () => {
+    setReceiptPromptOpen(false);
+  };
+
+  // Story 9.3: Navigate to scanner handler
+  const handleNavigateToScanner = () => {
+    setReceiptPromptOpen(false);
+    navigate('/scan');
+  };
+
   // Story 9.2: Confirm completion - exits shopping mode
   const handleConfirmCompletion = async () => {
     await endShoppingMode();
     setCompletionDialogOpen(false);
-    // Story 9.3: Will trigger receipt scan prompt here
+    // Story 9.3: Open receipt scan prompt after completion
+    setTimeout(() => {
+      setReceiptPromptOpen(true);
+    }, 100); // Small delay for smooth transition
   };
 
   // Story 9.2: Cancel completion - stays in shopping mode
   const handleCancelCompletion = () => {
     setCompletionDialogOpen(false);
+    setReceiptPromptOpen(false); // Ensure receipt prompt is closed too
   };
 
   // SpeedDial position - above BottomNav (which is typically 56-80px)
@@ -182,6 +204,12 @@ function ShoppingListContent() {
           onConfirm={handleConfirmCompletion}
           onCancel={handleCancelCompletion}
         />
+        {/* Story 9.3: Receipt Scan Prompt Dialog */}
+        <ReceiptScanPromptDialog
+          open={receiptPromptOpen}
+          onScan={handleNavigateToScanner}
+          onDefer={handleCloseReceiptPrompt}
+        />
       </Box>
     );
   }
@@ -254,6 +282,12 @@ function ShoppingListContent() {
           totalCount={progress.totalCount}
           onConfirm={handleConfirmCompletion}
           onCancel={handleCancelCompletion}
+        />
+        {/* Story 9.3: Receipt Scan Prompt Dialog */}
+        <ReceiptScanPromptDialog
+          open={receiptPromptOpen}
+          onScan={handleNavigateToScanner}
+          onDefer={handleCloseReceiptPrompt}
         />
       </Box>
     );
@@ -328,6 +362,12 @@ function ShoppingListContent() {
           totalCount={progress.totalCount}
           onConfirm={handleConfirmCompletion}
           onCancel={handleCancelCompletion}
+        />
+        {/* Story 9.3: Receipt Scan Prompt Dialog */}
+        <ReceiptScanPromptDialog
+          open={receiptPromptOpen}
+          onScan={handleNavigateToScanner}
+          onDefer={handleCloseReceiptPrompt}
         />
       </Box>
     );
@@ -440,6 +480,12 @@ function ShoppingListContent() {
         totalCount={progress.totalCount}
         onConfirm={handleConfirmCompletion}
         onCancel={handleCancelCompletion}
+      />
+      {/* Story 9.3: Receipt Scan Prompt Dialog */}
+      <ReceiptScanPromptDialog
+        open={receiptPromptOpen}
+        onScan={handleNavigateToScanner}
+        onDefer={handleCloseReceiptPrompt}
       />
     </Box>
   );
