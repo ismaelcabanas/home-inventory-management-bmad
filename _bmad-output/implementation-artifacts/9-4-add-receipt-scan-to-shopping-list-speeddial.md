@@ -1,6 +1,6 @@
 # Story 9.4: Add Receipt Scan to Shopping List SpeedDial
 
-Status: review
+Status: done
 
 ## Context
 
@@ -328,3 +328,8 @@ None - all changes in existing ShoppingList component
 - All tests passing (689/689)
 - ESLint clean, TypeScript clean, build successful
 - Ready for code review
+
+**2025-12-19:** Story 9.4 marked as done
+- Pull request #39 created and merged
+- Epic 9 marked as complete
+- MVP is now feature-complete!

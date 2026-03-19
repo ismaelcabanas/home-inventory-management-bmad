@@ -95,9 +95,9 @@ development_status:
   8-1-event-driven-synchronization: done
   epic-8-retrospective: optional
 
-  epic-9: in-progress
+  epic-9: done
   9-1-enhanced-shopping-mode-entry-and-visual-states: done
   9-2-user-initiated-shopping-completion: done
   9-3-post-shopping-receipt-scan-prompt: done
-  9-4-add-receipt-scan-to-shopping-list-speeddial: review
+  9-4-add-receipt-scan-to-shopping-list-speeddial: done
   epic-9-retrospective: optional
