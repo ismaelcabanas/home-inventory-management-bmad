@@ -6,6 +6,7 @@ import CheckroomIcon from '@mui/icons-material/Checkroom';
 import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloseIcon from '@mui/icons-material/Close';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { useShoppingList } from '../context/ShoppingContext';
 import { ShoppingListItem } from './ShoppingListItem';
 import { ShoppingProgress } from './ShoppingProgress';
@@ -111,6 +112,11 @@ function ShoppingListContent() {
     navigate('/scan');
   };
 
+  // Story 9.4: Handle Scan Receipt from SpeedDial (direct navigation, no prompt)
+  const handleScanReceipt = () => {
+    navigate('/scan');
+  };
+
   // Story 9.2: Confirm completion - exits shopping mode
   const handleConfirmCompletion = async () => {
     await endShoppingMode();
@@ -176,6 +182,7 @@ function ShoppingListContent() {
         </Box>
         {/* SpeedDial for Shopping List Actions */}
         {/* Story 9.1: Removed Shopping Mode toggle - now a prominent button */}
+        {/* Story 9.4: Added Scan Receipt action */}
         <Zoom in>
           <SpeedDial
             ariaLabel="Shopping list actions"
@@ -186,6 +193,11 @@ function ShoppingListContent() {
               icon={<AddIcon />}
               tooltipTitle="Add Products"
               onClick={handleOpenAddDialog}
+            />
+            <SpeedDialAction
+              icon={<CameraAltIcon />}
+              tooltipTitle="Scan Receipt"
+              onClick={handleScanReceipt}
             />
           </SpeedDial>
         </Zoom>
@@ -255,6 +267,7 @@ function ShoppingListContent() {
         </Alert>
         {/* SpeedDial for Shopping List Actions */}
         {/* Story 9.1: Removed Shopping Mode toggle - now a prominent button */}
+        {/* Story 9.4: Added Scan Receipt action */}
         <Zoom in>
           <SpeedDial
             ariaLabel="Shopping list actions"
@@ -265,6 +278,11 @@ function ShoppingListContent() {
               icon={<AddIcon />}
               tooltipTitle="Add Products"
               onClick={handleOpenAddDialog}
+            />
+            <SpeedDialAction
+              icon={<CameraAltIcon />}
+              tooltipTitle="Scan Receipt"
+              onClick={handleScanReceipt}
             />
           </SpeedDial>
         </Zoom>
@@ -335,6 +353,7 @@ function ShoppingListContent() {
         />
         {/* SpeedDial for Shopping List Actions */}
         {/* Story 9.1: Removed Shopping Mode toggle - now a prominent button */}
+        {/* Story 9.4: Added Scan Receipt action */}
         <Zoom in>
           <SpeedDial
             ariaLabel="Shopping list actions"
@@ -345,6 +364,11 @@ function ShoppingListContent() {
               icon={<AddIcon />}
               tooltipTitle="Add Products"
               onClick={handleOpenAddDialog}
+            />
+            <SpeedDialAction
+              icon={<CameraAltIcon />}
+              tooltipTitle="Scan Receipt"
+              onClick={handleScanReceipt}
             />
           </SpeedDial>
         </Zoom>
@@ -453,6 +477,7 @@ function ShoppingListContent() {
       </Box>
       {/* SpeedDial for Shopping List Actions */}
       {/* Story 9.1: Removed Shopping Mode toggle - now a prominent button */}
+      {/* Story 9.4: Added Scan Receipt action */}
       <Zoom in>
         <SpeedDial
           ariaLabel="Shopping list actions"
@@ -463,6 +488,11 @@ function ShoppingListContent() {
             icon={<AddIcon />}
             tooltipTitle="Add Products"
             onClick={handleOpenAddDialog}
+          />
+          <SpeedDialAction
+            icon={<CameraAltIcon />}
+            tooltipTitle="Scan Receipt"
+            onClick={handleScanReceipt}
           />
         </SpeedDial>
       </Zoom>

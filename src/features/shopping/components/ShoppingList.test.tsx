@@ -386,6 +386,33 @@ describe('ShoppingList', () => {
       expect(screen.getByTestId('AddIcon')).toBeInTheDocument();
     });
 
+    // Story 9.4: Receipt Scan in SpeedDial Tests
+    describe('Story 9.4: Receipt Scan in SpeedDial', () => {
+      it('should render SpeedDial with "Scan Receipt" action', () => {
+        render(<ShoppingList />, { wrapper });
+
+        // Should have Scan Receipt action in SpeedDial
+        const scanButton = screen.getByRole('menuitem', { name: /scan receipt/i });
+        expect(scanButton).toBeInTheDocument();
+      });
+
+      it('should render CameraAltIcon for Scan Receipt action', () => {
+        render(<ShoppingList />, { wrapper });
+
+        expect(screen.getByTestId('CameraAltIcon')).toBeInTheDocument();
+      });
+
+      it('should have 2 SpeedDialAction buttons (Add Products, Scan Receipt)', () => {
+        render(<ShoppingList />, { wrapper });
+
+        // Both actions should be present
+        const addButton = screen.getByRole('menuitem', { name: /add products/i });
+        const scanButton = screen.getByRole('menuitem', { name: /scan receipt/i });
+        expect(addButton).toBeInTheDocument();
+        expect(scanButton).toBeInTheDocument();
+      });
+    });
+
     it('should pass isShoppingMode prop to ShoppingListItem components', () => {
       vi.spyOn(ShoppingContext, 'useShoppingList').mockImplementation(() => ({
         state: { items: mockProducts, loading: false, error: null, count: 2, isShoppingMode: true },
