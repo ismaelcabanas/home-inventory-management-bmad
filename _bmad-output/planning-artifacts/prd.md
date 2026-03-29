@@ -587,6 +587,16 @@ Home Inventory Management is a mobile-first application designed for iOS and/or 
 **FR42:** System indicates when OCR processing is in progress
 **FR43:** System shows success confirmation after receipt processing completes
 
+### LLM-Powered Product Matching
+
+**FR44:** System uses LLM to intelligently match receipt products to existing inventory (semantically understanding product variations)
+**FR45:** LLM receives current inventory alongside receipt products to enable contextual matching decisions
+**FR46:** LLM marks products as "high confidence" (clear match), "medium confidence" (likely match), or "requires confirmation" (uncertain)
+**FR47:** Users can review and confirm products marked as "requires confirmation" before inventory update
+**FR48:** Users can manually override LLM matching decisions during review
+**FR49:** System falls back to basic matching (trim, lowercase, substring) when offline or LLM unavailable
+**FR50:** System displays confidence indicators for each matched product during review
+
 ## Non-Functional Requirements
 
 ### Performance
@@ -671,6 +681,22 @@ Home Inventory Management is a mobile-first application designed for iOS and/or 
 - Receipt photos not saved to device photo library by default
 - Clear user control over data
 
+### LLM Integration
+
+**NFR15: LLM Matching Accuracy**
+- LLM achieves >90% accuracy in correctly matching products from receipts to existing inventory
+- Clear distinction between high-confidence matches and uncertain matches requiring user confirmation
+- User can review all matching decisions before inventory update
+
+**NFR16: Offline Fallback**
+- Basic product matching (trim, lowercase, substring) works without network connectivity
+- LLM matching available when online, with automatic fallback to basic matching when offline
+- No data loss or corruption when switching between online/offline modes
+
+**NFR17: API Cost Efficiency**
+- LLM matching adds minimal cost (<10% increase over OCR-only approach)
+- Inventory data sent only when processing receipts (not continuous monitoring)
+
 ## Constraints & Assumptions
 
 ### Technical Constraints
@@ -750,9 +776,10 @@ Home Inventory Management is a mobile-first application designed for iOS and/or 
 - User accounts and authentication
 - Quantity-based inventory tracking
 - Price tracking or budget features
-- Barcode scanning
+- Barcode scanning for product entry
 - Recipe or meal planning integration
-- Product categories or organization
 - Expiration date tracking
 - Shopping list optimization by store layout
 - Multi-store support (MVP focuses on 1-2 stores)
+- Product enrichment with external data sources (Open Food Facts, barcode databases)
+- Complex normalization strategies beyond LLM semantic matching

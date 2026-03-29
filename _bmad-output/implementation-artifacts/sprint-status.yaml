@@ -101,3 +101,6 @@ development_status:
   9-3-post-shopping-receipt-scan-prompt: done
   9-4-add-receipt-scan-to-shopping-list-speeddial: done
   epic-9-retrospective: optional
+
+  epic-11: backlog
+  epic-11-retrospective: optional

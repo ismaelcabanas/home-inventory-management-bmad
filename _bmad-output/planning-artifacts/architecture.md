@@ -18,7 +18,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Requirements Overview
 
-**Functional Requirements (44 Total):**
+**Functional Requirements (50 Total):**
 
 The application centers on two core automation workflows:
 
@@ -56,7 +56,14 @@ The application centers on two core automation workflows:
    - Visual confirmation for all user actions
    - Clear error messages and processing status
 
-**Non-Functional Requirements (14 Critical):**
+6. **LLM-Powered Product Matching** (FR44-FR50):
+   - LLM receives current inventory alongside receipt products for contextual matching
+   - Semantic understanding of product variations (e.g., "Galletas Dinosauru" ≈ "Galleta Dinosaurus")
+   - Confidence-based matching: high-confidence (auto-merge), medium/low (user confirmation)
+   - User review interface for uncertain matches
+   - Graceful fallback to basic matching when offline or LLM unavailable
+
+**Non-Functional Requirements (17 Critical):**
 
 **Performance Requirements:**
 - NFR1: All tap/button actions complete within 2 seconds
@@ -80,6 +87,11 @@ The application centers on two core automation workflows:
 - NFR7: New users complete first cycle without tutorial
 - NFR7: Core actions require single tap
 - NFR7: Error correction intuitive for non-technical users
+
+**LLM Integration Requirements:**
+- NFR15: LLM matching accuracy >90% for product-to-inventory matching
+- NFR16: Offline fallback to basic matching when network unavailable
+- NFR17: API cost efficiency (<10% increase over OCR-only)
 
 ### Scale & Complexity
 
@@ -143,17 +155,19 @@ The application centers on two core automation workflows:
 - No authentication/accounts
 - Focus on 1-2 regular supermarkets (receipt format consistency)
 - No quantity tracking (4-state system only)
-- No barcode scanning
+- No barcode scanning for product entry
 - No price extraction or budget features
+- No product enrichment with external data sources (beyond LLM matching)
 
 **External Dependencies:**
-- OCR library or ML model for receipt text extraction (TBD)
+- OCR library or ML model for receipt text extraction (OpenAI GPT-4o mini API)
 - React + MUI framework
-- Local database solution (IndexedDB, LocalStorage, or similar)
+- Local database solution (Dexie.js for IndexedDB)
 - Browser APIs: Camera, Storage, Service Workers
 
 **Success Dependencies:**
 - OCR accuracy ≥95% on target supermarket receipts
+- LLM matching accuracy >90% for product-to-inventory matching
 - Browser camera API quality sufficient for receipt photos
 - Local storage adequate for hundreds of products
 - On-device processing achieves <5 second OCR time
@@ -433,7 +447,7 @@ src/
 │   ├── ocr/         # OCR service with provider architecture
 │   │   ├── ocr.service.ts       # Main OCR service
 │   │   ├── providers/           # OCR provider implementations
-│   │   │   ├── LLMProvider.ts   # OpenAI GPT-4o mini (active)
+│   │   │   ├── LLMProvider.ts   # OpenAI GPT-4o mini (active, with matching)
 │   │   │   └── TesseractProvider.ts # Tesseract.js (deprecated, Story 5.4)
 │   │   └── config.ts            # Provider selection
 │   └── inventory.ts # Inventory operations
@@ -501,6 +515,19 @@ src/
 - Better handling of complex layouts, poor lighting, crumpled receipts
 - Requires API key (VITE_LLM_API_KEY environment variable)
 - Tesseract.js deprecated after Story 5.4 due to accuracy limitations
+
+**LLM-Powered Product Matching (FR44-FR50)**
+- LLM receives current inventory alongside receipt products for intelligent matching
+- Semantic understanding of product variations (e.g., "Galletas Dinosauru" ≈ "Galleta Dinosaurus Cucharad")
+- Returns structured response with:
+  - `matched`: true/false
+  - `matchId`: product ID if matched
+  - `confidence`: "high" | "medium" | "low"
+  - `requiresConfirmation`: true for uncertain matches
+- User review interface for products marked as `requiresConfirmation`
+- Offline fallback: basic matching (trim, lowercase, substring) when LLM unavailable
+- ~10-40% cost increase over OCR-only (~+500-2000 tokens per receipt depending on inventory size)
+- No external dependencies beyond OpenAI API
 
 **Note:** Project initialization using this approach should be the first implementation story.
 
