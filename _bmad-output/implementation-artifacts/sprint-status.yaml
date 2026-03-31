@@ -102,5 +102,6 @@ development_status:
   9-4-add-receipt-scan-to-shopping-list-speeddial: done
   epic-9-retrospective: optional
 
-  epic-11: backlog
+  epic-11: in-progress
+  11-1-fix-view-inventory-button-navigation: review
   epic-11-retrospective: optional
