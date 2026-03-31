@@ -156,7 +156,7 @@ export function ReceiptScanner() {
                   variant="outlined"
                   onClick={() => {
                     clearError();
-                    navigate('/inventory');
+                    navigate('/');
                   }}
                   fullWidth
                 >
@@ -215,7 +215,7 @@ export function ReceiptScanner() {
               <Button
                 variant="contained"
                 size="large"
-                onClick={() => navigate('/inventory')}
+                onClick={() => navigate('/')}
                 fullWidth
                 sx={{ minHeight: 48 }}
               >
