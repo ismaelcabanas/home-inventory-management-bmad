@@ -17,6 +17,10 @@ export interface ProductCardProps {
  * - Short tap: Cycle stock level (high → medium → low → empty → high)
  * - Long press (0.8s): Open edit modal
  *
+ * Story 11.4: Touch gesture detection to prevent accidental interactions during scroll
+ * - Detects scroll vs tap by tracking touch movement
+ * - Only triggers actions when not scrolling
+ *
  * Based on mobile UX best practices for intuitive gestures.
  */
 export const ProductCard = memo(function ProductCard({
@@ -29,6 +33,10 @@ export const ProductCard = memo(function ProductCard({
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [isLongPress, setIsLongPress] = useState(false);
 
+  // Story 11.4: Touch gesture tracking to distinguish scroll from tap
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [isScrolling, setIsScrolling] = useState(false);
+
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Story 7.1: Get gradient and border color based on stock level
@@ -36,8 +44,40 @@ export const ProductCard = memo(function ProductCard({
   const borderColor = getStockLevelBorderColor(product.stockLevel);
   const statusText = getStockLevelText(product.stockLevel);
 
+  // Story 11.4: Touch start - record position
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    setTouchStart({
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    });
+    setIsScrolling(false);
+  }, []);
+
+  // Story 11.4: Touch move - detect if scrolling
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStart) return;
+
+    const deltaX = Math.abs(e.touches[0].clientX - touchStart.x);
+    const deltaY = Math.abs(e.touches[0].clientY - touchStart.y);
+
+    // If moved more than 10px, consider it a scroll
+    if (deltaX > 10 || deltaY > 10) {
+      setIsScrolling(true);
+    }
+  }, [touchStart]);
+
+  // Story 11.4: Touch end - reset scroll state after delay
+  const handleTouchEnd = useCallback(() => {
+    setTouchStart(null);
+    // Reset scrolling state after a short delay
+    setTimeout(() => setIsScrolling(false), 100);
+  }, []);
+
   // Long-press handler for edit
   const startPress = useCallback(() => {
+    // Story 11.4: Don't start press timer if we're scrolling
+    if (isScrolling) return;
+
     setIsLongPress(false);
     // Start timer for long press (0.8s)
     longPressTimerRef.current = setTimeout(() => {
@@ -47,7 +87,7 @@ export const ProductCard = memo(function ProductCard({
         navigator.vibrate(50);
       }
     }, 800);
-  }, []);
+  }, [isScrolling]);
 
   const cancelPress = useCallback(() => {
     if (longPressTimerRef.current) {
@@ -58,6 +98,11 @@ export const ProductCard = memo(function ProductCard({
 
   const handlePressEnd = useCallback(async () => {
     cancelPress();
+    // Story 11.4: Prevent action if we were scrolling
+    if (isScrolling) {
+      return;
+    }
+
     if (isLongPress) {
       // Long press detected - open edit modal
       onEdit(product);
@@ -76,7 +121,7 @@ export const ProductCard = memo(function ProductCard({
       }
     }
     setIsLongPress(false);
-  }, [isLongPress, product, onEdit, onCycleStockLevel, cancelPress]);
+  }, [isLongPress, product, onEdit, onCycleStockLevel, cancelPress, isScrolling]);
 
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
@@ -100,8 +145,10 @@ export const ProductCard = memo(function ProductCard({
           boxShadow: 4,
         }),
       }}
-      onTouchStart={startPress}
-      onTouchEnd={handlePressEnd}
+      // Story 11.4: Use new touch handlers with scroll detection
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       onMouseDown={startPress}
       onMouseUp={handlePressEnd}
       onMouseLeave={cancelPress}
