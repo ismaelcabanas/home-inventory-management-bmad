@@ -4,6 +4,7 @@
 import { createContext, useContext, useReducer, ReactNode, useMemo, useCallback, useRef, useEffect } from 'react';
 import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
+import { eventBus, EVENTS } from '@/utils/eventBus';
 import { ocrService, activeOCRProvider } from '@/services/ocr';
 import { inventoryService } from '@/services/inventory';
 import { shoppingService } from '@/services/shopping';
@@ -710,6 +711,20 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
     };
 
     updatePendingCount();
+  }, []);
+
+  // Story 11.2: Reset receipt state when starting new shopping session
+  useEffect(() => {
+    const handleReset = () => {
+      logger.debug('Resetting receipt state on shopping session start');
+      dispatch({ type: 'RESET' });
+    };
+
+    eventBus.on(EVENTS.RESET_RECEIPT_STATE, handleReset);
+
+    return () => {
+      eventBus.off(EVENTS.RESET_RECEIPT_STATE, handleReset);
+    };
   }, []);
 
   const value: ReceiptContextValue = useMemo(
