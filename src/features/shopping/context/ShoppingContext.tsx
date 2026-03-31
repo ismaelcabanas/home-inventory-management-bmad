@@ -194,6 +194,7 @@ export function ShoppingProvider({ children }: ShoppingProviderProps) {
   );
 
   // Remove product from shopping list (manual override)
+  // Story 11.5: Fixed - Reload items after removal to update UI
   const removeFromList = useCallback(
     async (productId: string) => {
       try {
@@ -202,9 +203,9 @@ export function ShoppingProvider({ children }: ShoppingProviderProps) {
 
         await shoppingService.removeFromList(productId);
 
-        // Update count to reflect the removal
-        const newCount = await shoppingService.getShoppingListCount();
-        dispatch({ type: 'UPDATE_COUNT', payload: newCount });
+        // Story 11.5: Reload items to update UI after removal
+        const items = await shoppingService.getShoppingListItems();
+        dispatch({ type: 'SET_ITEMS', payload: items });
 
         logger.info('Product removed from shopping list', { productId });
       } catch (error) {
