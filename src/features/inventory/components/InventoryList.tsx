@@ -140,7 +140,7 @@ export function InventoryList() {
   };
 
   return (
-    <Box sx={{ width: '100%', boxSizing: 'border-box', pb: 10 }}> {/* Bottom padding to account for sticky SearchFabRow + BottomNav */}
+    <Box sx={{ width: '100%', boxSizing: 'border-box', pb: 10, bgcolor: 'background.default' }}> {/* Bottom padding to account for sticky SearchFabRow + BottomNav */}
       {/* Centered header with title and home icon */}
       <Box
         sx={{
