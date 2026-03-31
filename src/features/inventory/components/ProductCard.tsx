@@ -46,19 +46,20 @@ export const ProductCard = memo(function ProductCard({
 
   // Story 11.4: Touch start - record position
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 0) return;
     setTouchStart({
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY,
+      x: e.touches[0]!.clientX,
+      y: e.touches[0]!.clientY,
     });
     setIsScrolling(false);
   }, []);
 
   // Story 11.4: Touch move - detect if scrolling
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStart) return;
+    if (!touchStart || e.touches.length === 0) return;
 
-    const deltaX = Math.abs(e.touches[0].clientX - touchStart.x);
-    const deltaY = Math.abs(e.touches[0].clientY - touchStart.y);
+    const deltaX = Math.abs(e.touches[0]!.clientX - touchStart.x);
+    const deltaY = Math.abs(e.touches[0]!.clientY - touchStart.y);
 
     // If moved more than 10px, consider it a scroll
     if (deltaX > 10 || deltaY > 10) {
