@@ -1,6 +1,6 @@
 # Story 11.1: Fix "View Inventory" Button Navigation
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
