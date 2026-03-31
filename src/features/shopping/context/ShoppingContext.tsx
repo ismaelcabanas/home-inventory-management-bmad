@@ -5,6 +5,7 @@ import { createContext, useContext, useReducer, ReactNode, useMemo, useCallback,
 import { shoppingService } from '@/services/shopping';
 import { handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
+import { eventBus, EVENTS } from '@/utils/eventBus';
 import type { Product } from '@/types/product';
 
 // State interface
@@ -258,6 +259,10 @@ export function ShoppingProvider({ children }: ShoppingProviderProps) {
   const startShoppingMode = useCallback(async () => {
     try {
       logger.debug('Starting shopping mode');
+
+      // Story 11.2: Reset receipt state to clear previous session data
+      eventBus.emit(EVENTS.RESET_RECEIPT_STATE);
+      logger.debug('Emitted receipt state reset event');
 
       // Persist to localStorage
       await shoppingService.setShoppingMode(true);
