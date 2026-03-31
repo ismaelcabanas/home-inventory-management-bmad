@@ -194,6 +194,23 @@ function receiptReducer(state: ReceiptState, action: ReceiptAction): ReceiptStat
       }
       return initialState;
 
+    case 'RESET_SESSION':
+      // Story 11.2: Reset receipt session state while preserving environmental fields
+      // This prevents losing isOnline, pendingReceiptsCount, and isOCRConfigured
+      // when starting a new shopping session (mount-only useEffect hooks won't rerun)
+      // Cleanup stream if present
+      if (state.videoStream) {
+        state.videoStream.getTracks().forEach((track) => track.stop());
+      }
+      // Only reset session fields, preserve environmental state
+      return {
+        ...initialState,
+        // Preserve these environmental fields that are set by mount-only effects
+        isOnline: state.isOnline,
+        pendingReceiptsCount: state.pendingReceiptsCount,
+        isOCRConfigured: state.isOCRConfigured,
+      };
+
     default:
       return state;
   }
@@ -717,7 +734,7 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
   useEffect(() => {
     const handleReset = () => {
       logger.debug('Resetting receipt state on shopping session start');
-      dispatch({ type: 'RESET' });
+      dispatch({ type: 'RESET_SESSION' });
     };
 
     eventBus.on(EVENTS.RESET_RECEIPT_STATE, handleReset);
