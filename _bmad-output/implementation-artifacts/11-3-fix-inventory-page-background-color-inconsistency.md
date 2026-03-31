@@ -1,6 +1,6 @@
 # Story 11.3: Fix Inventory Page Background Color Inconsistency
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -33,20 +33,20 @@ When viewing the inventory page, the background of products at the top is blank/
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Investigate and identify root cause of background inconsistency (AC: 1, 2)
-  - [ ] Subtask 1.1: Inspect InventoryList component for conditional styling based on scroll
-  - [ ] Subtask 1.2: Check parent container (AppLayout) for background color issues
-  - [ ] Subtask 1.3: Verify MUI theme is being applied correctly
+- [x] Task 1: Investigate and identify root cause of background inconsistency (AC: 1, 2)
+  - [x] Subtask 1.1: Inspect InventoryList component for conditional styling based on scroll
+  - [x] Subtask 1.2: Check parent container (AppLayout) for background color issues
+  - [x] Subtask 1.3: Verify MUI theme is being applied correctly
 
-- [ ] Task 2: Fix background color consistency (AC: 1, 2, 3)
-  - [ ] Subtask 2.1: Apply consistent background color to main container
-  - [ ] Subtask 2.2: Ensure all child components inherit or override correctly
-  - [ ] Subtask 2.3: Test on different screen sizes and scroll positions
+- [x] Task 2: Fix background color consistency (AC: 1, 2, 3)
+  - [x] Subtask 2.1: Apply consistent background color to main container
+  - [x] Subtask 2.2: Ensure all child components inherit or override correctly
+  - [x] Subtask 2.3: Test on different screen sizes and scroll positions
 
-- [ ] Task 3: Add tests and verify fix (AC: 1, 2, 3)
-  - [ ] Subtask 3.1: Add visual regression test if applicable
-  - [ ] Subtask 3.2: Manually test scrolling behavior
-  - [ ] Subtask 3.3: Run all tests to verify no regressions
+- [x] Task 3: Add tests and verify fix (AC: 1, 2, 3)
+  - [x] Subtask 3.1: Add visual regression test if applicable
+  - [x] Subtask 3.2: Manually test scrolling behavior
+  - [x] Subtask 3.3: Run all tests to verify no regressions
 
 ## Dev Notes
 
