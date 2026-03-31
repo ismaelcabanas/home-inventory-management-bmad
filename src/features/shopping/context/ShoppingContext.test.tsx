@@ -5,6 +5,18 @@ import { shoppingService } from '@/services/shopping';
 import React from 'react';
 import type { Product } from '@/types/product';
 
+// Mock eventBus for Story 11.2
+vi.mock('@/utils/eventBus', () => ({
+  eventBus: {
+    emit: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+  },
+  EVENTS: {
+    RESET_RECEIPT_STATE: 'receipt:reset-state',
+  },
+}));
+
 // Mock dependencies
 vi.mock('@/services/shopping', () => ({
   shoppingService: {
@@ -718,6 +730,23 @@ describe('ShoppingContext', () => {
 
       // When getShoppingMode fails, it should default to false (Planning Mode)
       expect(result.current.state.isShoppingMode).toBe(false);
+    });
+
+    // Story 11.2: Event-driven reset - Copilot Comment #3
+    it('should emit RESET_RECEIPT_STATE event when starting shopping mode', async () => {
+      const { eventBus } = await import('@/utils/eventBus');
+      const emitSpy = vi.mocked(eventBus.emit);
+
+      mockShoppingService.setShoppingMode.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useShoppingList(), { wrapper });
+
+      await act(async () => {
+        await result.current.startShoppingMode();
+      });
+
+      // Verify the reset event was emitted
+      expect(emitSpy).toHaveBeenCalledWith('receipt:reset-state');
     });
   });
 
