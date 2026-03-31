@@ -1,6 +1,6 @@
 # Story 11.5: Fix Remove Item Functionality in Shopping Page
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -34,20 +34,20 @@ The remove item button/functionality in the shopping page does not work, prevent
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Investigate remove button implementation (AC: 1)
-  - [ ] Subtask 1.1: Locate remove button in ShoppingListItem component
-  - [ ] Subtask 1.2: Check if event handler is wired correctly
-  - [ ] Subtask 1.3: Check for JavaScript errors in console when clicking remove
+- [x] Task 1: Investigate remove button implementation (AC: 1)
+  - [x] Subtask 1.1: Locate remove button in ShoppingListItem component
+  - [x] Subtask 1.2: Check if event handler is wired correctly
+  - [x] Subtask 1.3: Check for JavaScript errors in console when clicking remove
 
-- [ ] Task 2: Fix remove functionality (AC: 1, 2)
-  - [ ] Subtask 2.1: Ensure event handler calls ShoppingContext.removeFromList
-  - [ ] Subtask 2.2: Verify state updates correctly after removal
-  - [ ] Subtask 2.3: Verify removal persists to database (IndexedDB)
+- [x] Task 2: Fix remove functionality (AC: 1, 2)
+  - [x] Subtask 2.1: Ensure event handler calls ShoppingContext.removeFromList
+  - [x] Subtask 2.2: Verify state updates correctly after removal
+  - [x] Subtask 2.3: Verify removal persists to database (IndexedDB)
 
-- [ ] Task 3: Add visual feedback and verify (AC: 1, 2, 3)
-  - [ ] Subtask 3.1: Add visual feedback during removal (loading state or animation)
-  - [ ] Subtask 3.2: Test item can be re-added after removal
-  - [ ] Subtask 3.3: Run all tests to verify no regressions
+- [x] Task 3: Add visual feedback and verify (AC: 1, 2, 3)
+  - [x] Subtask 3.1: Add visual feedback during removal (loading state or animation)
+  - [x] Subtask 3.2: Test item can be re-added after removal
+  - [x] Subtask 3.3: Run all tests to verify no regressions
 
 ## Dev Notes
 

@@ -107,5 +107,5 @@ development_status:
   11-2-fix-shopping-session-state-persistence: ready-for-dev
   11-3-fix-inventory-page-background-color-inconsistency: done
   11-4-prevent-accidental-interactions-when-scrolling: ready-for-dev
-  11-5-fix-remove-item-functionality-in-shopping-page: ready-for-dev
+  11-5-fix-remove-item-functionality-in-shopping-page: done
   epic-11-retrospective: optional
