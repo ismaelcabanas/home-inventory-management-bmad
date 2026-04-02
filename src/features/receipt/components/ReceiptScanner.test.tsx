@@ -8,6 +8,7 @@ import '@testing-library/jest-dom';
 import { MemoryRouter } from 'react-router-dom';
 import { ReceiptScanner } from './ReceiptScanner';
 import { ReceiptProvider } from '@/features/receipt/context/ReceiptContext';
+import { ShoppingProvider } from '@/features/shopping/context/ShoppingContext';
 
 // Mock navigation
 const mockNavigate = vi.fn();
@@ -51,7 +52,9 @@ vi.mock('@/utils/network', () => ({
 function renderWithProviders(ui: React.ReactElement) {
   return render(
     <MemoryRouter>
-      <ReceiptProvider>{ui}</ReceiptProvider>
+      <ShoppingProvider>
+        <ReceiptProvider>{ui}</ReceiptProvider>
+      </ShoppingProvider>
     </MemoryRouter>
   );
 }
