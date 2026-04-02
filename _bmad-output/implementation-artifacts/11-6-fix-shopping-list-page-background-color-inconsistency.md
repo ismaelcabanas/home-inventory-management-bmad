@@ -165,26 +165,28 @@ Claude (glm-4.7)
 ### Completion Notes List
 
 **Root Cause Identified:**
-- MUI theme was configured with `mode: 'light'`
-- This made `background.default` resolve to white
-- App's global CSS uses dark background (`#242424`)
-- ShoppingList used `bgcolor: 'background.default'` which appeared white
-- Created inconsistency: white at top, dark (from global CSS) when scrolling
+- The `:root` element in `src/index.css` had `background-color: #242424` (dark gray)
+- This dark background showed through gaps/margins when scrolling in shopping list
+- The ShoppingList component had correct `bgcolor: 'background.default'` but parent page was dark
+- The app uses MUI light mode theme (`mode: 'light'` in theme.ts)
+- Inconsistency between component-level light background and page-level dark background
 
 **Fix Applied:**
-- Changed MUI theme mode from 'light' to 'dark'
-- Now `background.default` resolves to dark color
-- Matches app's global dark theme consistently
+- Changed `:root` `background-color` from `#242424` to `#f5f5f5` (light gray)
+- Changed `color-scheme` from `light dark` to `light` only
+- Updated text color to dark for light mode readability
+- Updated button background to light mode color
+- Now the entire app has consistent light background
 - All 692 tests passing
 
 **File Modified:**
-- `src/theme/theme.ts` - Changed `mode: 'light'` to `mode: 'dark'`
+- `src/index.css` - Changed root background and color scheme for light mode
 
 **Note:**
-This fix applies globally to the entire app, not just shopping list. The inventory page (Story 11.3) may have had the same issue which is now also fixed.
+This fix applies globally to the entire app, ensuring consistent light mode background across all pages including shopping list and inventory.
 
 ### File List
 
-- src/theme/theme.ts
+- src/index.css
 
 ---
