@@ -51,8 +51,11 @@ export class ShoppingService {
     try {
       logger.debug('Adding product to shopping list', { productId });
 
-      // Directly set isOnShoppingList to true without modifying stockLevel
-      await db.products.update(productId, { isOnShoppingList: true });
+      // Story 11.8: Always initialize isChecked as false when adding to list
+      await db.products.update(productId, {
+        isOnShoppingList: true,
+        isChecked: false,
+      });
 
       logger.info('Product added to shopping list', { productId });
     } catch (error) {
@@ -66,8 +69,12 @@ export class ShoppingService {
     try {
       logger.debug('Removing product from shopping list', { productId });
 
-      // Directly set isOnShoppingList to false without modifying stockLevel
-      await db.products.update(productId, { isOnShoppingList: false });
+      // Story 11.8: Clear isChecked flag when removing from list
+      // This prevents items from re-appearing as "bought" if added again
+      await db.products.update(productId, {
+        isOnShoppingList: false,
+        isChecked: false,
+      });
 
       logger.info('Product removed from shopping list', { productId });
     } catch (error) {
@@ -147,8 +154,10 @@ export class ShoppingService {
           const product = await inventoryService.findExistingProduct(name);
 
           if (product && product.isOnShoppingList) {
+            // Story 11.8: Clear isChecked flag for consistency
             await db.products.update(product.id!, {
               isOnShoppingList: false,
+              isChecked: false,
             });
             removedCount++;
             logger.info(`Removed from shopping list: ${name}`);
