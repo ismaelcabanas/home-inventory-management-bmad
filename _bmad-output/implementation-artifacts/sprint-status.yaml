@@ -108,4 +108,5 @@ development_status:
   11-3-fix-inventory-page-background-color-inconsistency: done
   11-4-prevent-accidental-interactions-when-scrolling: done
   11-5-fix-remove-item-functionality-in-shopping-page: done
+  11-6-fix-shopping-list-page-background-color-inconsistency: ready-for-dev
   epic-11-retrospective: optional
