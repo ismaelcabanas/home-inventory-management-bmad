@@ -1,4 +1,4 @@
-import { memo, useState, useRef, useCallback } from 'react';
+import { memo, useState, useRef, useCallback, useEffect } from 'react';
 import { Card, Typography, Box, Snackbar, Alert } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import type { Product } from '@/types/product';
@@ -38,6 +38,20 @@ export const ProductCard = memo(function ProductCard({
   const [isScrolling, setIsScrolling] = useState(false);
 
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Story 11.4: Store scroll state reset timeout to clear on unmount
+  const scrollResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Story 11.4: Clear any pending timers on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+      if (scrollResetTimerRef.current) {
+        clearTimeout(scrollResetTimerRef.current);
+      }
+    };
+  }, []);
 
   // Story 7.1: Get gradient and border color based on stock level
   const gradient = getStockLevelGradient(product.stockLevel);
@@ -70,8 +84,12 @@ export const ProductCard = memo(function ProductCard({
   // Story 11.4: Touch end - reset scroll state after delay
   const handleTouchEnd = useCallback(() => {
     setTouchStart(null);
+    // Clear any existing reset timer before scheduling a new one
+    if (scrollResetTimerRef.current) {
+      clearTimeout(scrollResetTimerRef.current);
+    }
     // Reset scrolling state after a short delay
-    setTimeout(() => setIsScrolling(false), 100);
+    scrollResetTimerRef.current = setTimeout(() => setIsScrolling(false), 100);
   }, []);
 
   // Long-press handler for edit
@@ -146,10 +164,20 @@ export const ProductCard = memo(function ProductCard({
           boxShadow: 4,
         }),
       }}
-      // Story 11.4: Use new touch handlers with scroll detection
-      onTouchStart={handleTouchStart}
+      // Story 11.4: Wire touch handlers to press lifecycle with scroll detection
+      onTouchStart={(event) => {
+        handleTouchStart(event);
+        startPress();
+      }}
       onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      onTouchEnd={() => {
+        handleTouchEnd();
+        handlePressEnd();
+      }}
+      onTouchCancel={() => {
+        handleTouchEnd();
+        cancelPress();
+      }}
       onMouseDown={startPress}
       onMouseUp={handlePressEnd}
       onMouseLeave={cancelPress}
