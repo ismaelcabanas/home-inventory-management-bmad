@@ -153,19 +153,26 @@ export class ShoppingService {
         for (const name of productNames) {
           const product = await inventoryService.findExistingProduct(name);
 
-          if (product && product.isOnShoppingList) {
-            // Story 11.8: Clear isChecked flag for consistency
+          if (product) {
+            // Story 11.8: Clear both isOnShoppingList AND isChecked for ANY matched product
+            // This is important because replenishStock() sets isOnShoppingList: false
+            // before calling this method, so we can't rely on isOnShoppingList state
+            const wasOnShoppingList = product.isOnShoppingList;
+
             await db.products.update(product.id!, {
               isOnShoppingList: false,
               isChecked: false,
             });
-            removedCount++;
-            logger.info(`Removed from shopping list: ${name}`);
+
+            if (wasOnShoppingList) {
+              removedCount++;
+            }
+            logger.info(`Processed purchased product: ${name}`);
           }
         }
       });
 
-      logger.info('Purchased items removed from shopping list', { count: removedCount });
+      logger.info('Purchased items processed', { count: removedCount });
       return removedCount;
     } catch (error) {
       const appError = handleError(error);

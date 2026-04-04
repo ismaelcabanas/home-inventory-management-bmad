@@ -132,6 +132,41 @@ describe('ShoppingService', () => {
       const updated = await inventoryService.getProduct(product.id);
       expect(updated?.stockLevel).toBe(originalStock);
     });
+
+    it('Story 11.8: should always set isChecked to false when adding to list', async () => {
+      const product = await inventoryService.addProduct('Milk');
+
+      // First, mark as bought
+      await shoppingService.updateCheckedState(product.id, true);
+      expect((await inventoryService.getProduct(product.id))?.isChecked).toBe(true);
+
+      // Remove from list
+      await shoppingService.removeFromList(product.id);
+      expect((await inventoryService.getProduct(product.id))?.isOnShoppingList).toBe(false);
+      expect((await inventoryService.getProduct(product.id))?.isChecked).toBe(false);
+
+      // Re-add to list - should have isChecked: false
+      await shoppingService.addToList(product.id);
+
+      const updated = await inventoryService.getProduct(product.id);
+      expect(updated?.isOnShoppingList).toBe(true);
+      expect(updated?.isChecked).toBe(false);
+    });
+
+    it('Story 11.8: should reset isChecked to false even if previously true', async () => {
+      const product = await inventoryService.addProduct('Eggs');
+
+      // Mark as bought first
+      await shoppingService.updateCheckedState(product.id, true);
+      expect((await inventoryService.getProduct(product.id))?.isChecked).toBe(true);
+
+      // Add to list - should reset isChecked to false
+      await shoppingService.addToList(product.id);
+
+      const updated = await inventoryService.getProduct(product.id);
+      expect(updated?.isChecked).toBe(false);
+      expect(updated?.isOnShoppingList).toBe(true);
+    });
   });
 
   describe('removeFromList', () => {
@@ -155,6 +190,46 @@ describe('ShoppingService', () => {
 
       const updated = await inventoryService.getProduct(product.id);
       expect(updated?.stockLevel).toBe(originalStock);
+    });
+
+    it('Story 11.8: should clear isChecked when removing from list', async () => {
+      const product = await inventoryService.addProduct('Cheese');
+      await shoppingService.addToList(product.id);
+
+      // Mark as bought
+      await shoppingService.updateCheckedState(product.id, true);
+      expect((await inventoryService.getProduct(product.id))?.isChecked).toBe(true);
+
+      // Remove from list - should clear isChecked
+      await shoppingService.removeFromList(product.id);
+
+      const updated = await inventoryService.getProduct(product.id);
+      expect(updated?.isOnShoppingList).toBe(false);
+      expect(updated?.isChecked).toBe(false);
+    });
+
+    it('Story 11.8: should prevent re-added as bought bug scenario', async () => {
+      const product = await inventoryService.addProduct('Yogurt');
+
+      // Scenario: Product runs low → auto-added
+      await inventoryService.updateProduct(product.id, { stockLevel: 'low' });
+      expect((await inventoryService.getProduct(product.id))?.isOnShoppingList).toBe(true);
+
+      // User marks as bought
+      await shoppingService.updateCheckedState(product.id, true);
+      expect((await inventoryService.getProduct(product.id))?.isChecked).toBe(true);
+
+      // User removes from list
+      await shoppingService.removeFromList(product.id);
+      expect((await inventoryService.getProduct(product.id))?.isOnShoppingList).toBe(false);
+      expect((await inventoryService.getProduct(product.id))?.isChecked).toBe(false);
+
+      // Product runs low again → auto-added
+      await inventoryService.updateProduct(product.id, { stockLevel: 'low' });
+
+      const updated = await inventoryService.getProduct(product.id);
+      expect(updated?.isOnShoppingList).toBe(true);
+      expect(updated?.isChecked).toBe(false); // Should NOT be checked
     });
   });
 
@@ -391,6 +466,45 @@ describe('ShoppingService', () => {
 
       const items = await shoppingService.getShoppingListItems();
       expect(items).toHaveLength(0);
+    });
+
+    it('Story 11.8: should clear isChecked even when isOnShoppingList is false (receipt flow)', async () => {
+      // Simulate receipt flow:
+      // 1. Product is on shopping list and marked as bought
+      const product = await inventoryService.addProduct('Milk');
+      await shoppingService.addToList(product.id);
+      await shoppingService.updateCheckedState(product.id, true);
+
+      expect((await inventoryService.getProduct(product.id))?.isOnShoppingList).toBe(true);
+      expect((await inventoryService.getProduct(product.id))?.isChecked).toBe(true);
+
+      // 2. replenishStock() sets isOnShoppingList: false BEFORE calling removePurchasedItems
+      await db.products.update(product.id, { isOnShoppingList: false });
+      expect((await inventoryService.getProduct(product.id))?.isOnShoppingList).toBe(false);
+      expect((await inventoryService.getProduct(product.id))?.isChecked).toBe(true); // Still true!
+
+      // 3. removePurchasedItems() should clear isChecked regardless of isOnShoppingList state
+      await shoppingService.removePurchasedItems(['Milk']);
+
+      // Verify isChecked is cleared even though isOnShoppingList was already false
+      const updated = await inventoryService.getProduct(product.id);
+      expect(updated?.isChecked).toBe(false);
+    });
+
+    it('Story 11.8: should clear isChecked for products on shopping list', async () => {
+      // Normal flow: product is on list and marked as bought
+      const product = await inventoryService.addProduct('Bread');
+      await shoppingService.addToList(product.id);
+      await shoppingService.updateCheckedState(product.id, true);
+
+      expect((await inventoryService.getProduct(product.id))?.isChecked).toBe(true);
+
+      // removePurchasedItems should clear isChecked
+      await shoppingService.removePurchasedItems(['Bread']);
+
+      const updated = await inventoryService.getProduct(product.id);
+      expect(updated?.isOnShoppingList).toBe(false);
+      expect(updated?.isChecked).toBe(false);
     });
   });
 });
