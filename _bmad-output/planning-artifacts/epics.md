@@ -1,9 +1,9 @@
 ---
 stepsCompleted: [1, 2, 3]
-totalEpics: 11
-totalStories: 45 (40 existing + 5 new for Epic 11)
+totalEpics: 12
+totalStories: 48 (40 existing + 5 new for Epic 11 + 3 new for Epic 12)
 requirementsCoverage: "50/50 FRs (100%)"
-note: Epic 11 added for Production Bug Fixes
+note: Epic 11 added for Production Bug Fixes, Epic 12 added for Testing Strategy
 inputDocuments:
   - "_bmad-output/planning-artifacts/prd.md"
   - "_bmad-output/planning-artifacts/architecture.md"
@@ -334,6 +334,12 @@ Users scan receipts and the system intelligently matches products even with diff
 Users experience a stable, reliable application with fixed production bugs affecting navigation, state management, visual consistency, user interactions, and core functionality.
 **FRs covered:** N/A (Bug fixes)
 **Priority:** High - Production issues affecting user experience
+
+### Epic 12: Testing Strategy Documentation and Reorganization
+
+Developers follow consistent testing practices with clear guidelines on when and how to write unit, integration, and E2E tests. Integration tests are reorganized to follow React/Vitest industry standards.
+**FRs covered:** N/A (Technical improvement - documentation and organization)
+**Priority:** Medium - Improves code quality and maintainability
 
 ---
 
@@ -777,6 +783,124 @@ The remove item button/functionality in the shopping page does not work, prevent
 - Visual/Styling: Story 11.3
 - User Interaction/UX: Story 11.4
 - Functional Bug: Story 11.5
+
+---
+
+### Story 12.1: Create Testing Guidelines Documentation
+
+As a **developer**,
+I want comprehensive testing guidelines documentation,
+So that all contributors follow consistent testing practices.
+
+**Acceptance Criteria:**
+
+**Given** I am a new developer joining the project
+**When** I need to write tests
+**Then** I can refer to `TESTING_GUIDELINES.md` for:
+  - Test type definitions (Unit, Integration, E2E)
+  - Folder structure conventions
+  - When to use each test type
+  - File naming conventions
+  - Coverage targets per story
+  - Testing best practices
+
+**Given** I review the testing guidelines
+**When** I look for the current state
+**Then** I see documented:
+  - Current test coverage gaps (Stories 5-11 missing integration/E2E)
+  - Current integration test location issue (`src/integration/` vs standard)
+  - **Action item:** Review current testing strategy before adding new integration/E2E tests
+
+**Technical Notes:**
+- Create `TESTING_GUIDELINES.md` in project root
+- Document current test structure: 19 integration tests (Stories 3.2, 4.1), ~12 E2E tests
+- Document coverage gaps for Stories 5-11
+- Include React/Vitest/Playwright conventions
+- Note that adding new integration/E2E tests is deferred pending strategy review
+
+---
+
+### Story 12.2: Move Integration Tests to Standard Location
+
+As a **developer**,
+I want integration tests to follow React/Vitest conventions,
+So that the test structure matches industry standards.
+
+**Acceptance Criteria:**
+
+**Given** integration tests currently exist in `src/integration/`
+**When** the migration is complete
+**Then** All integration tests are moved to `src/__tests__/integration/`
+**And** All imports in test files are updated to reflect new paths
+**And** `vitest.config.ts` includes the new test pattern if needed
+**And** All tests still pass after migration
+
+**Given** the migration is complete
+**When** I run `npm test`
+**Then** All 19 integration tests execute successfully
+**And** No import errors occur
+**And** Test coverage reports remain accurate
+
+**Technical Notes:**
+- Move `src/integration/auto-removal.integration.test.ts` → `src/__tests__/integration/auto-removal.integration.test.ts`
+- Move `src/integration/auto-removal.persistence.test.ts` → `src/__tests__/integration/auto-removal.persistence.test.ts`
+- Move `src/integration/check-off-items.persistence.test.ts` → `src/__tests__/integration/check-off-items.persistence.test.ts`
+- Update all import statements in moved files
+- Update `vitest.config.ts` if needed to include `src/__tests__/integration/` pattern
+- Verify all 19 tests pass after migration
+- Delete empty `src/integration/` directory after migration
+
+---
+
+### Story 12.3: Review and Update CI Configuration for Test Execution
+
+As a **developer**,
+I want CI to run tests in optimal order,
+So that feedback is fast and reliable.
+
+**Acceptance Criteria:**
+
+**Given** the project uses GitHub Actions or similar CI
+**When** I review the CI configuration
+**Then** Tests run in this order:
+  1. Unit tests (fastest feedback)
+  2. Integration tests (Vitest)
+  3. E2E tests (slowest, only if previous pass)
+
+**Given** a test type fails
+**When** the failure occurs
+**Then** Subsequent test types are skipped (fail fast)
+**And** Developers get quick feedback on what broke
+
+**Given** the CI configuration is updated
+**When** I push code to the repository
+**Then** I see separate test results for each test type
+**And** Coverage reports are generated for unit and integration tests
+**And** E2E test results show pass/fail status with screenshots on failure
+
+**Technical Notes:**
+- Review `.github/workflows/` or CI configuration file
+- Add separate jobs for each test type if not already present
+- Configure test reporting and coverage thresholds
+- Add integration test job after unit tests
+- Run E2E tests only on main branch or PR merge (not on every push)
+- Ensure fail-fast behavior is configured
+- Add test result artifacts (coverage reports, E2E screenshots)
+- Consider parallel execution for faster feedback
+
+---
+
+## Epic 12 Summary
+
+**Stories Created:** 3 stories
+- Story 12.1: Create Testing Guidelines Documentation
+- Story 12.2: Move Integration Tests to Standard Location
+- Story 12.3: Review and Update CI Configuration
+
+**FRs Covered:** N/A (Technical improvement - documentation and organization)
+**Priority:** Medium - Improves code quality and maintainability
+
+**Note:** This epic focuses on documentation and reorganization only. Adding new integration/E2E test coverage for Stories 5-11 will be deferred until after a careful review of the current testing strategy.
 
 ---
 
