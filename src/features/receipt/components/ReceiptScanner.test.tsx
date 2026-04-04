@@ -8,6 +8,7 @@ import '@testing-library/jest-dom';
 import { MemoryRouter } from 'react-router-dom';
 import { ReceiptScanner } from './ReceiptScanner';
 import { ReceiptProvider } from '@/features/receipt/context/ReceiptContext';
+import { ShoppingProvider } from '@/features/shopping/context/ShoppingContext';
 
 // Mock navigation
 const mockNavigate = vi.fn();
@@ -25,6 +26,13 @@ vi.mock('@/services/inventory', () => ({
 
 vi.mock('@/services/shopping', () => ({
   shoppingService: {
+    getShoppingListItems: vi.fn().mockResolvedValue([]),
+    getShoppingListCount: vi.fn().mockResolvedValue(0),
+    getShoppingMode: vi.fn().mockResolvedValue(false),
+    setShoppingMode: vi.fn().mockResolvedValue(undefined),
+    updateCheckedState: vi.fn().mockResolvedValue(undefined),
+    removeFromList: vi.fn().mockResolvedValue(undefined),
+    addToList: vi.fn().mockResolvedValue(undefined),
     removePurchasedItems: vi.fn().mockResolvedValue(0),
   },
 }));
@@ -51,7 +59,9 @@ vi.mock('@/utils/network', () => ({
 function renderWithProviders(ui: React.ReactElement) {
   return render(
     <MemoryRouter>
-      <ReceiptProvider>{ui}</ReceiptProvider>
+      <ShoppingProvider>
+        <ReceiptProvider>{ui}</ReceiptProvider>
+      </ShoppingProvider>
     </MemoryRouter>
   );
 }
