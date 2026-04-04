@@ -14,7 +14,7 @@
  * - error: Shows error message with retry option
  */
 
-import { Fragment, useState } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { Box, Stack, Button, Typography, List, ListItem, ListItemText, Chip, Alert, CircularProgress, LinearProgress } from '@mui/material';
 import { Receipt as ReceiptIcon, CheckCircle, Error as ErrorIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -27,6 +27,7 @@ import { ImagePreview } from '@/features/receipt/components/ImagePreview';
 import { OCRProcessing } from '@/features/receipt/components/OCRProcessing';
 import { ReceiptError } from '@/features/receipt/components/ReceiptError';
 import { ReceiptReview } from '@/features/receipt/components/ReceiptReview'; // Story 5.3
+import type { RecognizedProduct } from '@/features/receipt/types/receipt.types';
 
 export function ReceiptScanner() {
   const navigate = useNavigate();
@@ -36,6 +37,15 @@ export function ReceiptScanner() {
   // Story 11.7: Reconciliation dialog state
   const [reconciliationDialogOpen, setReconciliationDialogOpen] = useState(false);
   const [unconfirmedItems, setUnconfirmedItems] = useState<{ id: string; name: string }[]>([]);
+  // Store confirmed products to avoid stale closure issues
+  const [confirmedProducts, setConfirmedProducts] = useState<RecognizedProduct[]>([]);
+
+  // Story 11.7: Load shopping list on mount to ensure unconfirmed items check works correctly
+  useEffect(() => {
+    loadShoppingList().catch(error => {
+      logger.error('Failed to load shopping list on mount', error);
+    });
+  }, [loadShoppingList]);
 
   // Handle "Scan Receipt" button press
   const handleStartScanning = async () => {
@@ -51,16 +61,25 @@ export function ReceiptScanner() {
   const handleKeepInList = async () => {
     // Clear isChecked status for unconfirmed items, keep them in list
     try {
-      const shoppingService = (await import('@/services/shopping')).shoppingService;
-      for (const item of unconfirmedItems) {
-        await shoppingService.updateCheckedState(item.id, false);
+      const { shoppingService } = await import('@/services/shopping');
+      // Use Promise.all for parallel processing with error handling
+      const results = await Promise.allSettled(
+        unconfirmedItems.map(item => shoppingService.updateCheckedState(item.id, false))
+      );
+      // Log any failures but continue
+      const failures = results.filter(r => r.status === 'rejected');
+      if (failures.length > 0) {
+        logger.warn(`Failed to clear bought status for ${failures.length} items`, {
+          failures: failures.length,
+          total: unconfirmedItems.length
+        });
       }
       setReconciliationDialogOpen(false);
       setUnconfirmedItems([]);
       await loadShoppingList();
-      // Still need to process the receipt inventory update
+      // Still need to process the receipt inventory update with stored products
       confirmReview();
-      await updateInventoryFromReceipt();
+      await updateInventoryFromReceipt(confirmedProducts);
       navigate('/');
     } catch (error) {
       logger.error('Failed to clear bought status', error);
@@ -70,16 +89,25 @@ export function ReceiptScanner() {
   const handleRemoveFromList = async () => {
     // Remove unconfirmed items from shopping list
     try {
-      const shoppingService = (await import('@/services/shopping')).shoppingService;
-      for (const item of unconfirmedItems) {
-        await shoppingService.removeFromList(item.id);
+      const { shoppingService } = await import('@/services/shopping');
+      // Use Promise.all for parallel processing with error handling
+      const results = await Promise.allSettled(
+        unconfirmedItems.map(item => shoppingService.removeFromList(item.id))
+      );
+      // Log any failures but continue
+      const failures = results.filter(r => r.status === 'rejected');
+      if (failures.length > 0) {
+        logger.warn(`Failed to remove ${failures.length} items from list`, {
+          failures: failures.length,
+          total: unconfirmedItems.length
+        });
       }
       setReconciliationDialogOpen(false);
       setUnconfirmedItems([]);
       await loadShoppingList();
-      // Still need to process the receipt inventory update
+      // Still need to process the receipt inventory update with stored products
       confirmReview();
-      await updateInventoryFromReceipt();
+      await updateInventoryFromReceipt(confirmedProducts);
       navigate('/');
     } catch (error) {
       logger.error('Failed to remove items from list', error);
@@ -88,17 +116,21 @@ export function ReceiptScanner() {
 
   const handleKeepMarked = async () => {
     // Leave isChecked status unchanged, just process receipt and navigate
-    setReconciliationDialogOpen(false);
-    setUnconfirmedItems([]);
-    // Process the receipt inventory update
-    confirmReview();
-    await updateInventoryFromReceipt();
-    navigate('/');
+    try {
+      setReconciliationDialogOpen(false);
+      setUnconfirmedItems([]);
+      // Process the receipt inventory update with stored products
+      confirmReview();
+      await updateInventoryFromReceipt(confirmedProducts);
+      navigate('/');
+    } catch (error) {
+      logger.error('Failed to process receipt', error);
+    }
   };
 
   const handleCloseReconciliationDialog = () => {
-    // Treat as "Keep Marked"
-    handleKeepMarked();
+    // Treat as "Keep Marked" - explicitly handle the promise
+    void handleKeepMarked();
   };
 
   // Render content based on state
@@ -135,15 +167,23 @@ export function ReceiptScanner() {
               isCorrect: true,
             }));
 
-            const confirmedProductNames = products.map(p => p.name);
+            // Story 11.7: Normalize confirmed product names for case-insensitive matching
+            // This matches the behavior of shoppingService.removePurchasedItems() which
+            // uses inventoryService.findExistingProduct() for case-insensitive matching
+            const confirmedProductNameSet = new Set(
+              products.map(p => p.name.trim().toLowerCase())
+            );
 
             // Story 11.7: Check for unconfirmed bought items
             // Find items that were marked as "bought" but are NOT in the confirmed products
-            const unconfirmedBoughtItems = shoppingState.items.filter(item =>
-              item.isChecked && !confirmedProductNames.includes(item.name)
-            );
+            const unconfirmedBoughtItems = shoppingState.items.filter(item => {
+              const normalizedItemName = item.name.trim().toLowerCase();
+              return item.isChecked && !confirmedProductNameSet.has(normalizedItemName);
+            });
 
             if (unconfirmedBoughtItems.length > 0) {
+              // Store confirmed products to avoid stale closure
+              setConfirmedProducts(products);
               // Store unconfirmed items and show reconciliation dialog
               setUnconfirmedItems(unconfirmedBoughtItems.map(item => ({ id: item.id!, name: item.name })));
               setReconciliationDialogOpen(true);

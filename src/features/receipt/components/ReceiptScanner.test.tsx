@@ -26,6 +26,13 @@ vi.mock('@/services/inventory', () => ({
 
 vi.mock('@/services/shopping', () => ({
   shoppingService: {
+    getShoppingListItems: vi.fn().mockResolvedValue([]),
+    getShoppingListCount: vi.fn().mockResolvedValue(0),
+    getShoppingMode: vi.fn().mockResolvedValue(false),
+    setShoppingMode: vi.fn().mockResolvedValue(undefined),
+    updateCheckedState: vi.fn().mockResolvedValue(undefined),
+    removeFromList: vi.fn().mockResolvedValue(undefined),
+    addToList: vi.fn().mockResolvedValue(undefined),
     removePurchasedItems: vi.fn().mockResolvedValue(0),
   },
 }));
