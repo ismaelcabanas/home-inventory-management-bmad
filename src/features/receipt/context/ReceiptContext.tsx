@@ -191,7 +191,13 @@ function receiptReducer(state: ReceiptState, action: ReceiptAction): ReceiptStat
       if (state.videoStream) {
         state.videoStream.getTracks().forEach((track) => track.stop());
       }
-      return initialState;
+      // Preserve global app-level settings that shouldn't be reset between scans
+      return {
+        ...initialState,
+        isOCRConfigured: state.isOCRConfigured, // Preserve OCR configuration status
+        isOnline: state.isOnline, // Preserve online status
+        pendingReceiptsCount: state.pendingReceiptsCount, // Preserve pending count
+      };
 
     default:
       return state;
