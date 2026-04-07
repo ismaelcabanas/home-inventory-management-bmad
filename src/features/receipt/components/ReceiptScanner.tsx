@@ -31,7 +31,7 @@ import type { RecognizedProduct } from '@/features/receipt/types/receipt.types';
 
 export function ReceiptScanner() {
   const navigate = useNavigate();
-  const { state, requestCameraPermission, editProductName, addProduct, removeProduct, confirmReview, updateInventoryFromReceipt, clearError } = useReceiptContext();
+  const { state, requestCameraPermission, editProductName, addProduct, removeProduct, confirmReview, updateInventoryFromReceipt, clearError, resetReceipt } = useReceiptContext();
   const { state: shoppingState, loadShoppingList } = useShoppingList();
 
   // Story 11.7: Reconciliation dialog state
@@ -46,6 +46,11 @@ export function ReceiptScanner() {
       logger.error('Failed to load shopping list on mount', error);
     });
   }, [loadShoppingList]);
+
+  // Reset receipt state on mount to ensure fresh state for new scans
+  useEffect(() => {
+    resetReceipt();
+  }, [resetReceipt]);
 
   // Handle "Scan Receipt" button press
   const handleStartScanning = async () => {

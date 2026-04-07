@@ -514,6 +514,11 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
     dispatch({ type: 'CLEAR_INVENTORY_UPDATE_ERROR' });
   }, []);
 
+  // Reset receipt state to initial state
+  const resetReceipt = useCallback(() => {
+    dispatch({ type: 'RESET' });
+  }, []);
+
   // Story 5.3: Review state management methods
 
   // Edit product name during review
@@ -729,9 +734,10 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       updateInventoryFromReceipt, // Story 6.1
       stopCamera,
       clearError,
+      resetReceipt,
       videoRef,
     }),
-    [state, requestCameraPermission, startCamera, capturePhoto, retakePhoto, usePhoto, processReceiptWithOCR, processPendingQueue, editProductName, addProduct, removeProduct, confirmReview, updateInventoryFromReceipt, stopCamera, clearError]
+    [state, requestCameraPermission, startCamera, capturePhoto, retakePhoto, usePhoto, processReceiptWithOCR, processPendingQueue, editProductName, addProduct, removeProduct, confirmReview, updateInventoryFromReceipt, stopCamera, clearError, resetReceipt]
   );
 
   return (

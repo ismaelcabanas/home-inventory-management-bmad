@@ -142,5 +142,6 @@ export interface ReceiptContextValue {
   updateInventoryFromReceipt: (products?: RecognizedProduct[]) => Promise<void>; // Story 6.1: Update inventory from confirmed products
   stopCamera: () => void;
   clearError: () => void;
+  resetReceipt: () => void; // Reset receipt state to initial state
   videoRef: React.RefObject<HTMLVideoElement | null>;
 }
