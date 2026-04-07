@@ -154,14 +154,14 @@ describe('BoughtItemsReconciliationDialog', () => {
     });
 
     it('should have "Keep marked" as primary (contained) button', () => {
-      const { container } = render(<BoughtItemsReconciliationDialog {...defaultProps} open={true} itemCount={2} />);
+      render(<BoughtItemsReconciliationDialog {...defaultProps} open={true} itemCount={2} />);
 
       const keepMarkedButton = screen.getByText(/Keep marked/);
       expect(keepMarkedButton).toHaveClass('MuiButton-contained');
     });
 
     it('should have error color on Remove button', () => {
-      const { container } = render(<BoughtItemsReconciliationDialog {...defaultProps} open={true} itemCount={2} />);
+      render(<BoughtItemsReconciliationDialog {...defaultProps} open={true} itemCount={2} />);
 
       const removeButton = screen.getByText(/Remove/);
       expect(removeButton).toHaveClass('MuiButton-outlinedError');
