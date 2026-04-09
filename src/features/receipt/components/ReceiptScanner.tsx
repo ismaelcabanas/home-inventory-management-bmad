@@ -14,24 +14,21 @@
  * - error: Shows error message with retry option
  */
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Box, Stack, Button, Typography, List, ListItem, ListItemText, Chip, Alert, CircularProgress, LinearProgress } from '@mui/material';
 import { Receipt as ReceiptIcon, CheckCircle, Error as ErrorIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useReceiptContext } from '@/features/receipt/context/ReceiptContext';
-import { useShoppingList } from '@/features/shopping/context/ShoppingContext';
 import { logger } from '@/utils/logger';
 import { CameraCapture } from '@/features/receipt/components/CameraCapture';
 import { ImagePreview } from '@/features/receipt/components/ImagePreview';
 import { OCRProcessing } from '@/features/receipt/components/OCRProcessing';
 import { ReceiptError } from '@/features/receipt/components/ReceiptError';
 import { ReceiptReview } from '@/features/receipt/components/ReceiptReview'; // Story 5.3
-import type { RecognizedProduct } from '@/features/receipt/types/receipt.types';
 
 export function ReceiptScanner() {
   const navigate = useNavigate();
   const { state, requestCameraPermission, editProductName, addProduct, removeProduct, confirmReview, updateInventoryFromReceipt, clearError, resetReceipt } = useReceiptContext();
-  const { loadShoppingList } = useShoppingList();
 
   // Reset receipt state on mount to ensure fresh state for new scans
   useEffect(() => {
