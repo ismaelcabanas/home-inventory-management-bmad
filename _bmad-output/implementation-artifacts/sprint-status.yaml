@@ -111,4 +111,5 @@ development_status:
   11-6-fix-shopping-list-page-background-color-inconsistency: done
   11-7-handle-unconfirmed-bought-items-after-receipt-scan: done
   11-8-clear-bought-status-when-item-removed-from-shopping-list: done
+  11-9-add-products-by-photo-empty-inventory: ready-for-dev
   epic-11-retrospective: optional

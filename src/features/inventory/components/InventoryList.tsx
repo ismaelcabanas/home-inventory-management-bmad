@@ -9,6 +9,7 @@ import {
 import HomeIcon from '@mui/icons-material/Home';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
+import { useNavigate } from 'react-router-dom';
 import { useInventory } from '@/features/inventory/context/InventoryContext';
 import { ProductCard } from './ProductCard';
 import { AddProductDialog } from './AddProductDialog';
@@ -29,6 +30,7 @@ const SNACKBAR_AUTO_HIDE_DURATION = 3000; // 3 seconds
  * - ProductCard with tap-to-cycle and gradients
  */
 export function InventoryList() {
+  const navigate = useNavigate();
   const { state, loadProducts, addProduct, updateProduct, deleteProduct, clearError, cycleStockLevel } = useInventory();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -179,6 +181,8 @@ export function InventoryList() {
           message="Start by adding your first product to track. You can add items manually or scan receipts."
           actionLabel="Add your first product"
           onAction={() => setDialogOpen(true)}
+          secondaryActionLabel="Scan receipt to add products"
+          onSecondaryAction={() => navigate('/scan?mode=quick-add')}
           icon={<InventoryIcon sx={{ fontSize: 40 }} />}
         />
       )}

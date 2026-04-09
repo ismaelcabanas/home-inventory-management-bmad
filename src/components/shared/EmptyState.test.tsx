@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { EmptyState } from './EmptyState';
 
 describe('EmptyState', () => {
@@ -30,5 +30,88 @@ describe('EmptyState', () => {
     const title = screen.getByText('Empty List');
     // Component uses variant="h5" for styling but renders as h2 HTML element
     expect(title.tagName).toBe('H2');
+  });
+
+  describe('with secondary action', () => {
+    it('should render both primary and secondary action buttons', () => {
+      const onPrimaryAction = vi.fn();
+      const onSecondaryAction = vi.fn();
+      render(
+        <EmptyState
+          message="No items found"
+          actionLabel="Add Item"
+          onAction={onPrimaryAction}
+          secondaryActionLabel="Scan Receipt"
+          onSecondaryAction={onSecondaryAction}
+        />
+      );
+
+      expect(screen.getByRole('button', { name: 'Add Item' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Scan Receipt/ })).toBeInTheDocument();
+    });
+
+    it('should call onAction when primary button is clicked', () => {
+      const onPrimaryAction = vi.fn();
+      const onSecondaryAction = vi.fn();
+      render(
+        <EmptyState
+          message="No items found"
+          actionLabel="Add Item"
+          onAction={onPrimaryAction}
+          secondaryActionLabel="Scan Receipt"
+          onSecondaryAction={onSecondaryAction}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Add Item' }));
+      expect(onPrimaryAction).toHaveBeenCalledTimes(1);
+      expect(onSecondaryAction).not.toHaveBeenCalled();
+    });
+
+    it('should call onSecondaryAction when secondary button is clicked', () => {
+      const onPrimaryAction = vi.fn();
+      const onSecondaryAction = vi.fn();
+      render(
+        <EmptyState
+          message="No items found"
+          actionLabel="Add Item"
+          onAction={onPrimaryAction}
+          secondaryActionLabel="Scan Receipt"
+          onSecondaryAction={onSecondaryAction}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Scan Receipt/ }));
+      expect(onSecondaryAction).toHaveBeenCalledTimes(1);
+      expect(onPrimaryAction).not.toHaveBeenCalled();
+    });
+
+    it('should render only secondary button when primary action is not provided', () => {
+      const onSecondaryAction = vi.fn();
+      render(
+        <EmptyState
+          message="No items found"
+          secondaryActionLabel="Scan Receipt"
+          onSecondaryAction={onSecondaryAction}
+        />
+      );
+
+      expect(screen.getByRole('button', { name: /Scan Receipt/ })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Add Item' })).not.toBeInTheDocument();
+    });
+
+    it('should render only primary button when secondary action is not provided', () => {
+      const onPrimaryAction = vi.fn();
+      render(
+        <EmptyState
+          message="No items found"
+          actionLabel="Add Item"
+          onAction={onPrimaryAction}
+        />
+      );
+
+      expect(screen.getByRole('button', { name: 'Add Item' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Scan Receipt/ })).not.toBeInTheDocument();
+    });
   });
 });
