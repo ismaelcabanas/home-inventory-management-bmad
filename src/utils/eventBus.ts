@@ -72,6 +72,8 @@ export const eventBus = new EventBus();
 export const EVENTS = {
   /** Emitted when a product is updated in InventoryContext */
   INVENTORY_PRODUCT_UPDATED: 'inventory:product:updated',
+  /** Emitted when receipt state should be reset (e.g., starting new shopping session) */
+  RESET_RECEIPT_STATE: 'receipt:reset-state',
 } as const;
 
 // Type for event data payloads (extensible for future events)

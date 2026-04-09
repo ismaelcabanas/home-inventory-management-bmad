@@ -7,6 +7,21 @@ import { ocrService } from '@/services/ocr';
 import { inventoryService } from '@/services/inventory';
 import { shoppingService } from '@/services/shopping';
 
+// Mock eventBus for Story 11.2
+vi.mock('@/utils/eventBus', () => {
+  const eventBusMock = {
+    on: vi.fn(),
+    off: vi.fn(),
+    emit: vi.fn(),
+  };
+  return {
+    eventBus: eventBusMock,
+    EVENTS: {
+      RESET_RECEIPT_STATE: 'receipt:reset-state',
+    },
+  };
+});
+
 // Mock the utilities
 vi.mock('@/utils/errorHandler');
 vi.mock('@/utils/logger');
@@ -1104,6 +1119,58 @@ describe('ReceiptContext', () => {
         // Check OCR state transitioned to completed
         expect(result.current.state.ocrState).toBe('completed');
       });
+    });
+  });
+
+  // Story 11.2: Event-driven reset - Copilot Comment #2
+  describe('Event-Driven Session Reset (Story 11.2)', () => {
+    it('should reset session fields while preserving environmental fields when RESET_RECEIPT_STATE event is emitted', async () => {
+      const { eventBus } = await import('@/utils/eventBus');
+
+      const { result } = renderHook(() => useReceiptContext(), { wrapper });
+
+      // Setup: Set some session state
+      await act(async () => {
+        // Start camera to set session state
+        mockGetUserMedia.mockResolvedValue(createMockStream());
+        await result.current.startCamera();
+      });
+
+      // Verify initial session state
+      expect(result.current.state.cameraState).toBe('capturing');
+      expect(result.current.state.ocrState).toBe('idle');
+
+      // Get the environmental values that were set by mount-only effects
+      const initialIsOnline = result.current.state.isOnline;
+      const initialPendingReceiptsCount = result.current.state.pendingReceiptsCount;
+      const initialIsOCRConfigured = result.current.state.isOCRConfigured;
+
+      // Get the event handler that was registered
+      const onCalls = vi.mocked(eventBus.on).mock.calls;
+      const resetEventCall = onCalls.find(call => call[0] === 'receipt:reset-state');
+      const handleReset = resetEventCall?.[1] as () => void;
+
+      // Simulate the event being triggered
+      act(() => {
+        handleReset?.();
+      });
+
+      // Verify session fields were reset
+      expect(result.current.state.cameraState).toBe('idle');
+      expect(result.current.state.ocrState).toBe('idle');
+      expect(result.current.state.videoStream).toBeNull();
+      expect(result.current.state.capturedImage).toBeNull();
+      expect(result.current.state.recognizedProducts).toEqual([]);
+      expect(result.current.state.productsInReview).toEqual([]);
+      expect(result.current.state.confirmedProducts).toEqual([]);
+      expect(result.current.state.productsUpdated).toBe(-1);
+      expect(result.current.state.updatingInventory).toBe(false);
+      expect(result.current.state.updateError).toBeNull;
+
+      // Verify environmental fields were preserved (not reset to initialState defaults)
+      expect(result.current.state.isOnline).toBe(initialIsOnline);
+      expect(result.current.state.pendingReceiptsCount).toBe(initialPendingReceiptsCount);
+      expect(result.current.state.isOCRConfigured).toBe(initialIsOCRConfigured);
     });
   });
 });
