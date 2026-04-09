@@ -180,6 +180,37 @@ export class ShoppingService {
       throw appError;
     }
   }
+
+  // Clear all items from shopping list (used after receipt scan)
+  async clearShoppingList(): Promise<number> {
+    try {
+      logger.debug('Clearing all items from shopping list');
+
+      // Get all items on shopping list
+      const items = await db.products
+        .filter((product) => product.isOnShoppingList === true)
+        .toArray();
+
+      const count = items.length;
+
+      // Clear all items from list
+      await db.transaction('rw', db.products, async () => {
+        for (const item of items) {
+          await db.products.update(item.id!, {
+            isOnShoppingList: false,
+            isChecked: false,
+          });
+        }
+      });
+
+      logger.info('Shopping list cleared', { count });
+      return count;
+    } catch (error) {
+      const appError = handleError(error);
+      logger.error('Failed to clear shopping list', appError.details);
+      throw appError;
+    }
+  }
 }
 
 // Export singleton instance
