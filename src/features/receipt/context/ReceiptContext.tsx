@@ -191,7 +191,13 @@ function receiptReducer(state: ReceiptState, action: ReceiptAction): ReceiptStat
       if (state.videoStream) {
         state.videoStream.getTracks().forEach((track) => track.stop());
       }
-      return initialState;
+      // Preserve global app-level settings that shouldn't be reset between scans
+      return {
+        ...initialState,
+        isOCRConfigured: state.isOCRConfigured, // Preserve OCR configuration status
+        isOnline: state.isOnline, // Preserve online status
+        pendingReceiptsCount: state.pendingReceiptsCount, // Preserve pending count
+      };
 
     default:
       return state;
@@ -514,6 +520,11 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
     dispatch({ type: 'CLEAR_INVENTORY_UPDATE_ERROR' });
   }, []);
 
+  // Reset receipt state to initial state
+  const resetReceipt = useCallback(() => {
+    dispatch({ type: 'RESET' });
+  }, []);
+
   // Story 5.3: Review state management methods
 
   // Edit product name during review
@@ -729,9 +740,10 @@ export function ReceiptProvider({ children }: ReceiptProviderProps) {
       updateInventoryFromReceipt, // Story 6.1
       stopCamera,
       clearError,
+      resetReceipt,
       videoRef,
     }),
-    [state, requestCameraPermission, startCamera, capturePhoto, retakePhoto, usePhoto, processReceiptWithOCR, processPendingQueue, editProductName, addProduct, removeProduct, confirmReview, updateInventoryFromReceipt, stopCamera, clearError]
+    [state, requestCameraPermission, startCamera, capturePhoto, retakePhoto, usePhoto, processReceiptWithOCR, processPendingQueue, editProductName, addProduct, removeProduct, confirmReview, updateInventoryFromReceipt, stopCamera, clearError, resetReceipt]
   );
 
   return (
