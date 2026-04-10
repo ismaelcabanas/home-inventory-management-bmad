@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import { InventoryProvider } from '@/features/inventory/context/InventoryContext';
 import { ShoppingProvider } from '@/features/shopping/context/ShoppingContext';
 import { inventoryService } from '@/services/inventory';
@@ -41,10 +42,13 @@ const mockProduct: Product = {
 describe('InventoryList', () => {
   // Wrapper that provides both InventoryContext and ShoppingContext
   // Story 3.3: ProductCard now requires ShoppingProvider for useShoppingList hook
+  // Story 11.9: InventoryList uses useNavigate, needs Router
   const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <InventoryProvider>
-      <ShoppingProvider>{children}</ShoppingProvider>
-    </InventoryProvider>
+    <BrowserRouter>
+      <InventoryProvider>
+        <ShoppingProvider>{children}</ShoppingProvider>
+      </InventoryProvider>
+    </BrowserRouter>
   );
 
   beforeEach(() => {

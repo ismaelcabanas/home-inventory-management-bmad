@@ -1,6 +1,6 @@
 # Story 11.9: Add Products by Photo - Empty Inventory Feature
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -277,11 +277,17 @@ This story was implemented BEFORE the formal story creation workflow. The follow
 
 **Note:** This story is being created retroactively to document the implementation that was completed before following the formal BMAD workflow.
 
+**Test Fix Applied (2026-04-10):**
+- Fixed InventoryList.test.tsx to wrap component with BrowserRouter
+- This was required because InventoryList now uses useNavigate() hook
+- All tests passing: 703/703
+
 ### File List
 
 - src/components/shared/EmptyState.tsx
 - src/components/shared/EmptyState.test.tsx
 - src/features/inventory/components/InventoryList.tsx
+- src/features/inventory/components/InventoryList.test.tsx
 - src/features/receipt/components/ReceiptScanner.tsx
 
 ---
