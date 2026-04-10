@@ -155,9 +155,16 @@ export function ReceiptScanner() {
             <Stack direction="row" spacing={2} sx={{ width: '100%', pt: 2 }}>
               <Button
                 variant="contained"
-                onClick={() => {
+                onClick={async () => {
                   resetReceipt();
-                  // Stay in quick-add mode for retry
+                  // In quick-add mode, automatically restart camera capture
+                  if (isQuickAddMode) {
+                    try {
+                      await requestCameraPermission();
+                    } catch (error) {
+                      logger.error('Failed to restart camera for retry', error);
+                    }
+                  }
                 }}
                 fullWidth
               >
