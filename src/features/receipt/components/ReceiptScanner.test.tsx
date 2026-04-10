@@ -364,7 +364,7 @@ describe('ReceiptScanner - Story 11.9 Quick-Add Mode', () => {
     it('should detect quick-add mode from URL params', () => {
       // Simulate quick-add mode URL
       mockSearchParams.set('mode', 'quick-add');
-      const { container } = renderWithProviders(<ReceiptScanner />);
+      renderWithProviders(<ReceiptScanner />);
 
       // Quick-add mode is detected internally
       // The component should still render in idle state initially
@@ -373,7 +373,7 @@ describe('ReceiptScanner - Story 11.9 Quick-Add Mode', () => {
 
     it('should not be in quick-add mode without mode param', () => {
       // No mode parameter
-      const { container } = renderWithProviders(<ReceiptScanner />);
+      renderWithProviders(<ReceiptScanner />);
 
       // Should render normally
       expect(screen.getByText('Receipt Scanner')).toBeInTheDocument();
@@ -390,7 +390,7 @@ describe('ReceiptScanner - Story 11.9 Quick-Add Mode', () => {
 
       // For now, we verify the component structure supports this flow
       mockSearchParams.set('mode', 'quick-add');
-      const { container } = renderWithProviders(<ReceiptScanner />);
+      renderWithProviders(<ReceiptScanner />);
 
       // Initial idle state should be rendered
       expect(screen.getByText('Receipt Scanner')).toBeInTheDocument();
@@ -423,7 +423,7 @@ describe('ReceiptScanner - Story 11.9 Quick-Add Mode', () => {
       // the component should show "Updating inventory" progress instead of review screen
 
       mockSearchParams.set('mode', 'quick-add');
-      const { container } = renderWithProviders(<ReceiptScanner />);
+      renderWithProviders(<ReceiptScanner />);
 
       // Component renders successfully
       expect(screen.getByText('Receipt Scanner')).toBeInTheDocument();
@@ -475,7 +475,7 @@ describe('ReceiptScanner - Story 11.9 Quick-Add Mode', () => {
     it('should maintain quick-add mode state during scan flow', () => {
       // This test documents that quick-add mode should persist throughout the flow
       mockSearchParams.set('mode', 'quick-add');
-      const { rerender } = renderWithProviders(<ReceiptScanner />);
+      renderWithProviders(<ReceiptScanner />);
 
       // Initial render with quick-add mode
       expect(screen.getByText('Receipt Scanner')).toBeInTheDocument();
