@@ -2,6 +2,7 @@ import { Box, Typography, Button } from '@mui/material';
 import { ReactNode } from 'react';
 import InboxIcon from '@mui/icons-material/Inbox';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 
 export interface EmptyStateProps {
   message: string;
@@ -121,7 +122,7 @@ export function EmptyState({
               onClick={onSecondaryAction}
               sx={{ minWidth: 200, py: 1.5 }}
               aria-label={secondaryActionLabel}
-              startIcon={<span>📷</span>}
+              startIcon={<CameraAltIcon />}
             >
               {secondaryActionLabel}
             </Button>
