@@ -1,6 +1,6 @@
 # Story 11.9: Add Products by Photo - Empty Inventory Feature
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
