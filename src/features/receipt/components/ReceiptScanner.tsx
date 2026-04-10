@@ -14,10 +14,10 @@
  * - error: Shows error message with retry option
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Box, Stack, Button, Typography, List, ListItem, ListItemText, Chip, Alert, CircularProgress, LinearProgress } from '@mui/material';
 import { Receipt as ReceiptIcon, CheckCircle, Error as ErrorIcon } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useReceiptContext } from '@/features/receipt/context/ReceiptContext';
 import { logger } from '@/utils/logger';
 import { CameraCapture } from '@/features/receipt/components/CameraCapture';
@@ -28,7 +28,19 @@ import { ReceiptReview } from '@/features/receipt/components/ReceiptReview'; // 
 
 export function ReceiptScanner() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [isQuickAddMode, setIsQuickAddMode] = useState(false);
   const { state, requestCameraPermission, editProductName, addProduct, removeProduct, confirmReview, updateInventoryFromReceipt, clearError, resetReceipt } = useReceiptContext();
+
+  // Ref to track if we've already processed this specific review session (StrictMode-safe)
+  const quickAddProcessedRef = useRef<string>('');
+
+  // Check for quick-add mode on mount
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    setIsQuickAddMode(mode === 'quick-add');
+    logger.info(`Receipt scanner mode: ${mode || 'normal'}`);
+  }, [searchParams]);
 
   // Reset receipt state on mount to ensure fresh state for new scans
   useEffect(() => {
@@ -45,6 +57,58 @@ export function ReceiptScanner() {
     }
   };
 
+  // Handle quick-add mode: auto-confirm review and update inventory
+  useEffect(() => {
+    if (isQuickAddMode && state.ocrState === 'review') {
+      if (state.productsInReview.length === 0) {
+        // No products found - skip auto-proceed, render will show error UI
+        logger.info('Quick-add mode: No products found in receipt');
+        return;
+      }
+
+      // Create a unique hash for this review session to ensure idempotency
+      const reviewHash = state.productsInReview.map(p => `${p.id}-${p.name}`).join('|');
+
+      // Skip if we've already processed this exact review (StrictMode-safe)
+      if (quickAddProcessedRef.current === reviewHash) {
+        logger.debug('Quick-add mode: Already processed this review, skipping');
+        return;
+      }
+
+      const handleQuickAdd = async () => {
+        logger.info('Quick-add mode: Auto-confirming review and updating inventory');
+        const products = state.productsInReview.map(p => ({
+          ...p,
+          isCorrect: true,
+        }));
+
+        // Mark as processed BEFORE async operations to prevent double-execution
+        quickAddProcessedRef.current = reviewHash;
+
+        // Confirm review (updates state)
+        confirmReview();
+
+        // Immediately trigger inventory update with the captured products
+        try {
+          await updateInventoryFromReceipt(products);
+
+          // Clear all items from shopping list after receipt scan
+          try {
+            const { shoppingService } = await import('@/services/shopping');
+            await shoppingService.clearShoppingList();
+            logger.info('Shopping list cleared after receipt scan');
+          } catch (error) {
+            logger.error('Failed to clear shopping list', error);
+          }
+        } catch (error) {
+          logger.error('Inventory update failed in quick-add mode', error);
+        }
+      };
+
+      handleQuickAdd();
+    }
+  }, [isQuickAddMode, state.ocrState, state.productsInReview, confirmReview, updateInventoryFromReceipt]);
+
   // Render content based on state
   const content = (() => {
     // Render different UI based on camera and OCR state
@@ -57,8 +121,98 @@ export function ReceiptScanner() {
       return <ReceiptError />;
     }
 
+    // Quick-add mode: Show "no products found" message
+    if (isQuickAddMode && state.ocrState === 'review' && state.productsInReview.length === 0) {
+      return (
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100vh',
+            p: 3,
+            bgcolor: 'background.default',
+          }}
+        >
+          <Stack spacing={3} alignItems="center" sx={{ maxWidth: 400, textAlign: 'center' }}>
+            <ErrorIcon
+              sx={{
+                fontSize: 64,
+                color: 'warning.main',
+              }}
+            />
+            <Stack spacing={1}>
+              <Typography variant="h5" component="h1">
+                No Products Found
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                We couldn't find any products in your receipt. Please try again with a clearer photo or add products manually.
+              </Typography>
+            </Stack>
+            <Stack direction="row" spacing={2} sx={{ width: '100%', pt: 2 }}>
+              <Button
+                variant="contained"
+                onClick={async () => {
+                  resetReceipt();
+                  // In quick-add mode, automatically restart camera capture
+                  if (isQuickAddMode) {
+                    try {
+                      await requestCameraPermission();
+                    } catch (error) {
+                      logger.error('Failed to restart camera for retry', error);
+                    }
+                  }
+                }}
+                fullWidth
+              >
+                Try Again
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => navigate('/')}
+                fullWidth
+              >
+                Go to Inventory
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
+      );
+    }
+
     // Story 5.3: Show review screen when OCR completes and enters review state
     if (state.ocrState === 'review') {
+      // Quick-add mode: skip review screen UI, but keep showing progress while useEffect auto-proceeds
+      if (isQuickAddMode) {
+        return (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: '100vh',
+              p: 3,
+              bgcolor: 'background.default',
+            }}
+          >
+            <Stack spacing={3} alignItems="center" sx={{ maxWidth: 400, textAlign: 'center' }}>
+              <CircularProgress size={56} />
+              <Stack spacing={1}>
+                <Typography variant="h5" component="h1">
+                  Updating inventory
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Finalizing your receipt scan and updating your inventory.
+                </Typography>
+              </Stack>
+            </Stack>
+          </Box>
+        );
+      }
+
+      // Normal mode: show review screen
       return (
         <ReceiptReview
           products={state.productsInReview}

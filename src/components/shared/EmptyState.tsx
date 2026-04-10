@@ -2,6 +2,7 @@ import { Box, Typography, Button } from '@mui/material';
 import { ReactNode } from 'react';
 import InboxIcon from '@mui/icons-material/Inbox';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 
 export interface EmptyStateProps {
   message: string;
@@ -9,6 +10,8 @@ export interface EmptyStateProps {
   title?: string;
   actionLabel?: string;
   onAction?: () => void;
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
   variant?: 'default' | 'search';
 }
 
@@ -31,6 +34,8 @@ export function EmptyState({
   title,
   actionLabel,
   onAction,
+  secondaryActionLabel,
+  onSecondaryAction,
   variant = 'default',
 }: EmptyStateProps) {
   // Default icons based on variant
@@ -82,23 +87,48 @@ export function EmptyState({
       <Typography
         variant="body1"
         color="text.secondary"
-        sx={{ mb: actionLabel ? 3 : 0, maxWidth: 400, lineHeight: 1.6 }}
+        sx={{ mb: (actionLabel || secondaryActionLabel) ? 3 : 0, maxWidth: 400, lineHeight: 1.6 }}
       >
         {message}
       </Typography>
 
-      {/* CTA button - prominent and action-oriented */}
-      {actionLabel && onAction && (
-        <Button
-          variant="contained"
-          size="large"
-          onClick={onAction}
-          sx={{ mt: 2, minWidth: 200, py: 1.5 }}
-          aria-label={actionLabel}
+      {/* CTA button(s) - prominent and action-oriented */}
+      {(actionLabel && onAction) || (secondaryActionLabel && onSecondaryAction) ? (
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            mt: 2,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
-          {actionLabel}
-        </Button>
-      )}
+          {actionLabel && onAction && (
+            <Button
+              variant="contained"
+              size="large"
+              onClick={onAction}
+              sx={{ minWidth: 200, py: 1.5 }}
+              aria-label={actionLabel}
+            >
+              {actionLabel}
+            </Button>
+          )}
+          {secondaryActionLabel && onSecondaryAction && (
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={onSecondaryAction}
+              sx={{ minWidth: 200, py: 1.5 }}
+              aria-label={secondaryActionLabel}
+              startIcon={<CameraAltIcon />}
+            >
+              {secondaryActionLabel}
+            </Button>
+          )}
+        </Box>
+      ) : null}
     </Box>
   );
 }
