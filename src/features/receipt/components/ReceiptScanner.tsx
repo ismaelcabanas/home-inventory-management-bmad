@@ -14,7 +14,7 @@
  * - error: Shows error message with retry option
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Box, Stack, Button, Typography, List, ListItem, ListItemText, Chip, Alert, CircularProgress, LinearProgress } from '@mui/material';
 import { Receipt as ReceiptIcon, CheckCircle, Error as ErrorIcon } from '@mui/icons-material';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -31,6 +31,9 @@ export function ReceiptScanner() {
   const [searchParams] = useSearchParams();
   const [isQuickAddMode, setIsQuickAddMode] = useState(false);
   const { state, requestCameraPermission, editProductName, addProduct, removeProduct, confirmReview, updateInventoryFromReceipt, clearError, resetReceipt } = useReceiptContext();
+
+  // Ref to track if we've already processed this specific review session (StrictMode-safe)
+  const quickAddProcessedRef = useRef<string>('');
 
   // Check for quick-add mode on mount
   useEffect(() => {
@@ -65,12 +68,24 @@ export function ReceiptScanner() {
         return;
       }
 
+      // Create a unique hash for this review session to ensure idempotency
+      const reviewHash = state.productsInReview.map(p => `${p.id}-${p.name}`).join('|');
+
+      // Skip if we've already processed this exact review (StrictMode-safe)
+      if (quickAddProcessedRef.current === reviewHash) {
+        logger.debug('Quick-add mode: Already processed this review, skipping');
+        return;
+      }
+
       const handleQuickAdd = async () => {
         logger.info('Quick-add mode: Auto-confirming review and updating inventory');
         const products = state.productsInReview.map(p => ({
           ...p,
           isCorrect: true,
         }));
+
+        // Mark as processed BEFORE async operations to prevent double-execution
+        quickAddProcessedRef.current = reviewHash;
 
         // Confirm review (updates state)
         confirmReview();
