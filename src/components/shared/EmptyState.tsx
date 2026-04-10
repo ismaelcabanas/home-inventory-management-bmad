@@ -86,7 +86,7 @@ export function EmptyState({
       <Typography
         variant="body1"
         color="text.secondary"
-        sx={{ mb: actionLabel ? 3 : 0, maxWidth: 400, lineHeight: 1.6 }}
+        sx={{ mb: (actionLabel || secondaryActionLabel) ? 3 : 0, maxWidth: 400, lineHeight: 1.6 }}
       >
         {message}
       </Typography>
