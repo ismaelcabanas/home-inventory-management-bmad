@@ -61,10 +61,8 @@ export function ReceiptScanner() {
   useEffect(() => {
     if (isQuickAddMode && state.ocrState === 'review') {
       if (state.productsInReview.length === 0) {
-        // No products found - show error and navigate back
+        // No products found - skip auto-proceed, render will show error UI
         logger.info('Quick-add mode: No products found in receipt');
-        // Set an error state that will be displayed to the user
-        // The user can then retry or go back to inventory
         return;
       }
 
