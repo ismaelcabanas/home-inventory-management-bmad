@@ -185,9 +185,33 @@ export function ReceiptScanner() {
 
     // Story 5.3: Show review screen when OCR completes and enters review state
     if (state.ocrState === 'review') {
-      // Quick-add mode: skip review screen entirely (handled by useEffect)
+      // Quick-add mode: skip review screen UI, but keep showing progress while useEffect auto-proceeds
       if (isQuickAddMode) {
-        return null; // useEffect will auto-proceed
+        return (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: '100vh',
+              p: 3,
+              bgcolor: 'background.default',
+            }}
+          >
+            <Stack spacing={3} alignItems="center" sx={{ maxWidth: 400, textAlign: 'center' }}>
+              <CircularProgress size={56} />
+              <Stack spacing={1}>
+                <Typography variant="h5" component="h1">
+                  Updating inventory
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Finalizing your receipt scan and updating your inventory.
+                </Typography>
+              </Stack>
+            </Stack>
+          </Box>
+        );
       }
 
       // Normal mode: show review screen
