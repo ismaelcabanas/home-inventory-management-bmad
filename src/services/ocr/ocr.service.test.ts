@@ -331,6 +331,113 @@ TARJETA BANCARIA`;
     });
   });
 
+  describe('Bidirectional Product Matching (Story 11.10)', () => {
+    it('should match when OCR name is more detailed than inventory name', async () => {
+      const inventoryProducts: Product[] = [
+        { id: '1', name: 'Leche', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+        { id: '2', name: 'Pan', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+        { id: '3', name: 'Manzanas', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+      ];
+
+      ocrService.setInventoryService({
+        getProducts: () => Promise.resolve(inventoryProducts),
+      } as MockInventoryService);
+
+      const result = await ocrService.matchExistingProducts(['Leche entera 1L', 'Pan barra 500g', 'Manzanas Golden 1kg']);
+
+      expect(result).toHaveLength(3);
+      expect(result[0].matchedProduct?.name).toBe('Leche');
+      expect(result[0].confidence).toBe(0.8);
+      expect(result[1].matchedProduct?.name).toBe('Pan');
+      expect(result[1].confidence).toBe(0.8);
+      expect(result[2].matchedProduct?.name).toBe('Manzanas');
+      expect(result[2].confidence).toBe(0.8);
+    });
+
+    it('should match brand variations (e.g., Coca-Cola Zero matches Coca-Cola)', async () => {
+      const inventoryProducts: Product[] = [
+        { id: '1', name: 'Coca-Cola', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+      ];
+
+      ocrService.setInventoryService({
+        getProducts: () => Promise.resolve(inventoryProducts),
+      } as MockInventoryService);
+
+      const result = await ocrService.matchExistingProducts(['Coca-Cola Zero 33cl']);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].matchedProduct?.name).toBe('Coca-Cola');
+      expect(result[0].confidence).toBe(0.8);
+    });
+
+    it('should normalize whitespace before matching', async () => {
+      const inventoryProducts: Product[] = [
+        { id: '1', name: 'Manzanas', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+      ];
+
+      ocrService.setInventoryService({
+        getProducts: () => Promise.resolve(inventoryProducts),
+      } as MockInventoryService);
+
+      const result = await ocrService.matchExistingProducts(['  Manzanas   Golden   1kg  ']);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].matchedProduct?.name).toBe('Manzanas');
+      expect(result[0].confidence).toBe(0.8);
+    });
+
+    it('should not create false positives for partial word matches', async () => {
+      const inventoryProducts: Product[] = [
+        { id: '1', name: 'Pan', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+      ];
+
+      ocrService.setInventoryService({
+        getProducts: () => Promise.resolve(inventoryProducts),
+      } as MockInventoryService);
+
+      const result = await ocrService.matchExistingProducts(['Mantecado']);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].matchedProduct).toBeUndefined();
+      expect(result[0].confidence).toBe(0.5); // No match - "pan" in "mantecado" but shouldn't match
+    });
+
+    it('should handle multiple scans of same product consistently', async () => {
+      const inventoryProducts: Product[] = [
+        { id: '1', name: 'Leche', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+      ];
+
+      ocrService.setInventoryService({
+        getProducts: () => Promise.resolve(inventoryProducts),
+      } as MockInventoryService);
+
+      // First scan
+      const result1 = await ocrService.matchExistingProducts(['Leche entera 1L']);
+      // Second scan with different variation
+      const result2 = await ocrService.matchExistingProducts(['Leche semi 1L']);
+
+      expect(result1[0].matchedProduct?.id).toBe(result2[0].matchedProduct?.id);
+      expect(result1[0].confidence).toBe(0.8);
+      expect(result2[0].confidence).toBe(0.8);
+    });
+
+    it('should preserve existing behavior when inventory name is more detailed than OCR', async () => {
+      const inventoryProducts: Product[] = [
+        { id: '1', name: 'Whole Milk', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+      ];
+
+      ocrService.setInventoryService({
+        getProducts: () => Promise.resolve(inventoryProducts),
+      } as MockInventoryService);
+
+      const result = await ocrService.matchExistingProducts(['Milk']);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].matchedProduct?.name).toBe('Whole Milk');
+      expect(result[0].confidence).toBe(0.8);
+    });
+  });
+
   describe('isProductLine', () => {
     it('should identify product lines correctly', () => {
       expect(ocrService.isProductLine('WHOLE MILK')).toBe(true);

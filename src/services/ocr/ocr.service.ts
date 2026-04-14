@@ -461,15 +461,20 @@ export class OCRService {
     const recognizedProducts: RecognizedProduct[] = [];
 
     for (const ocrName of names) {
-      const lowerOcrName = ocrName.toLowerCase();
+      // NORMALIZATION: Trim and normalize whitespace
+      const normalizedOcrName = ocrName.trim().replace(/\s+/g, ' ');
+      const lowerOcrName = normalizedOcrName.toLowerCase();
 
-      // Try exact match first
-      const match = products.find((p) => p.name.toLowerCase() === lowerOcrName);
+      // Try exact match first (with normalization)
+      const match = products.find((p) => {
+        const normalizedProductName = p.name.trim().replace(/\s+/g, ' ');
+        return normalizedProductName.toLowerCase() === lowerOcrName;
+      });
 
       if (match) {
         recognizedProducts.push({
           id: crypto.randomUUID(),
-          name: ocrName,
+          name: ocrName, // Keep original OCR name for display
           matchedProduct: match,
           confidence: 1.0,
           isCorrect: false,
@@ -477,8 +482,19 @@ export class OCRService {
         continue;
       }
 
-      // Try contains match
-      const matches = products.filter((p) => p.name.toLowerCase().includes(lowerOcrName));
+      // BIDIRECTIONAL MATCHING: Check both directions
+      const matches = products.filter((p) => {
+        const normalizedName = p.name.trim().replace(/\s+/g, ' ');
+        const lowerName = normalizedName.toLowerCase();
+
+        // Direction 1: Inventory contains OCR (existing behavior)
+        const inventoryContainsOcr = lowerName.includes(lowerOcrName);
+
+        // Direction 2: OCR contains inventory (NEW - fixes the bug)
+        const ocrContainsInventory = lowerOcrName.includes(lowerName);
+
+        return inventoryContainsOcr || ocrContainsInventory;
+      });
 
       if (matches.length > 0) {
         // Pick most recently updated
@@ -487,7 +503,7 @@ export class OCRService {
           id: crypto.randomUUID(),
           name: ocrName,
           matchedProduct: matches[0],
-          confidence: 0.8,
+          confidence: 0.8, // Medium confidence for partial/inverse matches
           isCorrect: false,
         });
         continue;
