@@ -395,11 +395,32 @@ TARJETA BANCARIA`;
         getProducts: () => Promise.resolve(inventoryProducts),
       } as MockInventoryService);
 
-      const result = await ocrService.matchExistingProducts(['Mantecado']);
+      // "Empanada" contains "pan" as a substring but shouldn't match "Pan"
+      // because they are different words (word-boundary matching)
+      const result = await ocrService.matchExistingProducts(['Empanada']);
 
       expect(result).toHaveLength(1);
       expect(result[0].matchedProduct).toBeUndefined();
-      expect(result[0].confidence).toBe(0.5); // No match - "pan" in "mantecado" but shouldn't match
+      expect(result[0].confidence).toBe(0.5); // No match
+    });
+
+    it('should not match product names that share common substrings but are different products', async () => {
+      const inventoryProducts: Product[] = [
+        { id: '1', name: 'Pan', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+        { id: '2', name: 'Jamón', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+      ];
+
+      ocrService.setInventoryService({
+        getProducts: () => Promise.resolve(inventoryProducts),
+      } as MockInventoryService);
+
+      // "PAN CRUDO" contains "PAN" - this SHOULD match due to bidirectional matching
+      // This is correct behavior: "PAN CRUDO" is a type of "Pan"
+      const result = await ocrService.matchExistingProducts(['PAN CRUDO']);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].matchedProduct?.name).toBe('Pan');
+      expect(result[0].confidence).toBe(0.8); // Partial match
     });
 
     it('should handle multiple scans of same product consistently', async () => {
@@ -435,6 +456,54 @@ TARJETA BANCARIA`;
       expect(result).toHaveLength(1);
       expect(result[0].matchedProduct?.name).toBe('Whole Milk');
       expect(result[0].confidence).toBe(0.8);
+    });
+
+    it('should match multiple detailed OCR names to simplified inventory names (Story 11.10 bug scenario)', async () => {
+      // This is the actual bug scenario: OCR returns detailed names but inventory has simplified names
+      const inventoryProducts: Product[] = [
+        { id: '1', name: 'Leche', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+        { id: '2', name: 'Pan', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+        { id: '3', name: 'Manzanas', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+        { id: '4', name: 'Coca-Cola', stockLevel: 'high', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01'), isOnShoppingList: false, isChecked: false },
+      ];
+
+      ocrService.setInventoryService({
+        getProducts: () => Promise.resolve(inventoryProducts),
+      } as MockInventoryService);
+
+      // Simulate scanning a receipt with detailed product names
+      const ocrProductNames = [
+        'Leche entera 1L',
+        'Pan barra 500g',
+        'Manzanas Golden 1kg',
+        'Coca-Cola Zero 33cl'
+      ];
+
+      const result = await ocrService.matchExistingProducts(ocrProductNames);
+
+      // Verify all OCR products matched to existing inventory (no duplicates)
+      expect(result).toHaveLength(4);
+
+      // Each should match with 0.8 confidence (partial/inverse match)
+      expect(result[0].matchedProduct?.id).toBe('1'); // Leche entera 1L → Leche
+      expect(result[0].matchedProduct?.name).toBe('Leche');
+      expect(result[0].confidence).toBe(0.8);
+
+      expect(result[1].matchedProduct?.id).toBe('2'); // Pan barra 500g → Pan
+      expect(result[1].matchedProduct?.name).toBe('Pan');
+      expect(result[1].confidence).toBe(0.8);
+
+      expect(result[2].matchedProduct?.id).toBe('3'); // Manzanas Golden 1kg → Manzanas
+      expect(result[2].matchedProduct?.name).toBe('Manzanas');
+      expect(result[2].confidence).toBe(0.8);
+
+      expect(result[3].matchedProduct?.id).toBe('4'); // Coca-Cola Zero 33cl → Coca-Cola
+      expect(result[3].matchedProduct?.name).toBe('Coca-Cola');
+      expect(result[3].confidence).toBe(0.8);
+
+      // Verify no unmatched products (all would have created duplicates)
+      const unmatchedProducts = result.filter(p => !p.matchedProduct);
+      expect(unmatchedProducts).toHaveLength(0);
     });
   });
 
