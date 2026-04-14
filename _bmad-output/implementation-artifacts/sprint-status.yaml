@@ -112,5 +112,5 @@ development_status:
   11-7-handle-unconfirmed-bought-items-after-receipt-scan: done
   11-8-clear-bought-status-when-item-removed-from-shopping-list: done
   11-9-add-products-by-photo-empty-inventory: review
-  11-10-fix-product-matching-prevent-duplicate-products-on-receipt-scan: backlog
+  11-10-fix-product-matching-prevent-duplicate-products-on-receipt-scan: ready-for-dev
   epic-11-retrospective: optional
