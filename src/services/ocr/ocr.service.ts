@@ -517,13 +517,16 @@ export class OCRService {
       if (matches.length > 0) {
         // Pick most recently updated
         matches.sort((a, b) => b.product.updatedAt.getTime() - a.product.updatedAt.getTime());
-        recognizedProducts.push({
-          id: crypto.randomUUID(),
-          name: ocrName,
-          matchedProduct: matches[0].product,
-          confidence: 0.8, // Medium confidence for partial/inverse matches
-          isCorrect: false,
-        });
+        const bestMatch = matches[0];
+        if (bestMatch) {
+          recognizedProducts.push({
+            id: crypto.randomUUID(),
+            name: ocrName,
+            matchedProduct: bestMatch.product,
+            confidence: 0.8, // Medium confidence for partial/inverse matches
+            isCorrect: false,
+          });
+        }
         continue;
       }
 
