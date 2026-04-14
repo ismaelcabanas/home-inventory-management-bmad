@@ -1,7 +1,7 @@
 ---
 stepsCompleted: [1, 2, 3]
 totalEpics: 12
-totalStories: 48 (40 existing + 5 new for Epic 11 + 3 new for Epic 12)
+totalStories: 49 (40 existing + 6 new for Epic 11 + 3 new for Epic 12)
 requirementsCoverage: "50/50 FRs (100%)"
 note: Epic 11 added for Production Bug Fixes, Epic 12 added for Testing Strategy
 inputDocuments:
@@ -765,14 +765,85 @@ The remove item button/functionality in the shopping page does not work, prevent
 
 ---
 
+### Story 11.6: Fix Product Matching - Prevent Duplicate Products on Receipt Scan
+
+As a **user**,
+I want the system to correctly match products from new receipts with existing inventory,
+So that I don't get duplicate products when scanning receipts after shopping.
+
+**Bug Description:**
+When scanning receipts after shopping, the product matching logic fails to match products that should match, resulting in 50% confidence and creating duplicate products in inventory if confirmed. This occurs because the matching logic only checks if the inventory product name contains the OCR name, but not the reverse. OCR typically returns more detailed names (e.g., "Leche entera 1L") while inventory has simplified names (e.g., "Leche"), causing the one-directional check to fail.
+
+**Acceptance Criteria:**
+
+**Given** I have existing products in my inventory (e.g., "Leche", "Pan", "Manzanas")
+**When** I scan a new receipt after shopping
+**Then** Products on the receipt should match existing inventory even if the OCR name is more detailed
+**And** "Leche entera 1L" from OCR should match "Leche" in inventory with high confidence
+**And** "Pan barra 500g" from OCR should match "Pan" in inventory with high confidence
+**And** "Manzanas Golden 1kg" from OCR should match "Manzanas" in inventory with high confidence
+
+**Given** the OCR product name is more detailed than the inventory product name
+**When** the matching algorithm compares them
+**Then** The system should perform bidirectional matching:
+  - Check if inventory name contains OCR name (existing behavior)
+  - Check if OCR name contains inventory name (new behavior)
+**And** A match should be found if either condition is true
+**And** Confidence should be set to 0.8 for partial/inverse matches
+
+**Given** I have a product "Coca-Cola" in inventory
+**When** OCR recognizes "Coca-Cola Zero 33cl" on receipt
+**Then** The system should recognize this as a match to "Coca-Cola"
+**And** Display confidence of 0.8 (medium confidence, requires confirmation)
+**And** Not create a duplicate "Coca-Cola Zero 33cl" product
+
+**Given** I review matched products before confirming
+**When** I see products with 0.8 confidence
+**Then** I can choose to:
+  - Confirm the match (uses existing inventory product)
+  - Mark as different product (creates new product)
+**And** The default behavior prevents accidental duplicates
+
+**Given** I confirm the receipt scan
+**When** The inventory is updated
+**Then** No duplicate products are created for items that matched existing inventory
+**And** Stock levels are updated for matched products
+**And** Only truly new products are added to inventory
+
+**Given** I scan multiple receipts over time
+**When** The same product appears with slightly different names
+**Then** The system consistently matches them to the same inventory product
+**And** My inventory doesn't accumulate duplicates of the same product
+
+**Technical Notes:**
+- Update `src/services/ocr/ocr.service.ts` in `matchExistingProducts()` method (line 481)
+- Change the contains match logic to bidirectional:
+  ```typescript
+  // Current (one-directional):
+  const matches = products.filter((p) => p.name.toLowerCase().includes(lowerOcrName));
+
+  // Proposed (bidirectional):
+  const matches = products.filter((p) =>
+    p.name.toLowerCase().includes(lowerOcrName) ||
+    lowerOcrName.includes(p.name.toLowerCase())
+  );
+  ```
+- Consider adding normalization logic (trim, remove extra spaces) before matching
+- Add unit tests for bidirectional matching scenarios
+- Test with real-world examples: OCR names with quantities/weights matching simplified inventory names
+- Related files: `src/services/ocr/ocr.service.ts`, `src/services/ocr/ocr.service.test.ts`
+
+---
+
 ## Epic 11 Summary
 
-**Stories Created:** 5 stories
+**Stories Created:** 6 stories
 - Story 11.1: Fix "View Inventory" Button Navigation
 - Story 11.2: Fix Shopping Session State Persistence
 - Story 11.3: Fix Inventory Page Background Color Inconsistency
 - Story 11.4: Prevent Accidental Interactions When Scrolling
 - Story 11.5: Fix Remove Item Functionality in Shopping Page
+- Story 11.6: Fix Product Matching - Prevent Duplicate Products on Receipt Scan
 
 **FRs Covered:** N/A (Bug fixes - existing functionality)
 **Priority:** High - Production issues affecting user experience
@@ -783,6 +854,7 @@ The remove item button/functionality in the shopping page does not work, prevent
 - Visual/Styling: Story 11.3
 - User Interaction/UX: Story 11.4
 - Functional Bug: Story 11.5
+- Core Feature/Matching: Story 11.6
 
 ---
 
