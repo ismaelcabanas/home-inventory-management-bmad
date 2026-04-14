@@ -461,8 +461,16 @@ export class OCRService {
     const recognizedProducts: RecognizedProduct[] = [];
 
     /**
+     * Helper: Normalize a product name for matching
+     * Trims whitespace and normalizes multiple spaces to single space
+     */
+    const normalizeName = (name: string): string => {
+      return name.trim().replace(/\s+/g, ' ').toLowerCase();
+    };
+
+    /**
      * Helper: Check if two product names match using word-boundary matching
-     * Returns true if any word from one name is found in the other name
+     * Returns true if any word from one name EQUALS any word from the other name
      * This prevents false positives like "Pan" matching "Empanada"
      */
     const namesMatch = (name1: string, name2: string): boolean => {
@@ -470,30 +478,30 @@ export class OCRService {
       const words1 = name1.split(' ').filter(w => w.length > 1);
       const words2 = name2.split(' ').filter(w => w.length > 1);
 
-      // Check if any word from name1 is in name2
-      const wordInName2 = words1.some(w1 => words2.some(w2 => w2.includes(w1)));
-      // Check if any word from name2 is in name1
-      const wordInName1 = words2.some(w2 => words1.some(w1 => w1.includes(w2)));
+      // Check if any word from name1 EQUALS any word from name2
+      const hasEqualWord = words1.some(w1 => words2.some(w2 => w1 === w2));
 
-      return wordInName2 || wordInName1;
+      return hasEqualWord;
     };
 
+    // Pre-normalize all product names once (performance optimization)
+    const normalizedProducts = products.map((p) => ({
+      product: p,
+      normalizedName: normalizeName(p.name),
+    }));
+
     for (const ocrName of names) {
-      // NORMALIZATION: Trim and normalize whitespace
-      const normalizedOcrName = ocrName.trim().replace(/\s+/g, ' ');
-      const lowerOcrName = normalizedOcrName.toLowerCase();
+      // Normalize OCR name once
+      const normalizedOcrName = normalizeName(ocrName);
 
       // Try exact match first (with normalization)
-      const match = products.find((p) => {
-        const normalizedProductName = p.name.trim().replace(/\s+/g, ' ');
-        return normalizedProductName.toLowerCase() === lowerOcrName;
-      });
+      const match = normalizedProducts.find((np) => np.normalizedName === normalizedOcrName);
 
       if (match) {
         recognizedProducts.push({
           id: crypto.randomUUID(),
           name: ocrName, // Keep original OCR name for display
-          matchedProduct: match,
+          matchedProduct: match.product,
           confidence: 1.0,
           isCorrect: false,
         });
@@ -501,21 +509,18 @@ export class OCRService {
       }
 
       // BIDIRECTIONAL MATCHING: Check both directions using word-boundary matching
-      const matches = products.filter((p) => {
-        const normalizedName = p.name.trim().replace(/\s+/g, ' ');
-        const lowerName = normalizedName.toLowerCase();
-
+      const matches = normalizedProducts.filter((np) => {
         // Use word-boundary matching to prevent false positives
-        return namesMatch(lowerName, lowerOcrName);
+        return namesMatch(np.normalizedName, normalizedOcrName);
       });
 
       if (matches.length > 0) {
         // Pick most recently updated
-        matches.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+        matches.sort((a, b) => b.product.updatedAt.getTime() - a.product.updatedAt.getTime());
         recognizedProducts.push({
           id: crypto.randomUUID(),
           name: ocrName,
-          matchedProduct: matches[0],
+          matchedProduct: matches[0].product,
           confidence: 0.8, // Medium confidence for partial/inverse matches
           isCorrect: false,
         });
