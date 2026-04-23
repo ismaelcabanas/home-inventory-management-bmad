@@ -460,36 +460,73 @@ export class OCRService {
     const products = await this.inventoryService.getProducts();
     const recognizedProducts: RecognizedProduct[] = [];
 
-    for (const ocrName of names) {
-      const lowerOcrName = ocrName.toLowerCase();
+    /**
+     * Helper: Normalize a product name for matching
+     * Trims whitespace and normalizes multiple spaces to single space
+     */
+    const normalizeName = (name: string): string => {
+      return name.trim().replace(/\s+/g, ' ').toLowerCase();
+    };
 
-      // Try exact match first
-      const match = products.find((p) => p.name.toLowerCase() === lowerOcrName);
+    /**
+     * Helper: Check if two product names match using word-boundary matching
+     * Returns true if any word from one name EQUALS any word from the other name
+     * This prevents false positives like "Pan" matching "Empanada"
+     */
+    const namesMatch = (name1: string, name2: string): boolean => {
+      // Split into words and filter out single characters (better matching)
+      const words1 = name1.split(' ').filter(w => w.length > 1);
+      const words2 = name2.split(' ').filter(w => w.length > 1);
+
+      // Check if any word from name1 EQUALS any word from name2
+      const hasEqualWord = words1.some(w1 => words2.some(w2 => w1 === w2));
+
+      return hasEqualWord;
+    };
+
+    // Pre-normalize all product names once (performance optimization)
+    const normalizedProducts = products.map((p) => ({
+      product: p,
+      normalizedName: normalizeName(p.name),
+    }));
+
+    for (const ocrName of names) {
+      // Normalize OCR name once
+      const normalizedOcrName = normalizeName(ocrName);
+
+      // Try exact match first (with normalization)
+      const match = normalizedProducts.find((np) => np.normalizedName === normalizedOcrName);
 
       if (match) {
         recognizedProducts.push({
           id: crypto.randomUUID(),
-          name: ocrName,
-          matchedProduct: match,
+          name: ocrName, // Keep original OCR name for display
+          matchedProduct: match.product,
           confidence: 1.0,
           isCorrect: false,
         });
         continue;
       }
 
-      // Try contains match
-      const matches = products.filter((p) => p.name.toLowerCase().includes(lowerOcrName));
+      // BIDIRECTIONAL MATCHING: Check both directions using word-boundary matching
+      const matches = normalizedProducts.filter((np) => {
+        // Use word-boundary matching to prevent false positives
+        return namesMatch(np.normalizedName, normalizedOcrName);
+      });
 
       if (matches.length > 0) {
         // Pick most recently updated
-        matches.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
-        recognizedProducts.push({
-          id: crypto.randomUUID(),
-          name: ocrName,
-          matchedProduct: matches[0],
-          confidence: 0.8,
-          isCorrect: false,
-        });
+        matches.sort((a, b) => b.product.updatedAt.getTime() - a.product.updatedAt.getTime());
+        const bestMatch = matches[0];
+        if (bestMatch) {
+          recognizedProducts.push({
+            id: crypto.randomUUID(),
+            name: ocrName,
+            matchedProduct: bestMatch.product,
+            confidence: 0.8, // Medium confidence for partial/inverse matches
+            isCorrect: false,
+          });
+        }
         continue;
       }
 
